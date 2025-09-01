@@ -9,20 +9,20 @@
     <title>{{ config('app.name', 'Laravel') }}</title>
     <link rel="icon" type="image/x-icon" href="{{ asset('assets/src/assets/img/favicon.ico') }}"/>
     <link href="{{ asset("assets/layouts/vertical-light-menu/css/light/loader.css") }}" rel="stylesheet" type="text/css" />
-    <link href="{{ "assets/layouts/vertical-light-menu/css/dark/loader.css" }}" rel="stylesheet" type="text/css" />
-    <script src="{{ "assets/layouts/vertical-light-menu/loader.js" }}"></script>
+    <link href="{{ asset("assets/layouts/vertical-light-menu/css/dark/loader.css") }}" rel="stylesheet" type="text/css" />
+    <script src="{{ asset("assets/layouts/vertical-light-menu/loader.js") }}"></script>
     <!-- BEGIN GLOBAL MANDATORY STYLES -->
     <link href="https://fonts.googleapis.com/css?family=Nunito:400,600,700" rel="stylesheet">
-    <link href="{{ "assets/src/bootstrap/css/bootstrap.min.css" }}" rel="stylesheet" type="text/css" />
+    <link href="{{ asset("assets/src/bootstrap/css/bootstrap.min.css") }}" rel="stylesheet" type="text/css" />
 
-    <link href="{{ "assets/layouts/vertical-light-menu/css/light/plugins.css" }}" rel="stylesheet" type="text/css" />
-    <link href="{{ "assets/src/assets/css/light/authentication/auth-boxed.css" }}" rel="stylesheet" type="text/css" />
+    <link href="{{ asset("assets/layouts/vertical-light-menu/css/light/plugins.css") }}" rel="stylesheet" type="text/css" />
+    <link href="{{ asset("assets/src/assets/css/light/authentication/auth-boxed.css") }}" rel="stylesheet" type="text/css" />
 
     {{--<link href="{{ "assets/layouts/vertical-light-menu/css/dark/plugins.css"}}" rel="stylesheet" type="text/css" />
     <link href="{{ "assets/src/assets/css/dark/authentication/auth-boxed.css"}}" rel="stylesheet" type="text/css" />--}}
     <!-- END GLOBAL MANDATORY STYLES -->
     <!-- Scripts -->
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
+    {{--@vite(['resources/css/app.css', 'resources/js/app.js'])--}}
 </head>
 <body class="form">
 
@@ -50,26 +50,41 @@
                             <div class="row">
                                 <div class="col-md-12 mb-3">
 
-                                    <h1>Sign In</h1>
+                                    <h2>Sign In</h2>
                                     <p>Enter your email and password to login</p>
 
                                 </div>
                                 <div class="col-md-12">
                                     <div class="mb-3">
-                                        <label class="form-label">Email</label>
-                                        <input type="email" class="form-control" type="email" name="email"
-                                               :value="old('email')" required autofocus autocomplete="username">
-                                        <x-input-error :messages="$errors->get('email')" class="mt-2" />
+                                        <label for="email" class="form-label">Email</label>
+                                        <input
+                                            type="email"
+                                            class="form-control @error('email') is-invalid @enderror"
+                                            id="email"
+                                            name="email"
+                                            value="{{ old('email') }}"
+                                            required
+                                            autofocus
+                                            autocomplete="username"
+                                        >
+                                        <x-input-error :messages="$errors->get('email')" class="invalid-feedback d-block" />
                                     </div>
                                 </div>
                                 <div class="col-12">
                                     <div class="mb-4">
-                                        <label class="form-label">Password</label>
-                                        <input type="password" class="form-control" id="password" type="password"
-                                               name="password" required autocomplete="current-password">
-                                        <x-input-error :messages="$errors->get('password')" class="mt-2" />
+                                        <label for="password" class="form-label">Password</label>
+                                        <input
+                                            type="password"
+                                            class="form-control @error('password') is-invalid @enderror"
+                                            id="password"
+                                            name="password"
+                                            required
+                                            autocomplete="current-password"
+                                        >
+                                        <x-input-error :messages="$errors->get('password')" class="invalid-feedback d-block" />
                                     </div>
                                 </div>
+
                                 <div class="col-12">
                                     <div class="mb-3">
                                         <div class="form-check form-check-primary form-check-inline">
@@ -91,7 +106,7 @@
 
                                 <div class="col-12">
                                     <div class="text-center">
-                                        @if (Route::has('password.request'))
+                                        @if (\Illuminate\Support\Facades\Route::has('password.request'))
                                             <a class="text-warning" href="{{ route('password.request') }}">
                                                 {{ __('Forgot your password?') }}
                                             </a>
@@ -113,7 +128,7 @@
 </div>
 
 <!-- BEGIN GLOBAL MANDATORY SCRIPTS -->
-<script src="{{ "assets/src/bootstrap/js/bootstrap.bundle.min.js" }}"></script>
+<script src="{{ asset("assets/src/bootstrap/js/bootstrap.bundle.min.js") }}"></script>
 <!-- END GLOBAL MANDATORY SCRIPTS -->
 
 
