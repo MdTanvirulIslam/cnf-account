@@ -43,7 +43,7 @@
     <link rel="stylesheet" type="text/css" href="{{ asset("assets/src/plugins/src/flatpickr/flatpickr.css") }}">
     <link rel="stylesheet" type="text/css" href="{{ asset("assets/src/plugins/css/light/flatpickr/custom-flatpickr.css") }}">
     <link rel="stylesheet" type="text/css" href="{{ asset("assets/src/plugins/css/dark/flatpickr/custom-flatpickr.css") }}">
-
+    @vite(['resources/js/app.js'])
     @yield('styles')
 
 </head>
