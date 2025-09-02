@@ -708,10 +708,10 @@
                     <div class="card-bottom-section">
                         <h5>4 Members Going</h5>
                         <div class="img-group">
-                            <img src="../src/assets/img/profile-19.jpeg" alt="avatar">
-                            <img src="../src/assets/img/profile-6.jpeg" alt="avatar">
-                            <img src="../src/assets/img/profile-8.jpeg" alt="avatar">
-                            <img src="../src/assets/img/profile-3.jpeg" alt="avatar">
+                            <img src="{{ asset("assert/src/assets/img/profile-19.jpeg") }}" alt="avatar">
+                            <img src="{{ asset("assert/src/assets/img/profile-6.jpeg") }}" alt="avatar">
+                            <img src="{{ asset("assert/assets/img/profile-8.jpeg") }}" alt="avatar">
+                            <img src="{{ asset("assert/assets/img/profile-3.jpeg") }}" alt="avatar">
                         </div>
                         <a href="javascript:void(0);" class="btn">View Details</a>
                     </div>
