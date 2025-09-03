@@ -111,7 +111,7 @@
                 ]
             });
 
-            // ✅ Load Sub Categories dynamically
+            //  Load Sub Categories dynamically
             $('#category_id').on('change', function () {
                 let categoryId = $(this).val();
                 $('#sub_category_id').empty().append('<option value="">Select Sub Category</option>');
@@ -124,7 +124,7 @@
                 }
             });
 
-            // ✅ Save & Update
+            //  Save & Update
             $('#expenseForm').submit(function (e) {
                 e.preventDefault();
 
@@ -148,7 +148,7 @@
                 });
             });
 
-            // ✅ Edit
+            //  Edit
             $(document).on('click', '.edit-btn', function () {
                 let id = $(this).data('id');
                 $.get('/expenses/' + id + '/edit', function (res) {
@@ -165,7 +165,7 @@
                 });
             });
 
-            // ✅ Delete
+            //  Delete
             $(document).on('click', '.delete-btn', function () {
                 let id = $(this).data('id');
 
