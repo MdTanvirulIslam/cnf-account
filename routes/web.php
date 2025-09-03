@@ -4,6 +4,7 @@ use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Middleware\SetPageTitle;
 use App\Http\Controllers\BankBookController;
+use App\Http\Controllers\CategoryController;
 
 
 Route::get('/', function () {
@@ -20,6 +21,8 @@ Route::middleware(['auth', SetPageTitle::class])->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
     Route::resource('bankbooks', BankBookController::class);
+
+    Route::resource('categories', CategoryController::class);
 });
 
 require __DIR__.'/auth.php';

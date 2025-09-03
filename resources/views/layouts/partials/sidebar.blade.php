@@ -79,10 +79,10 @@
                 </a>
                 <ul class="collapse submenu list-unstyled" id="Expense" data-bs-parent="#accordionExample">
                     <li>
-                        <a href="./layout-blank-page.html"> Expense Bill </a>
+                        <a href="ExpenseList.php"> Expense List </a>
                     </li>
                     <li>
-                        <a href="./layout-empty.html"> Expense Summary </a>
+                        <a href="{{ route("categories.index") }}"> Expense Category </a>
                     </li>
 
                 </ul>

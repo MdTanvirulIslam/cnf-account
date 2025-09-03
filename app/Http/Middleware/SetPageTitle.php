@@ -13,6 +13,7 @@ class SetPageTitle
 
         $pageTitles = [
             'bankbooks.index'  => 'Bank Book',
+            'categories.index'  => 'Expense Categories',
 
         ];
 
