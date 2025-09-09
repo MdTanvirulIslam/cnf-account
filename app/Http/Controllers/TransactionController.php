@@ -26,22 +26,66 @@ class TransactionController extends Controller
 
             return DataTables::of($query)
                 ->addIndexColumn()
-                ->addColumn('employee_name', fn($row) => isset($row->employee->name) ? $row->employee->name : 'N/A')
-                ->editColumn('date', fn($row) => $row->date instanceof \Carbon\Carbon ? $row->date->format('Y-m-d') : $row->date)
+                ->addColumn('employee_name', fn($row) => $row->employee->name ?? 'N/A')
+                ->editColumn('date', fn($row) =>
+                $row->date instanceof \Carbon\Carbon
+                    ? $row->date->format('Y-m-d')
+                    : date('Y-m-d', strtotime($row->date))
+                )
                 ->editColumn('amount', fn($row) => number_format($row->amount, 2))
                 ->editColumn('type', fn($row) =>
                 $row->type === 'receive'
                     ? '<span class="badge badge-light-success">Receive</span>'
                     : '<span class="badge badge-light-secondary">Return</span>'
                 )
-                ->addColumn('action', function ($row) use ($department) {
-                    $prefix = strtolower($department);
+                ->addColumn('action', function ($row) {
+                    $editId   = $row->id;
+                    $deleteId = $row->id;
+
+                    // build routes dynamically (import/export will be auto detected)
+                    $department = strtolower(isset($row->employee->department) ? $row->employee->department : 'import');
+                    $editRoute   = route("transactions.$department.edit", $editId);
+                    $deleteRoute = route("transactions.$department.destroy", $deleteId);
+
                     return '
-                        <ul class="table-controls text-center">
-                            <li><a href="javascript:void(0);" class="edit-btn" data-id="'.$row->id.'" data-route="'.route("transactions.$prefix.edit",$row->id).'">✏️</a></li>
-                            <li><a href="javascript:void(0);" class="delete-btn text-danger" data-id="'.$row->id.'" data-route="'.route("transactions.$prefix.destroy",$row->id).'">🗑</a></li>
-                        </ul>';
+        <ul class="table-controls text-center">
+            <li>
+                <a href="javascript:void(0);"
+                   class="edit-btn bs-tooltip"
+                   data-id="'.$editId.'"
+                   data-route="'.$editRoute.'"
+                   data-bs-toggle="tooltip"
+                   title="Edit">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"
+                         viewBox="0 0 30 30" fill="none" stroke="currentColor"
+                         stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                         class="feather feather-edit-2 p-1 br-8 mb-1">
+                        <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
+                    </svg>
+                </a>
+            </li>
+            <li>
+                <a href="javascript:void(0);"
+                   class="delete-btn bs-tooltip text-danger"
+                   data-id="'.$deleteId.'"
+                   data-route="'.$deleteRoute.'"
+                   data-bs-toggle="tooltip"
+                   title="Delete">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"
+                         viewBox="0 0 30 30" fill="none" stroke="currentColor"
+                         stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                         class="feather feather-trash p-1 br-8 mb-1">
+                        <polyline points="3 6 5 6 21 6"></polyline>
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6
+                                 m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2">
+                        </path>
+                    </svg>
+                </a>
+            </li>
+        </ul>
+    ';
                 })
+
                 ->rawColumns(['type','action'])
                 ->make(true);
         }
