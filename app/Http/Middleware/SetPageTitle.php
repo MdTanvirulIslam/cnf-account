@@ -16,6 +16,8 @@ class SetPageTitle
             'categories.index'  => 'Expense Categories',
             'expenses.index'  => 'Expenses',
             'employees.index'  => 'Employees',
+            'transactions.import'  => 'Import Employee Transactions',
+            'transactions.export'  => 'Export Employee Transactions',
 
         ];
 

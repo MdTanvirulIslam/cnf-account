@@ -110,10 +110,10 @@
                 </a>
                 <ul class="collapse submenu list-unstyled" id="EmployeeCash" data-bs-parent="#accordionExample">
                     <li>
-                        <a href="./layout-blank-page.html"> Import  Cash </a>
+                        <a href="{{ route("transactions.import") }}"> Import  Cash </a>
                     </li>
                     <li>
-                        <a href="./layout-empty.html"> Export Cash</a>
+                        <a href="{{ route("transactions.export") }}"> Export Cash</a>
                     </li>
 
                 </ul>
