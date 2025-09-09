@@ -15,6 +15,7 @@ class SetPageTitle
             'bankbooks.index'  => 'Bank Book',
             'categories.index'  => 'Expense Categories',
             'expenses.index'  => 'Expenses',
+            'employees.index'  => 'Employees',
 
         ];
 

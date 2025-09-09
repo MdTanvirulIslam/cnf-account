@@ -6,6 +6,7 @@ use App\Http\Middleware\SetPageTitle;
 use App\Http\Controllers\BankBookController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\ExpensesController;
+use App\Http\Controllers\EmployeeController;
 
 
 Route::get('/', function () {
@@ -25,6 +26,8 @@ Route::middleware(['auth', SetPageTitle::class])->group(function () {
     Route::resource('categories', CategoryController::class);
     Route::resource('expenses', ExpensesController::class);
     Route::get('get-subcategories/{id}', [ExpensesController::class, 'getSubCategories']);
+
+    Route::resource('employees', EmployeeController::class);
 
 });
 
