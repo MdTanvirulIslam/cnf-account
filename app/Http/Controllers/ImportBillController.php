@@ -42,8 +42,11 @@ class ImportBillController extends Controller
     public function data(Request $request)
     {
         if ($request->ajax()) {
-            $query = ImportBill::withSum('expenses', 'amount') // adds expenses_sum_amount
-            ->latest();
+            $query = ImportBill::withSum('expenses', 'amount') // total expenses
+            ->withSum(['expenses as ait_sum_amount' => function ($q) {
+                $q->where('expense_type', 'AIT (As Per Receipt)'); // only AIT expenses
+            }], 'amount')
+                ->latest();
 
             return datatables()->of($query)
                 ->addIndexColumn()
@@ -72,6 +75,9 @@ class ImportBillController extends Controller
                     return $row->bill_date
                         ? \Carbon\Carbon::parse($row->bill_date)->format('F')
                         : '';
+                })
+                ->addColumn('ait_amount', function ($row) {
+                    return number_format(isset($row->ait_sum_amount) ? $row->ait_sum_amount : 0, 2);
                 })
                 ->addColumn('action', function ($row) {
                     $editUrl   = route('import-bills.edit', $row->id);

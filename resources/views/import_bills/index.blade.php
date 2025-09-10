@@ -34,11 +34,22 @@
                             <th class="text-center">MONTH</th>
                             <th class="text-center">VALUE</th>
                             <th class="text-center">BILL AMOUNT</th>
+                            <th class="text-center">DF VAT</th>
                             <th class="text-center">DOC FEE</th>
                             <th class="text-center">SCAN FEE</th>
                             <th class="text-center">Action</th>
                         </tr>
                     </thead>
+                    <tfoot>
+                    <tr>
+                        <th colspan="12" style="text-align:right">Total Amount:</th>
+                        <th id="total_amount"></th>
+                        <th id="total_ait"></th>
+                        <th id="total_doc"></th>
+                        <th id="total_scan"></th>
+                        <th></th>
+                    </tr>
+                    </tfoot>
                 </table>
             </div>
         </div>
@@ -55,7 +66,9 @@
             $.ajaxSetup({ headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') } });
 
             const table = $('#importBillTable').DataTable({
-                "dom": "<'dt--top-section'<'row'<'col-12 col-sm-6 d-flex justify-content-sm-start justify-content-center'l><'col-12 col-sm-6 d-flex justify-content-sm-end justify-content-center mt-sm-0 mt-3'f>>>" +
+                "dom":
+                    "<'dt--top-section'<'row'<'col-12 col-sm-6 d-flex justify-content-sm-start justify-content-center'l>" +
+                    "<'col-12 col-sm-6 d-flex justify-content-sm-end justify-content-center mt-sm-0 mt-3'f>>>" +
                     "<'table-responsive'tr>" +
                     "<'dt--bottom-section d-sm-flex justify-content-sm-between text-center'<'dt--pages-count  mb-sm-0 mb-3'i><'dt--pagination'p>>",
                 "oLanguage": {
@@ -69,7 +82,7 @@
                 serverSide: true,
                 ajax: "{{ route('import-bills.data') }}",
                 columns: [
-                    { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false }, // index
+                    { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false },
                     { data: 'lc_no', name: 'lc_no' },
                     { data: 'lc_date', name: 'lc_date' },
                     { data: 'be_no', name: 'be_no' },
@@ -82,20 +95,46 @@
                     { data: 'month_name', name: 'month_name' },
                     { data: 'value', name: 'value' },
                     { data: 'amount', name: 'amount' },
+                    { data: 'ait_amount', name: 'ait_amount' },
                     { data: 'doc_fee', name: 'doc_fee' },
                     { data: 'scan_fee', name: 'scan_fee' },
                     { data: 'action', name: 'action', orderable: false, searchable: false }
                 ],
                 order: [[15, 'desc']],
-                drawCallback: function() {
+                drawCallback: function () {
                     // re-init tooltips if needed
                     if (window.bootstrap) {
-                        document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el=>{
+                        document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => {
                             if (!el._tooltip) el._tooltip = new bootstrap.Tooltip(el);
                         });
                     }
+                },
+                footerCallback: function (row, data, start, end, display) {
+                    var api = this.api();
+
+                    // Helper to parse numbers
+                    var intVal = function (i) {
+                        return typeof i === 'string'
+                            ? i.replace(/[\$,]/g, '') * 1
+                            : typeof i === 'number'
+                                ? i
+                                : 0;
+                    };
+
+                    // Compute totals for current page
+                    var totalAmount = api.column(12, { page: 'current' }).data().reduce((a, b) => intVal(a) + intVal(b), 0);
+                    var totalAIT = api.column(13, { page: 'current' }).data().reduce((a, b) => intVal(a) + intVal(b), 0);
+                    var totalDoc = api.column(14, { page: 'current' }).data().reduce((a, b) => intVal(a) + intVal(b), 0);
+                    var totalScan = api.column(15, { page: 'current' }).data().reduce((a, b) => intVal(a) + intVal(b), 0);
+
+                    // Update footer cells
+                    $('#total_amount').html(totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2 }));
+                    $('#total_ait').html(totalAIT.toLocaleString(undefined, { minimumFractionDigits: 2 }));
+                    $('#total_doc').html(totalDoc.toLocaleString(undefined, { minimumFractionDigits: 2 }));
+                    $('#total_scan').html(totalScan.toLocaleString(undefined, { minimumFractionDigits: 2 }));
                 }
             });
+
 
             // Delete via SweetAlert + reload table
             $(document).on('click', '.delete-btn', function () {
@@ -114,7 +153,7 @@
                         $.ajax({
                             url: route,
                             type: 'DELETE',
-                            data: {_token: $('meta[name="csrf-token"]').attr('content')}, // ✅ required
+                            data: {_token: $('meta[name="csrf-token"]').attr('content')}, 
                             success: function (res) {
                                 $('#importBillTable').DataTable().ajax.reload(null, false);
                                 Swal.fire("Deleted!", res.message, "success");
