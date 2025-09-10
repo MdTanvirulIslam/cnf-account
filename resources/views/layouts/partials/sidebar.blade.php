@@ -58,10 +58,10 @@
                 </a>
                 <ul class="collapse submenu list-unstyled" id="Import" data-bs-parent="#accordionExample">
                     <li>
-                        <a href="./layout-blank-page.html"> Import Bill </a>
+                        <a href="{{ route("import-bills.create") }}"> Import Bill </a>
                     </li>
                     <li>
-                        <a href="./layout-empty.html"> Import Summary </a>
+                        <a href="{{ route("import-bills.index") }}"> Import Summary </a>
                     </li>
 
                 </ul>

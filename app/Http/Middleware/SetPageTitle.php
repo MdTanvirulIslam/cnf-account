@@ -18,6 +18,9 @@ class SetPageTitle
             'employees.index'  => 'Employees',
             'transactions.import'  => 'Import Employee Transactions',
             'transactions.export'  => 'Export Employee Transactions',
+            'import-bills.index'  => 'Import Bills',
+            'import-bills.create'  => 'Add Import Bill',
+            'import-bills.edit'  => 'Update Import Bill',
 
         ];
 

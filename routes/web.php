@@ -8,6 +8,7 @@ use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\ExpensesController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\TransactionController;
+use App\Http\Controllers\ImportBillController;
 
 
 Route::get('/', function () {
@@ -45,6 +46,9 @@ Route::middleware(['auth', SetPageTitle::class])->group(function () {
     Route::get('transactions/export/{id}/edit',[TransactionController::class,'edit'])->name('transactions.export.edit');
     Route::put('transactions/export/{id}',[TransactionController::class,'update'])->name('transactions.export.update');
     Route::delete('transactions/export/{id}',[TransactionController::class,'destroy'])->name('transactions.export.destroy');
+
+    Route::resource('import-bills', ImportBillController::class);
+    Route::get('import-bills-data', [ImportBillController::class, 'data'])->name('import-bills.data');
 
 });
 
