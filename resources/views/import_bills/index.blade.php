@@ -153,7 +153,7 @@
                         $.ajax({
                             url: route,
                             type: 'DELETE',
-                            data: {_token: $('meta[name="csrf-token"]').attr('content')}, 
+                            data: {_token: $('meta[name="csrf-token"]').attr('content')},
                             success: function (res) {
                                 $('#importBillTable').DataTable().ajax.reload(null, false);
                                 Swal.fire("Deleted!", res.message, "success");

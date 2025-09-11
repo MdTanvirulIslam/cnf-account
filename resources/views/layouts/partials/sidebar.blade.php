@@ -36,10 +36,10 @@
                 </a>
                 <ul class="collapse submenu list-unstyled" id="Export" data-bs-parent="#accordionExample">
                     <li>
-                        <a href="ExportBillEnter.php"> Export Bill </a>
+                        <a href="{{ route('export-bills.create') }}"> Export Bill </a>
                     </li>
                     <li>
-                        <a href="ExportBillSummary.php"> Export Summary </a>
+                        <a href="{{ route('export-bills.index') }}"> Export Summary </a>
                     </li>
 
                 </ul>

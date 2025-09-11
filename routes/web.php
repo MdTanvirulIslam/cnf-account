@@ -9,6 +9,8 @@ use App\Http\Controllers\ExpensesController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\TransactionController;
 use App\Http\Controllers\ImportBillController;
+use App\Http\Controllers\BuyerController;
+use App\Http\Controllers\ExportBillController;
 
 
 Route::get('/', function () {
@@ -49,6 +51,11 @@ Route::middleware(['auth', SetPageTitle::class])->group(function () {
 
     Route::resource('import-bills', ImportBillController::class);
     Route::get('import-bills-data', [ImportBillController::class, 'data'])->name('import-bills.data');
+
+    Route::resource('buyers', BuyerController::class);
+
+    Route::resource('export-bills', ExportBillController::class);
+    Route::get('export-bills-data',[ExportBillController::class,'data'])->name('export-bills.data');
 
 });
 
