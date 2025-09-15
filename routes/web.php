@@ -12,6 +12,7 @@ use App\Http\Controllers\ImportBillController;
 use App\Http\Controllers\BuyerController;
 use App\Http\Controllers\ExportBillController;
 use App\Http\Middleware\CheckDomain;
+use App\Http\Controllers\AccountController;
 
 
 Route::get('/', function () {
@@ -26,6 +27,8 @@ Route::middleware(['auth','verified', CheckDomain::class, SetPageTitle::class])-
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+
+    Route::resource('accounts', AccountController::class);
 
     Route::resource('bankbooks', BankBookController::class);
     Route::resource('categories', CategoryController::class);

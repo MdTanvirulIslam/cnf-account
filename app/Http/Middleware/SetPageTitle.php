@@ -24,6 +24,8 @@ class SetPageTitle
             'export-bills.index'  => 'Export Bills',
             'export-bills.create'  => 'Add Export Bill',
             'export-bills.edit'  => 'Update Export Bill',
+            'buyers.index'  => 'Buyers',
+            'accounts.index'  => 'Accounts',
 
         ];
 

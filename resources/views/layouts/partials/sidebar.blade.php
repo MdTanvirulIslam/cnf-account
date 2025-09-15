@@ -154,10 +154,10 @@
                 </a>
                 <ul class="collapse submenu list-unstyled" id="Settings" data-bs-parent="#accordionExample">
                     <li>
-                        <a href="user-account-settings.php"> Account Settings </a>
+                        <a href="{{ route('accounts.index') }}"> Account Settings </a>
                     </li>
                     <li>
-                        <a href="./layout-empty.html"> Settings 2</a>
+                        <a href="user-account-settings.php"> Profile Settings </a>
                     </li>
 
                 </ul>
