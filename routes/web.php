@@ -11,6 +11,7 @@ use App\Http\Controllers\TransactionController;
 use App\Http\Controllers\ImportBillController;
 use App\Http\Controllers\BuyerController;
 use App\Http\Controllers\ExportBillController;
+use App\Http\Middleware\CheckDomain;
 
 
 Route::get('/', function () {
@@ -21,7 +22,7 @@ Route::get('/dashboard', function () {
     return view('dashboard');
 })->middleware(['auth', 'verified',SetPageTitle::class])->name('dashboard');
 
-Route::middleware(['auth', SetPageTitle::class])->group(function () {
+Route::middleware(['auth',CheckDomain::class, SetPageTitle::class])->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');

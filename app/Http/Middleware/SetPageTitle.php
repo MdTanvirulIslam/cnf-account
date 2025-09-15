@@ -21,6 +21,9 @@ class SetPageTitle
             'import-bills.index'  => 'Import Bills',
             'import-bills.create'  => 'Add Import Bill',
             'import-bills.edit'  => 'Update Import Bill',
+            'export-bills.index'  => 'Export Bills',
+            'export-bills.create'  => 'Add Export Bill',
+            'export-bills.edit'  => 'Update Export Bill',
 
         ];
 

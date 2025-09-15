@@ -27,7 +27,8 @@ class ExportBillController extends Controller
         "ADMIN CHARGE",
         "Special permission DSV AIR & SEA LTD",
         "Short Ship Certificate",
-        "Weight Permission. Invoice P/list Dc Print"
+        "Weight Permission. Invoice P/list Dc Print",
+
     ];
     /**
      * Display a listing of the resource.
