@@ -2,7 +2,6 @@
 
 @section('styles')
     <link rel="stylesheet" href="{{ asset('assets/src/plugins/src/sweetalerts2/sweetalerts2.css') }}">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css"/>
 @endsection
 
 @section('content')
@@ -21,14 +20,10 @@
                         @csrf
                         @method('PUT')
                         <div class="row">
-                            <div class="col-md-3 mb-3">
-                                <label>Company Name *</label>
-                                <input type="text" name="company_name" class="form-control form-control-sm" value="{{ $bill->company_name }}" required>
-                            </div>
+
                             <div class="col-md-3 mb-3">
                                 <label>Buyer Name *</label>
-                                <select name="buyer_id" class="form-control form-control-sm select2" required>
-                                    <option value="">-- Select Buyer --</option>
+                                <select id="select-beast" name="buyer_id"  autocomplete="off">
                                     @foreach($buyers as $buyer)
                                         <option value="{{ $buyer->id }}" {{ $bill->buyer_id == $buyer->id ? 'selected' : '' }}>
                                             {{ $buyer->name }}
@@ -108,10 +103,8 @@
 
 @section('scripts')
     <script src="{{ asset('assets/src/plugins/src/sweetalerts2/sweetalerts2.min.js') }}"></script>
-    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script>
         $(function(){
-            $('.select2').select2();
 
             $('#importBillForm').submit(function(e){
                 e.preventDefault();
@@ -119,19 +112,15 @@
 
                 $.ajax({
                     url: "{{ route('export-bills.update', $bill->id) }}",
-                    type: "POST",
-                    data: formData,
+                    type: "PUT",
+                    data: $(this).serialize(),
                     success: function(res){
-                        Swal.fire("Success", res.message ?? "Bill updated successfully!", "success").then(()=>{
-                            window.location.href = "{{ route('export-bills.index') }}";
-                        });
+                        Swal.fire("Success", res.message ?? "Bill updated successfully!", "success")
+                            .then(()=> window.location.href = "{{ route('export-bills.index') }}");
                     },
                     error: function(xhr){
                         let errors = xhr.responseJSON?.errors;
-                        let msg = "Something went wrong.";
-                        if(errors){
-                            msg = Object.values(errors).join("<br>");
-                        }
+                        let msg = errors ? Object.values(errors).join("<br>") : "Something went wrong.";
                         Swal.fire("Error", msg, "error");
                     }
                 });

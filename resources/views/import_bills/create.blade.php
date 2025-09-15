@@ -20,15 +20,6 @@
                         @csrf
 
                         <div class="col-md-3 form-group">
-                            <label for="companyName">Company Name</label>
-                            <select name="company_name" id="companyName" class="form-control form-control-sm" required>
-                                <option value="">Select Company</option>
-                                <option value="MFL">MFL</option>
-                                <option value="IMP">IMP</option>
-                            </select>
-                        </div>
-
-                        <div class="col-md-3 form-group">
                             <label for="lcNoText">L/C No</label>
                             <input class="form-control form-control-sm" type="text" name="lc_no" id="lcNoText" required>
                         </div>

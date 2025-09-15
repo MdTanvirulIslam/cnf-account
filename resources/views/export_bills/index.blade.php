@@ -22,7 +22,6 @@
                     <thead>
                     <tr>
                         <th class="text-center">SL</th>
-                        <th>Company</th>
                         <th>Buyer</th>
                         <th>Invoice No</th>
                         <th>Invoice Date</th>
@@ -41,7 +40,7 @@
                     </thead>
                     <tfoot>
                     <tr>
-                        <th colspan="13" style="text-align:right">Total Amount:</th>
+                        <th colspan="12" style="text-align:right">Total Amount:</th>
                         <th></th> <!-- Amount Total -->
                         <th></th> <!-- Bank Vat Total -->
                         <th></th> <!-- Action column empty -->
@@ -78,7 +77,6 @@
                 ajax: "{{ route('export-bills.data') }}",
                 columns: [
                     { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false },
-                    { data: 'company_name', name: 'company_name' },
                     { data: 'buyer_name', name: 'buyer_name' },
                     { data: 'invoice_no', name: 'invoice_no' },
                     { data: 'invoice_date', name: 'invoice_date' },
@@ -116,18 +114,18 @@
                     };
 
                     // ====== Amount Total (column index 13) ======
-                    var totalAmount = api.column(13, { page: 'current' }).data()
+                    var totalAmount = api.column(12, { page: 'current' }).data()
                         .reduce((a, b) => intVal(a) + intVal(b), 0);
 
                     // ====== Bank VAT Total (column index 14) ======
-                    var totalBankVat = api.column(14, { page: 'current' }).data()
+                    var totalBankVat = api.column(13, { page: 'current' }).data()
                         .reduce((a, b) => intVal(a) + intVal(b), 0);
 
                     // Update footer cells
-                    $(api.column(13).footer()).html(
+                    $(api.column(12).footer()).html(
                         totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
                     );
-                    $(api.column(14).footer()).html(
+                    $(api.column(13).footer()).html(
                         totalBankVat.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
                     );
                 }

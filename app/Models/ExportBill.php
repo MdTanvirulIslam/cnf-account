@@ -22,6 +22,21 @@ class ExportBill extends Model
         'usd'          => 'decimal:2',
     ];
 
+    protected static function boot()
+    {
+        parent::boot();
+
+        // Auto set company_name when creating
+        static::creating(function ($bill) {
+            $bill->company_name = env('COMPANY_NAME');
+        });
+
+        // Auto set company_name when updating
+        static::updating(function ($bill) {
+            $bill->company_name = env('COMPANY_NAME');
+        });
+    }
+
     public function expenses()
     {
         return $this->hasMany(ExportBillExpense::class, 'export_bill_id');

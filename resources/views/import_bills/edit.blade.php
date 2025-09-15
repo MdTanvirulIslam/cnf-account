@@ -19,14 +19,6 @@
                     <form id="importBillForm" class="row g-3">
                         @csrf
                         {{-- We'll append _method=PUT in ajax request --}}
-                        <div class="col-md-3 form-group">
-                            <label>Company Name</label>
-                            <select name="company_name" id="companyName" class="form-control form-control-sm" required>
-                                <option value="">Select Company</option>
-                                <option value="MFL" {{ $bill->company_name == 'MFL' ? 'selected' : '' }}>MFL</option>
-                                <option value="IMP" {{ $bill->company_name == 'IMP' ? 'selected' : '' }}>IMP</option>
-                            </select>
-                        </div>
 
                         <div class="col-md-3 form-group">
                             <label>L/C No</label>

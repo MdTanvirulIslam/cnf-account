@@ -2,7 +2,6 @@
 
 @section('styles')
     <link rel="stylesheet" href="{{ asset('assets/src/plugins/src/sweetalerts2/sweetalerts2.css') }}">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css"/>
 @endsection
 
 @section('content')
@@ -20,13 +19,10 @@
                     <form id="importBillForm">
                         @csrf
                         <div class="row">
-                            <div class="col-md-3 mb-3">
-                                <label>Company Name *</label>
-                                <input type="text" name="company_name" class="form-control form-control-sm" required>
-                            </div>
+
                             <div class="col-md-3 mb-3">
                                 <label>Buyer Name *</label>
-                                <select name="buyer_id" class="form-control form-control-sm select2" required>
+                                <select id="select-beast" name="buyer_id"  autocomplete="off">
                                     <option value="">-- Select Buyer --</option>
                                     @foreach($buyers as $buyer)
                                         <option value="{{ $buyer->id }}">{{ $buyer->name }}</option>
@@ -102,10 +98,9 @@
 
 @section('scripts')
     <script src="{{ asset('assets/src/plugins/src/sweetalerts2/sweetalerts2.min.js') }}"></script>
-    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script>
         $(function(){
-            $('.select2').select2();
+
 
             $('#importBillForm').submit(function(e){
                 e.preventDefault();

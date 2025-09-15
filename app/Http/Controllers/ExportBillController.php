@@ -8,6 +8,7 @@ use App\Models\ExportBillExpense;
 use Yajra\DataTables\Facades\DataTables;
 use Carbon\Carbon;
 use App\Models\Buyer;
+use Log\Facades\Log;
 
 class ExportBillController extends Controller
 {
@@ -142,7 +143,6 @@ class ExportBillController extends Controller
     {
        //dd($request->all());
         $request->validate([
-            'company_name' => 'required|string|max:255',
             'buyer_id' => 'required|exists:buyers,id',
             'invoice_no' => 'required|string|max:255',
             'invoice_date' => 'nullable|date',
@@ -157,7 +157,7 @@ class ExportBillController extends Controller
         ]);
 
         $bill = ExportBill::create($request->only([
-            'company_name','buyer_id','invoice_no','invoice_date','bill_no',
+            'buyer_id','invoice_no','invoice_date','bill_no',
             'bill_date','usd','total_qty','ctn_no','be_no','be_date','qty_pcs'
         ]));
 
@@ -169,6 +169,8 @@ class ExportBillController extends Controller
                 'amount'=>$amount
             ]);
         }
+
+        \Log::info('Export Bill Created', ['bill_id' => $bill->id, 'user_id' => auth()->id()]);
 
         return response()->json(['success'=>true,'message'=>'Export Bill created successfully']);
     }
@@ -206,8 +208,8 @@ class ExportBillController extends Controller
      */
     public function update(Request $request,$id)
     {
+
        $request->validate([
-            'company_name' => 'required|string|max:255',
             'buyer_id' => 'required|exists:buyers,id',
             'invoice_no' => 'required|string|max:255',
             'invoice_date' => 'nullable|date',
@@ -223,7 +225,8 @@ class ExportBillController extends Controller
         $bill = ExportBill::findOrFail($id);
         // Update header fields
         $bill->update($request->only([
-            'company_name','buyer_id','bill_no','bill_date','invoice_no','invoice_date','usd','total_qty','ctn_no','be_no','be_date','qty_pcs'
+            'buyer_id','bill_no','bill_date','invoice_no','invoice_date',
+            'usd','total_qty','ctn_no','be_no','be_date','qty_pcs'
         ]));
 
         // Update expenses
@@ -232,7 +235,7 @@ class ExportBillController extends Controller
             $expense->amount = $amount ?: 0;
             $expense->save();
         }
-
+        \Log::info('Export Bill Update', ['bill_id' => $bill->id, 'user_id' => auth()->id()]);
         return response()->json(['message' => 'Export bill updated successfully!']);
     }
 

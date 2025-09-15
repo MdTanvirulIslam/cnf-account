@@ -73,7 +73,7 @@ class ImportBillController extends Controller
                 })
                 ->addColumn('month_name', function ($row) {
                     return $row->bill_date
-                        ? \Carbon\Carbon::parse($row->bill_date)->format('F')
+                        ? \Carbon\Carbon::parse($row->created_at)->format('F')
                         : '';
                 })
                 ->addColumn('ait_amount', function ($row) {
@@ -147,7 +147,6 @@ class ImportBillController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'company_name' => 'required|string|max:255',
             'lc_no'        => 'required|string|max:255',
             'lc_date'      => 'nullable|date',
             'bill_no'      => 'required|string|max:255',
@@ -156,7 +155,7 @@ class ImportBillController extends Controller
         ]);
 
         $bill = ImportBill::create($request->only([
-            'company_name','lc_no','lc_date','bill_no','bill_date',
+            'lc_no','lc_date','bill_no','bill_date',
             'item','value','qty','weight','be_no','be_date',
             'scan_fee','doc_fee'
         ]));
@@ -170,7 +169,7 @@ class ImportBillController extends Controller
                 'amount'         => $amount,
             ]);
         }
-
+        \Log::info('Import Bill created', ['bill_id' => $bill->id, 'user_id' => auth()->id()]);
         return response()->json([
             'success' => true,
             'message' => 'Import Bill created successfully',
@@ -192,7 +191,7 @@ class ImportBillController extends Controller
     public function update(Request $request, $id)
     {
         $request->validate([
-            'company_name' => 'required|string|max:255',
+
             'lc_no'        => 'required|string|max:255',
             'lc_date'      => 'nullable|date',
             'bill_no'      => 'required|string|max:255',
@@ -202,7 +201,7 @@ class ImportBillController extends Controller
 
         $bill = ImportBill::findOrFail($id);
         $bill->update($request->only([
-            'company_name','lc_no','lc_date','bill_no','bill_date',
+            'lc_no','lc_date','bill_no','bill_date',
             'item','value','qty','weight','be_no','be_date',
             'scan_fee','doc_fee'
         ]));
@@ -218,7 +217,7 @@ class ImportBillController extends Controller
                 $bill->expenses()->create(['expense_type' => $type, 'amount' => $amount]);
             }
         }
-
+        \Log::info('Import Bill Update', ['bill_id' => $bill->id, 'user_id' => auth()->id()]);
         return response()->json([
             'success' => true,
             'message' => 'Import Bill updated successfully'
