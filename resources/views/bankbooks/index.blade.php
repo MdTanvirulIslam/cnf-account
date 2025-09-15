@@ -25,12 +25,14 @@
                         <input type="hidden" id="bankbook_id" name="id"> {{-- set when editing --}}
 
                         <div class="col-md-12 form-group">
-                            <label for="bank_name">Bank Name</label>
-                            <select name="bank_name" id="bank_name" class="form-control form-control-sm">
-                                <option value="" selected>Select Bank Name</option>
-                                <option value="Janata Bank">Janata Bank</option>
-                                <option value="Sonali Bank">Sonali Bank</option>
-                                <option value="Chase">Chase</option>
+                            <label>Account *</label>
+                            <select name="account_id" id="account_id" class="form-control form-control-sm">
+                                <option value="">Select Account</option>
+                                @foreach($accounts as $account)
+                                    <option value="{{ $account->id }}" {{ isset($bankBook) && $bankBook->account_id == $account->id ? 'selected' : '' }}>
+                                        {{ $account->name }} (Balance: {{ number_format($account->balance, 2) }})
+                                    </option>
+                                @endforeach
                             </select>
                         </div>
 
@@ -40,6 +42,7 @@
                                 <option value="" selected>Select Type</option>
                                 <option value="Receive">Receive</option>
                                 <option value="Withdraw">Withdraw</option>
+                                <option value="Pay Order">Pay Order</option>
                             </select>
                         </div>
 
@@ -119,7 +122,7 @@
                 ajax: "{{ route('bankbooks.index') }}",
                 columns: [
                     { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable:false, searchable:false, className:'text-center' },
-                    { data: 'bank_name',   name: 'bank_name', className:'text-center' },
+                    { data: 'bank_name',   name: 'bank_name', className:'text-center' }, // comes from account relation
                     { data: 'type',        name: 'type',      orderable:false, searchable:false, className:'text-center' },
                     { data: 'amount',      name: 'amount' },
                     { data: 'note',        name: 'note' },
@@ -188,7 +191,7 @@
                 $.get("/bankbooks/" + id + "/edit")
                     .done(function (data) {
                         $('#bankbook_id').val(data.id);
-                        $('#bank_name').val(data.bank_name);
+                        $('#account_id').val(data.account_id);
                         $('#type').val(data.type);
                         $('#amount').val(data.amount);
                         $('#note').val(data.note || '');
