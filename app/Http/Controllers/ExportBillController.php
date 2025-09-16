@@ -84,9 +84,9 @@ class ExportBillController extends Controller
                 <ul class="table-controls text-center">
                     <li>
                         <a href="'.$editUrl.'"
-                           class="bs-tooltip"
+                           class="edit-btn bs-tooltip"
                            title="Edit"
-                           data-id="'.$row->id.'">
+                           data-id="'.$row->id.'" data-bs-toggle="tooltip">
                             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"
                                  viewBox="0 0 30 30" fill="none" stroke="currentColor"
                                  stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
@@ -100,6 +100,7 @@ class ExportBillController extends Controller
                         <a href="javascript:void(0);"
                            class="delete-btn bs-tooltip text-danger"
                            title="Delete"
+                           data-bs-toggle="tooltip"
                            data-route="'.$deleteUrl.'"
                            data-id="'.$row->id.'">
                             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"

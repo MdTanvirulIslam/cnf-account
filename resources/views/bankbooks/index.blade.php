@@ -5,8 +5,6 @@
     <link rel="stylesheet" type="text/css" href="{{ asset("assets/src/plugins/css/light/table/datatable/dt-global_style.css") }}">
     <link rel="stylesheet" type="text/css" href="{{ asset("assets/src/plugins/css/light/table/datatable/custom_dt_custom.css") }}">
     <link rel="stylesheet" href="{{ asset("assets/src/plugins/src/sweetalerts2/sweetalerts2.css") }}">
-    <link href="{{ asset("assets/src/assets/css/light/scrollspyNav.css") }}" rel="stylesheet" type="text/css" />
-    <link href="{{ asset("assets/src/plugins/css/light/sweetalerts2/custom-sweetalert.css") }}" rel="stylesheet" type="text/css" />
 @endsection
 
 @section('content')
@@ -105,10 +103,8 @@
 
 @section('scripts')
     {{-- Load vendor scripts FIRST --}}
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="{{ asset("assets/src/assets/js/scrollspyNav.js") }}"></script>
+
     <script src="{{ asset("assets/src/plugins/src/sweetalerts2/sweetalerts2.min.js") }}"></script>
-    <script src="{{ asset("assets/src/plugins/src/sweetalerts2/custom-sweetalert.js") }}"></script>
     <script src="{{ asset("assets/src/plugins/src/table/datatable/datatables.js") }}"></script>
 
     <script>

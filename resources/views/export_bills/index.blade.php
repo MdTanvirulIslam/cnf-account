@@ -5,6 +5,7 @@
     <link rel="stylesheet" href="{{ asset('assets/src/plugins/css/light/table/datatable/dt-global_style.css') }}">
     <link rel="stylesheet" href="{{ asset('assets/src/plugins/css/light/table/datatable/custom_dt_custom.css') }}">
     <link rel="stylesheet" href="{{ asset('assets/src/plugins/src/sweetalerts2/sweetalerts2.css') }}">
+
 @endsection
 
 @section('content')
@@ -53,7 +54,6 @@
 @endsection
 
 @section('scripts')
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="{{ asset('assets/src/plugins/src/table/datatable/datatables.js') }}"></script>
     <script src="{{ asset('assets/src/plugins/src/sweetalerts2/sweetalerts2.min.js') }}"></script>
 
@@ -92,7 +92,7 @@
                     { data: 'bank_vat_amount', name: 'bank_vat_amount', className: "text-right" },
                     { data: 'action', name: 'action', orderable:false, searchable:false, className:'text-center' }
                 ],
-                order: [[13, 'desc']], // you can adjust the default order if needed
+                 // you can adjust the default order if needed
                 drawCallback: function () {
                     // re-init tooltips if needed
                     if (window.bootstrap) {
