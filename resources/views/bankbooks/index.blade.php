@@ -25,11 +25,11 @@
                         <input type="hidden" id="bankbook_id" name="id"> {{-- set when editing --}}
 
                         <div class="col-md-12 form-group">
-                            <label>Account *</label>
+                            <label>To Account *</label>
                             <select name="account_id" id="account_id" class="form-control form-control-sm">
                                 <option value="">Select Account</option>
                                 @foreach($accounts as $account)
-                                    <option value="{{ $account->id }}" {{ isset($bankBook) && $bankBook->account_id == $account->id ? 'selected' : '' }}>
+                                    <option value="{{ $account->id }}">
                                         {{ $account->name }} (Balance: {{ number_format($account->balance, 2) }})
                                     </option>
                                 @endforeach
@@ -43,8 +43,23 @@
                                 <option value="Receive">Receive</option>
                                 <option value="Withdraw">Withdraw</option>
                                 <option value="Pay Order">Pay Order</option>
+                                <option value="Bank Transfer">Bank Transfer</option>
                             </select>
                         </div>
+
+                        <div id="from_account_wrapper" class="col-md-12 form-group d-none">
+                            <label>From Account *</label>
+                            <select name="from_account_id" id="from_account_id" class="form-control form-control-sm">
+                                <option value="">Select Account</option>
+                                @foreach($accounts as $account)
+                                    <option value="{{ $account->id }}">
+                                        {{ $account->name }} (Balance: {{ number_format($account->balance, 2) }})
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+
+
 
                         <div class="col-md-12 form-group">
                             <label for="amount">Money</label>
@@ -105,6 +120,20 @@
                 headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') }
             });
 
+            // Toggle From Account visibility
+            function toggleFromAccount(type) {
+                if (type === 'Bank Transfer') {
+                    $('#from_account_wrapper').removeClass('d-none');
+                } else {
+                    $('#from_account_wrapper').addClass('d-none');
+                    $('#from_account_id').val('');
+                }
+            }
+
+            $('#type').on('change', function () {
+                toggleFromAccount($(this).val());
+            });
+
             // DataTable init
             const bankbookTable = $('#bankbookTable').DataTable({
                 "dom": "<'dt--top-section'<'row'<'col-12 col-sm-6 d-flex justify-content-sm-start justify-content-center'l><'col-12 col-sm-6 d-flex justify-content-sm-end justify-content-center mt-sm-0 mt-3'f>>>" +
@@ -148,13 +177,14 @@
                 editId = null;
                 $('#formSubmitBtn').text('Create');
                 $('#formCancelBtn').addClass('d-none');
+                toggleFromAccount('');
             }
 
             // Submit (Create / Update)
             $('#bankbookForm').on('submit', function (e) {
                 e.preventDefault();
 
-                // normalize amount (strip commas, /= etc.)
+                // normalize amount
                 const amountVal = ($('#amount').val() || '').toString().replace(/[^0-9.\-]/g, '');
                 $('#amount').val(amountVal);
 
@@ -162,7 +192,7 @@
 
                 const isUpdate = !!$('#bankbook_id').val();
                 const url      = isUpdate ? ("/bankbooks/" + $('#bankbook_id').val()) : "{{ route('bankbooks.store') }}";
-                const payload  = isUpdate ? (formData + '&_method=PUT') : formData; // method spoofing for Laravel
+                const payload  = isUpdate ? (formData + '&_method=PUT') : formData;
 
                 $.post(url, payload)
                     .done(function (res) {
@@ -178,7 +208,9 @@
                     })
                     .fail(function (xhr) {
                         let msg = 'Something went wrong.';
-                        if (xhr.responseJSON && xhr.responseJSON.errors) {
+                        if (xhr.responseJSON && xhr.responseJSON.message) {
+                            msg = xhr.responseJSON.message;
+                        } else if (xhr.responseJSON && xhr.responseJSON.errors) {
                             msg = Object.values(xhr.responseJSON.errors).map(e => e[0]).join('\n');
                         }
                         Swal.fire('Error!', msg, 'error');
@@ -196,11 +228,20 @@
                         $('#amount').val(data.amount);
                         $('#note').val(data.note || '');
 
+                        // Set from_account if transfer
+                        if (data.type === 'Bank Transfer') {
+                            $('#from_account_id').val(data.from_account_id || '');
+                        } else {
+                            $('#from_account_id').val('');
+                        }
+
+                        toggleFromAccount(data.type);
+
                         editId = id;
                         $('#formSubmitBtn').text('Update');
                         $('#formCancelBtn').removeClass('d-none');
 
-                        // (Optional) scroll to form
+                        // scroll to form
                         $('html, body').animate({ scrollTop: $('.BankBook').offset().top - 80 }, 300);
                     })
                     .fail(function () {
@@ -213,7 +254,7 @@
                 resetFormToCreate();
             });
 
-            // Delete with SweetAlert
+            // Delete with SweetAlert (unchanged)
             $(document).on('click', '.delete-btn', function () {
                 const id = $(this).data('id');
 
@@ -230,11 +271,10 @@
                         $.ajax({
                             url: "/bankbooks/" + id,
                             type: 'POST',
-                            data: { _method: 'DELETE' }, // method spoofing
+                            data: { _method: 'DELETE' },
                             success: function (res) {
                                 bankbookTable.ajax.reload(null, false);
                                 Swal.fire("Deleted!", res.message || "Deleted successfully.", "success");
-                                // if the deleted item is currently being edited, reset the form
                                 if ($('#bankbook_id').val() == id) resetFormToCreate();
                             },
                             error: function () {

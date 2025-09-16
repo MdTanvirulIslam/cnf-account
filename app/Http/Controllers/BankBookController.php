@@ -6,18 +6,16 @@ use App\Models\BankBook;
 use Illuminate\Http\Request;
 use Yajra\DataTables\Facades\DataTables;
 use App\Models\Account;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
 
 class BankBookController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
     public function index(Request $request)
     {
         $accounts = Account::all();
 
         if ($request->ajax()) {
-            // Eager load account relation for performance
             $data = BankBook::with('account')->latest()->get();
 
             return DataTables::of($data)
@@ -32,6 +30,8 @@ class BankBookController extends Controller
                         return '<span class="badge badge-light-secondary">Receive</span>';
                     } elseif ($row->type === 'Withdraw') {
                         return '<span class="badge badge-light-success">Withdraw</span>';
+                    } elseif ($row->type === 'Bank Transfer') {
+                        return '<span class="badge badge-light-info">Bank Transfer</span>';
                     } else {
                         return '<span class="badge badge-light-warning">Pay Order</span>';
                     }
@@ -85,34 +85,62 @@ class BankBookController extends Controller
         return view('bankbooks.index', compact('accounts'));
     }
 
-
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
-    }
-
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(Request $request)
     {
         $request->validate([
-            'account_id' => 'required|exists:accounts,id',
-            'type'       => 'required|in:Receive,Withdraw,Pay Order',
-            'amount'     => 'required|numeric|min:1',
-            'note'       => 'nullable|string'
+            'account_id'     => 'required|exists:accounts,id',
+            'type'           => 'required|in:Receive,Withdraw,Pay Order,Bank Transfer',
+            'amount'         => 'required|numeric|min:1',
+            'note'           => 'nullable|string',
+            'from_account_id'=> 'nullable|exists:accounts,id',
         ]);
 
         try {
-            $bankBook = \App\Models\BankBook::create($request->all());
+            DB::transaction(function () use ($request, &$responseData) {
+                $type = $request->type;
+                $amount = $request->amount;
+                $note = $request->note;
+
+                if ($type === 'Bank Transfer') {
+                    // extra validation: ensure from_account provided and different
+                    if (!$request->from_account_id) {
+                        throw new \Exception("From Account is required for Bank Transfer.");
+                    }
+                    if ($request->from_account_id == $request->account_id) {
+                        throw new \Exception("From Account and To Account must be different.");
+                    }
+
+                    $uuid = (string) Str::uuid();
+
+                    // Create Receive for destination account
+                    $receive = BankBook::create([
+                        'account_id'   => $request->account_id,
+                        'type'         => 'Receive',
+                        'amount'       => $amount,
+                        'note'         => $note,
+                        'transfer_uuid' => $uuid,
+                    ]);
+
+                    // Create Transfer (deduct) for source account
+                    $transfer = BankBook::create([
+                        'account_id'   => $request->from_account_id,
+                        'type'         => 'Bank Transfer',
+                        'amount'       => $amount,
+                        'note'         => $note,
+                        'transfer_uuid' => $uuid,
+                    ]);
+
+                    $responseData = [$receive, $transfer];
+                } else {
+                    $bankBook = BankBook::create($request->only(['account_id','type','amount','note']));
+                    $responseData = $bankBook;
+                }
+            });
 
             return response()->json([
                 'success' => true,
                 'message' => 'BankBook created successfully!',
-                'data' => $bankBook
+                'data'    => $responseData
             ]);
         } catch (\Exception $e) {
             return response()->json([
@@ -122,46 +150,173 @@ class BankBookController extends Controller
         }
     }
 
-
-    /**
-     * Display the specified resource.
-     */
-    public function show(Request $request, $id)
-    {
-
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
     public function edit($id)
     {
         $bankBook = BankBook::findOrFail($id);
 
+        // If it's part of a transfer, return both sides info (from and to)
+        $fromAccountId = null;
+        $toAccountId = $bankBook->account_id;
+
+        if ($bankBook->transfer_uuid) {
+            $pair = BankBook::where('transfer_uuid', $bankBook->transfer_uuid)->get();
+
+            // find receive row and transfer row
+            $receive = $pair->firstWhere('type', 'Receive');
+            $transfer = $pair->firstWhere('type', 'Bank Transfer');
+
+            if ($receive) {
+                $toAccountId = $receive->account_id;
+            }
+
+            if ($transfer) {
+                $fromAccountId = $transfer->account_id;
+            }
+        }
+
         return response()->json([
-            'id'        => $bankBook->id,
-            'account_id' => $bankBook->account_id,
-            'type'      => $bankBook->type,
-            'amount'    => $bankBook->amount,
-            'note'      => $bankBook->note,
+            'id'             => $bankBook->id,
+            'account_id'     => $toAccountId,
+            'from_account_id'=> $fromAccountId,
+            'type'           => ($bankBook->transfer_uuid ? 'Bank Transfer' : $bankBook->type),
+            'amount'         => $bankBook->amount,
+            'note'           => $bankBook->note,
+            'transfer_uuid'  => $bankBook->transfer_uuid
         ]);
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
     public function update(Request $request, $id)
     {
         $request->validate([
-            'account_id' => 'required|exists:accounts,id',
-            'type'       => 'required|in:Receive,Withdraw,Pay Order',
-            'amount'     => 'required|numeric|min:1',
-            'note'       => 'nullable|string'
+            'account_id'     => 'required|exists:accounts,id',
+            'type'           => 'required|in:Receive,Withdraw,Pay Order,Bank Transfer',
+            'amount'         => 'required|numeric|min:1',
+            'note'           => 'nullable|string',
+            'from_account_id'=> 'nullable|exists:accounts,id',
         ]);
 
         try {
-            $bankBook = \App\Models\BankBook::findOrFail($id);
-            $bankBook->update($request->all());
+            DB::transaction(function () use ($request, $id) {
+                $bankBook = BankBook::findOrFail($id);
+                $type = $request->type;
+                $amount = $request->amount;
+                $note = $request->note;
+
+                // Target: Bank Transfer
+                if ($type === 'Bank Transfer') {
+
+                    if (!$request->from_account_id) {
+                        throw new \Exception("From Account is required for Bank Transfer.");
+                    }
+                    if ($request->from_account_id == $request->account_id) {
+                        throw new \Exception("From Account and To Account must be different.");
+                    }
+
+                    if ($bankBook->transfer_uuid) {
+                        // existing transfer pair -> update both
+                        $pair = BankBook::where('transfer_uuid', $bankBook->transfer_uuid)->get();
+
+                        $receive = $pair->firstWhere('type','Receive');
+                        $transfer = $pair->firstWhere('type','Bank Transfer');
+
+                        // if missing any side, attempt to recover: ensure both exist
+                        if (!$receive) {
+                            // if current $bankBook is Receive, use it
+                            if ($bankBook->type == 'Receive') {
+                                $receive = $bankBook;
+                            } else {
+                                // create the missing receive
+                                $receive = BankBook::create([
+                                    'account_id'   => $request->account_id,
+                                    'type'         => 'Receive',
+                                    'amount'       => $amount,
+                                    'note'         => $note,
+                                    'transfer_uuid'=> $bankBook->transfer_uuid,
+                                ]);
+                            }
+                        }
+
+                        if (!$transfer) {
+                            if ($bankBook->type == 'Bank Transfer') {
+                                $transfer = $bankBook;
+                            } else {
+                                $transfer = BankBook::create([
+                                    'account_id'   => $request->from_account_id,
+                                    'type'         => 'Bank Transfer',
+                                    'amount'       => $amount,
+                                    'note'         => $note,
+                                    'transfer_uuid'=> $bankBook->transfer_uuid,
+                                ]);
+                            }
+                        }
+
+                        // Update both records (model updating() will handle balances)
+                        $receive->update([
+                            'account_id' => $request->account_id,
+                            'type'       => 'Receive',
+                            'amount'     => $amount,
+                            'note'       => $note
+                        ]);
+
+                        $transfer->update([
+                            'account_id' => $request->from_account_id,
+                            'type'       => 'Bank Transfer',
+                            'amount'     => $amount,
+                            'note'       => $note
+                        ]);
+
+                    } else {
+                        // previously single record -> convert into transfer pair
+                        $uuid = (string) Str::uuid();
+
+                        // Update current as Receive and attach uuid
+                        $bankBook->update([
+                            'account_id'   => $request->account_id,
+                            'type'         => 'Receive',
+                            'amount'       => $amount,
+                            'note'         => $note,
+                            'transfer_uuid'=> $uuid
+                        ]);
+
+                        // Create the transfer side
+                        BankBook::create([
+                            'account_id'    => $request->from_account_id,
+                            'type'          => 'Bank Transfer',
+                            'amount'        => $amount,
+                            'note'          => $note,
+                            'transfer_uuid' => $uuid
+                        ]);
+                    }
+
+                } else {
+                    // Non-transfer type
+
+                    if ($bankBook->transfer_uuid) {
+                        // If this record is part of a transfer, remove the counterpart then update to single
+                        $pair = BankBook::where('transfer_uuid', $bankBook->transfer_uuid)
+                            ->where('id', '!=', $bankBook->id)
+                            ->first();
+
+                        if ($pair) {
+                            // deleting the counterpart will reverse its balance (model deleting hook)
+                            $pair->delete();
+                        }
+
+                        // Update this row to requested non-transfer type (updating hook will reconcile balances)
+                        $bankBook->update([
+                            'account_id'   => $request->account_id,
+                            'type'         => $request->type,
+                            'amount'       => $amount,
+                            'note'         => $note,
+                            'transfer_uuid'=> null
+                        ]);
+                    } else {
+                        // simple update
+                        $bankBook->update($request->only(['account_id','type','amount','note']));
+                    }
+                }
+
+            });
 
             return response()->json([
                 'success' => true,
@@ -175,11 +330,6 @@ class BankBookController extends Controller
         }
     }
 
-
-
-    /**
-     * Remove the specified resource from storage.
-     */
     public function destroy($id)
     {
         try {
