@@ -76,11 +76,12 @@
                             {{-- Bank Account --}}
                             <div class="col-md-3 mb-3">
                                 <label>Bank Account *</label>
-                                <select name="from_account_id" id="from_account_id" class="form-control form-control-sm" required>
-                                    <option value="">-- Select Account --</option>
+                                <select name="from_account_id" id="from_account_id" class="form-control form-control-sm">
+
                                     @foreach($accounts as $account)
-                                        <option value="{{ $account->id }}">
-                                            {{ $account->name }} (Balance: {{ number_format($account->balance, 2) }})
+                                        <option value="{{ $account->id }}"
+                                            {{ str_contains(strtolower($account->name), 'sonali') ? 'selected' : '' }}>
+                                            {{ $account->name }} (Balance: {{ number_format($account->balance,2) }})
                                         </option>
                                     @endforeach
                                 </select>

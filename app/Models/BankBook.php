@@ -12,7 +12,7 @@ class BankBook extends Model
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
-        'account_id', 'type', 'amount', 'note', 'transfer_uuid'
+        'account_id', 'type', 'amount', 'note', 'transfer_uuid', 'adjust_balance'
     ];
 
     public function account()
@@ -22,44 +22,42 @@ class BankBook extends Model
 
     protected static function booted()
     {
-        // Creating: adjust account balance
+        // Creating
         static::creating(function ($bankBook) {
             $account = $bankBook->account;
+            if (!$account) throw new \Exception("Account not found for BankBook entry!");
 
-            if (!$account) {
-                throw new \Exception("Account not found for BankBook entry!");
+            // Only adjust balance if adjust_balance is true
+            if (!isset($bankBook->adjust_balance) || $bankBook->adjust_balance) {
+                if (in_array($bankBook->type, ['Withdraw', 'Pay Order', 'Bank Transfer']) && $bankBook->amount > $account->balance) {
+                    throw new \Exception("Insufficient account balance!");
+                }
+
+                if ($bankBook->type == 'Receive') {
+                    $account->balance += $bankBook->amount;
+                } else {
+                    $account->balance -= $bankBook->amount;
+                }
+
+                $account->save();
             }
-
-            // Check balance for withdraw / pay order / bank transfer
-            if (in_array($bankBook->type, ['Withdraw', 'Pay Order', 'Bank Transfer']) && $bankBook->amount > $account->balance) {
-                throw new \Exception("Insufficient account balance!");
-            }
-
-            // Adjust balance
-            if ($bankBook->type == 'Receive') {
-                $account->balance += $bankBook->amount;
-            } else {
-                // for Withdraw, Pay Order, Bank Transfer => deduct
-                $account->balance -= $bankBook->amount;
-            }
-
-            $account->save();
 
             Log::info('BankBook created', [
                 'bankbook_id' => $bankBook->id,
                 'account_id'  => $account->id,
                 'type'        => $bankBook->type,
                 'amount'      => $bankBook->amount,
+                'adjusted'    => $bankBook->adjust_balance ?? true,
                 'new_balance' => $account->balance
             ]);
         });
 
-        // Updating: reverse old record effect then apply new
+        // Updating
         static::updating(function ($bankBook) {
             $original = $bankBook->getOriginal();
 
             $oldAccount = Account::find($original['account_id']);
-            if ($oldAccount) {
+            if ($oldAccount && (!isset($bankBook->adjust_balance) || $bankBook->adjust_balance)) {
                 if ($original['type'] == 'Receive') {
                     $oldAccount->balance -= $original['amount'];
                 } else {
@@ -69,13 +67,7 @@ class BankBook extends Model
             }
 
             $newAccount = $bankBook->account;
-
-            // Check balance for withdraw / pay order / bank transfer
-            if ($newAccount && in_array($bankBook->type, ['Withdraw', 'Pay Order', 'Bank Transfer']) && $bankBook->amount > $newAccount->balance) {
-                throw new \Exception("Insufficient account balance!");
-            }
-
-            if ($newAccount) {
+            if ($newAccount && (!isset($bankBook->adjust_balance) || $bankBook->adjust_balance)) {
                 if ($bankBook->type == 'Receive') {
                     $newAccount->balance += $bankBook->amount;
                 } else {
@@ -83,38 +75,28 @@ class BankBook extends Model
                 }
                 $newAccount->save();
             }
-
-            Log::info('BankBook updated', [
-                'bankbook_id'    => $bankBook->id,
-                'old_account_id' => $original['account_id'],
-                'new_account_id' => $bankBook->account_id,
-                'type'           => $bankBook->type,
-                'amount'         => $bankBook->amount
-            ]);
         });
 
-        // Deleting: reverse the effect on account (covers soft-delete too)
+        // Deleting
         static::deleting(function ($bankBook) {
             $account = Account::find($bankBook->account_id);
-            if (!$account) {
-                return;
+            if (!$account) return;
+
+            if (!isset($bankBook->adjust_balance) || $bankBook->adjust_balance) {
+                if ($bankBook->type == 'Receive') {
+                    $account->balance -= $bankBook->amount;
+                } else {
+                    $account->balance += $bankBook->amount;
+                }
+                $account->save();
             }
 
-            if ($bankBook->type == 'Receive') {
-                // remove previously added receive amount
-                $account->balance -= $bankBook->amount;
-            } else {
-                // restore previously deducted amount
-                $account->balance += $bankBook->amount;
-            }
-
-            $account->save();
-
-            Log::info('BankBook deleted (balance reversed)', [
+            Log::info('BankBook deleted', [
                 'bankbook_id' => $bankBook->id,
                 'account_id'  => $bankBook->account_id,
                 'type'        => $bankBook->type,
-                'amount'      => $bankBook->amount
+                'amount'      => $bankBook->amount,
+                'adjusted'    => $bankBook->adjust_balance ?? true
             ]);
         });
     }

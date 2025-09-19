@@ -8,6 +8,10 @@ use App\Models\ImportBill;
 use App\Models\ImportBillExpense;
 use Yajra\DataTables\Facades\DataTables;
 use Illuminate\Support\Facades\DB;
+use App\Models\Account;
+use App\Models\BankBook;
+use Illuminate\Validation\ValidationException;
+
 
 class ImportBillController extends Controller
 {
@@ -129,7 +133,19 @@ class ImportBillController extends Controller
     // create form
     public function create()
     {
-        return view('import_bills.create', ['expenseTypes' => $this->expenseTypes]);
+        // fetch accounts for the selects
+        $accounts = Account::orderBy('name')->get();
+
+        // try to auto-find best defaults by bank name (Sonali / Janata)
+        $defaultAitAccountId = Account::where('name', 'like', '%Sonali%')->value('id');
+        $defaultPortAccountId = Account::where('name', 'like', '%Janata%')->value('id');
+
+        return view('import_bills.create', [
+            'expenseTypes' => $this->expenseTypes,
+            'accounts' => $accounts,
+            'defaultAitAccountId' => $defaultAitAccountId,
+            'defaultPortAccountId' => $defaultPortAccountId,
+        ]);
     }
 
     public function show($id)
@@ -147,82 +163,191 @@ class ImportBillController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'lc_no'        => 'required|string|max:255',
-            'lc_date'      => 'nullable|date',
-            'bill_no'      => 'required|string|max:255',
-            'bill_date'    => 'nullable|date',
-            'value'        => 'required|numeric|min:0.01',
+            'lc_no'           => 'required|string|max:255',
+            'lc_date'         => 'nullable|date',
+            'bill_no'         => 'required|string|max:255',
+            'bill_date'       => 'nullable|date',
+            'value'           => 'required|numeric|min:0.01',
+            'ait_account_id'  => 'nullable|exists:accounts,id',
+            'port_account_id' => 'nullable|exists:accounts,id',
+            'expenses'        => 'nullable|array',
         ]);
 
-        $bill = ImportBill::create($request->only([
-            'lc_no','lc_date','bill_no','bill_date',
-            'item','value','qty','weight','be_no','be_date',
-            'scan_fee','doc_fee'
-        ]));
+        DB::transaction(function () use ($request) {
+            // 1️⃣ Create ImportBill
+            $bill = ImportBill::create($request->only([
+                'lc_no','lc_date','bill_no','bill_date',
+                'item','value','qty','weight','be_no','be_date',
+                'scan_fee','doc_fee'
+            ]));
 
-        $expenses = (array)$request->input('expenses', []);
-        foreach ($this->expenseTypes as $type) {
-            $amount = isset($expenses[$type]) ? floatval($expenses[$type]) : 0;
-            ImportBillExpense::create([
-                'import_bill_id' => $bill->id,
-                'expense_type'   => $type,
-                'amount'         => $amount,
-            ]);
-        }
-        \Log::info('Import Bill created', ['bill_id' => $bill->id, 'user_id' => auth()->id()]);
+            // 2️⃣ Create ImportBillExpenses
+            $expenses = (array)$request->input('expenses', []);
+            foreach ($this->expenseTypes as $type) {
+                $amount = isset($expenses[$type]) ? floatval($expenses[$type]) : 0;
+                ImportBillExpense::create([
+                    'import_bill_id' => $bill->id,
+                    'expense_type'   => $type,
+                    'amount'         => $amount,
+                ]);
+            }
+
+            // 3️⃣ Create BankBook entries **without adjusting account**
+            // AIT (Sonali Bank)
+            $aitType = 'AIT (As Per Receipt)';
+            $aitAmount = floatval($expenses[$aitType] ?? 0);
+            $aitAccountId = $request->input('ait_account_id') ?: Account::where('name', 'like', '%Sonali%')->value('id');
+
+            if ($aitAmount > 0) {
+                if (!$aitAccountId) {
+                    throw ValidationException::withMessages([
+                        'ait_account_id' => 'AIT amount provided but Sonali Bank account not found.'
+                    ]);
+                }
+
+                BankBook::create([
+                    'account_id'     => $aitAccountId,
+                    'type'           => 'Pay Order',
+                    'amount'         => $aitAmount,
+                    'note'           => "Import Bill #{$bill->id} — {$aitType}",
+
+                ]);
+            }
+
+            // Port Bill (Janata Bank)
+            $portType = 'Port Bill (As Per Receipt)';
+            $portAmount = floatval($expenses[$portType] ?? 0);
+            $portAccountId = $request->input('port_account_id') ?: Account::where('name', 'like', '%Janata%')->value('id');
+
+            if ($portAmount > 0) {
+                if (!$portAccountId) {
+                    throw ValidationException::withMessages([
+                        'port_account_id' => 'Port Bill amount provided but Janata Bank account not found.'
+                    ]);
+                }
+
+                BankBook::create([
+                    'account_id'     => $portAccountId,
+                    'type'           => 'Pay Order',
+                    'amount'         => $portAmount,
+                    'note'           => "Import Bill #{$bill->id} — {$portType}",
+
+                ]);
+            }
+
+            \Log::info('Import Bill created', ['bill_id' => $bill->id, 'user_id' => auth()->id()]);
+        });
+
         return response()->json([
             'success' => true,
             'message' => 'Import Bill created successfully',
-            'bill_id' => $bill->id
         ], 201);
     }
+
+
+
 
     // edit form
     public function edit($id)
     {
         $bill = ImportBill::with('expenses')->findOrFail($id);
-        return view('import_bills.edit', [
-            'bill' => $bill,
-            'expenseTypes' => $this->expenseTypes
-        ]);
+        $expenseTypes = $this->expenseTypes;
+        $accounts = Account::all(); // load bank accounts
+
+        return view('import_bills.edit', compact('bill','expenseTypes','accounts'));
     }
+
 
     // update existing bill
     public function update(Request $request, $id)
     {
         $request->validate([
-
             'lc_no'        => 'required|string|max:255',
             'lc_date'      => 'nullable|date',
             'bill_no'      => 'required|string|max:255',
             'bill_date'    => 'nullable|date',
             'value'        => 'required|numeric|min:0.01',
+            'ait_account_id'  => 'nullable|exists:accounts,id',
+            'port_account_id' => 'nullable|exists:accounts,id',
+            'expenses'     => 'nullable|array',
         ]);
 
-        $bill = ImportBill::findOrFail($id);
-        $bill->update($request->only([
-            'lc_no','lc_date','bill_no','bill_date',
-            'item','value','qty','weight','be_no','be_date',
-            'scan_fee','doc_fee'
-        ]));
+        DB::transaction(function () use ($request, $id) {
+            $bill = ImportBill::with('expenses')->findOrFail($id);
 
-        $expenses = (array)$request->input('expenses', []);
-        // update existing expense rows (or create if missing)
-        foreach ($this->expenseTypes as $type) {
-            $amount = isset($expenses[$type]) ? floatval($expenses[$type]) : 0;
-            $expRow = $bill->expenses()->where('expense_type', $type)->first();
-            if ($expRow) {
-                $expRow->update(['amount' => $amount]);
-            } else {
-                $bill->expenses()->create(['expense_type' => $type, 'amount' => $amount]);
+            // Update basic fields
+            $bill->update($request->only([
+                'lc_no','lc_date','bill_no','bill_date',
+                'item','value','qty','weight','be_no','be_date',
+                'scan_fee','doc_fee'
+            ]));
+
+            // Update/create expenses
+            $expenses = (array)$request->input('expenses', []);
+            foreach ($this->expenseTypes as $type) {
+                $amount = floatval($expenses[$type] ?? 0);
+                $expRow = $bill->expenses()->where('expense_type', $type)->first();
+                if ($expRow) {
+                    $expRow->update(['amount' => $amount]);
+                } else {
+                    $bill->expenses()->create(['expense_type' => $type, 'amount' => $amount]);
+                }
             }
-        }
-        \Log::info('Import Bill Update', ['bill_id' => $bill->id, 'user_id' => auth()->id()]);
+
+            // ---- Sync AIT BankBook ----
+            $aitType = 'AIT (As Per Receipt)';
+            $aitAmount = floatval($expenses[$aitType] ?? 0);
+            $aitAccountId = $request->input('ait_account_id')
+                ?: Account::where('name', 'like', '%Sonali%')->value('id');
+
+            $oldAitBankBook = BankBook::where('type', 'Pay Order')
+                ->where('note', 'like', "%Import Bill #{$bill->id}%{$aitType}%")
+                ->first();
+            if ($oldAitBankBook) {
+                $oldAitBankBook->delete(); // reverses old balance
+            }
+            if ($aitAmount > 0) {
+                BankBook::create([
+                    'account_id'     => $aitAccountId,
+                    'type'           => 'Pay Order',
+                    'amount'         => $aitAmount,
+                    'note'           => "Import Bill #{$bill->id} — {$aitType}",
+                    'adjust_balance' => true, // deducts balance
+                ]);
+            }
+
+            // ---- Sync Port Bill BankBook ----
+            $portType = 'Port Bill (As Per Receipt)';
+            $portAmount = floatval($expenses[$portType] ?? 0);
+            $portAccountId = $request->input('port_account_id')
+                ?: Account::where('name', 'like', '%Janata%')->value('id');
+
+            $oldPortBankBook = BankBook::where('type', 'Pay Order')
+                ->where('note', 'like', "%Import Bill #{$bill->id}%{$portType}%")
+                ->first();
+            if ($oldPortBankBook) {
+                $oldPortBankBook->delete(); // reverses old balance
+            }
+            if ($portAmount > 0) {
+                BankBook::create([
+                    'account_id'     => $portAccountId,
+                    'type'           => 'Pay Order',
+                    'amount'         => $portAmount,
+                    'note'           => "Import Bill #{$bill->id} — {$portType}",
+                    'adjust_balance' => true, // deducts balance
+                ]);
+            }
+
+            \Log::info('Import Bill Updated', ['bill_id' => $bill->id, 'user_id' => auth()->id()]);
+        });
+
         return response()->json([
             'success' => true,
             'message' => 'Import Bill updated successfully'
         ]);
     }
+
+
 
     public function destroy($id)
     {
@@ -235,12 +360,25 @@ class ImportBillController extends Controller
             ], 404);
         }
 
-        $bill->delete();
+        DB::transaction(function () use ($bill) {
+            // delete all related Pay Order bankbooks created for this import bill note pattern
+            $bankbooks = BankBook::where('type', 'Pay Order')
+                ->where('note', 'like', "%Import Bill #{$bill->id}%")
+                ->get();
+
+            foreach ($bankbooks as $bk) {
+                $bk->delete(); // BankBook deleting handler will restore account balance
+            }
+
+            // then delete bill (and expenses)
+            $bill->delete();
+        });
 
         return response()->json([
             'success' => true,
             'message' => 'Bill deleted successfully',
         ]);
     }
+
 
 }

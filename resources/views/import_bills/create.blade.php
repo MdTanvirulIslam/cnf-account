@@ -7,11 +7,14 @@
 @section('content')
     <div class="row layout-spacing ">
         <div class="col-xl-12 layout-top-spacing">
-            <div class="card"><div class="card-body">
+            <div class="card">
+                <div class="card-body">
                     <div class="row mb-2">
-                        <div class="col-md-6"><h5 class="card-title">Import Bill Enter Form</h5></div>
+                        <div class="col-md-6"><h5 class="card-title">Import Bill Create Form</h5></div>
                         <div class="col-md-6 d-flex justify-content-end">
-                            <a href="{{ route('import-bills.index') }}" class="btn btn-info btn-rounded mb-2 me-4">View Import Bill Summary</a>
+                            <a href="{{ route('import-bills.index') }}" class="btn btn-info btn-rounded mb-2 me-4">
+                                View Import Bill Summary
+                            </a>
                         </div>
                     </div>
                     <hr>
@@ -19,6 +22,7 @@
                     <form id="importBillForm" class="row g-3">
                         @csrf
 
+                        {{-- Existing fields --}}
                         <div class="col-md-3 form-group">
                             <label for="lcNoText">L/C No</label>
                             <input class="form-control form-control-sm" type="text" name="lc_no" id="lcNoText" required>
@@ -79,6 +83,33 @@
                             <input class="form-control form-control-sm" type="number" name="doc_fee" id="docFee" value="0" step="0.01">
                         </div>
 
+                        {{-- 🔹 Bank Accounts --}}
+                        <div class="col-md-6 form-group">
+                            <label for="aitAccount">AIT (Sonali Bank)</label>
+                            <select class="form-control form-control-sm" name="ait_account_id" id="aitAccount" disabled>
+                                <option value="">-- Select AIT Account --</option>
+                                @foreach($accounts as $account)
+                                    <option value="{{ $account->id }}"
+                                        {{ str_contains(strtolower($account->name), 'sonali') ? 'selected' : '' }}>
+                                        {{ $account->name }} (Balance: {{ number_format($account->balance,2) }})
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        <div class="col-md-6 form-group">
+                            <label for="portAccount">Port Bill (Janata Bank)</label>
+                            <select class="form-control form-control-sm" name="port_account_id" id="portAccount" disabled>
+                                <option value="">-- Select Port Bill Account --</option>
+                                @foreach($accounts as $account)
+                                    <option value="{{ $account->id }}"
+                                        {{ str_contains(strtolower($account->name), 'janata') ? 'selected' : '' }}>
+                                        {{ $account->name }} (Balance: {{ number_format($account->balance,2) }})
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+
                         <hr class="mt-3 mb-3">
                         <h5 class="mb-3">Expenses</h5>
                         @foreach($expenseTypes as $i => $exp)
@@ -99,7 +130,8 @@
 
                     <div id="formAlert" class="mt-3"></div>
 
-                </div></div>
+                </div>
+            </div>
         </div>
     </div>
 @endsection
@@ -116,10 +148,11 @@
             $("#importBillForm").validate({
                 errorClass: 'text-danger',
                 rules: {
-                    company_name: { required: true },
                     lc_no: { required: true },
                     bill_no: { required: true },
-                    value: { required: true, number: true, min: 0.01 }
+                    value: { required: true, number: true, min: 0.01 },
+                    ait_account_id: { required: true },
+                    port_account_id: { required: true }
                 },
                 submitHandler: function(form) {
                     let formData = new FormData(form);
@@ -131,7 +164,6 @@
                         processData: false,
                         success: function(res){
                             Swal.fire({ icon:'success', title: res.message, timer:1500, showConfirmButton:false });
-                            // redirect to index so user sees DataTable
                             setTimeout(function(){ window.location.href = "{{ route('import-bills.index') }}"; }, 800);
                         },
                         error: function(xhr){
