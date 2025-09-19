@@ -12,7 +12,7 @@ class ExportBill extends Model
     protected $fillable = [
         'company_name','buyer_id','invoice_no','invoice_date',
         'bill_no','bill_date','usd','total_qty','ctn_no',
-        'be_no','be_date','qty_pcs'
+        'be_no','be_date','qty_pcs','from_account_id'
     ];
 
     protected $casts = [

@@ -14,15 +14,21 @@ class Account extends Model
         'opening_balance',
         'balance',
     ];
+    protected $casts = [
+        'balance' => 'decimal:2',
+        'opening_balance' => 'decimal:2',
+    ];
 
-    // Auto-calculate balance if needed
+
     protected static function boot()
     {
         parent::boot();
 
         static::creating(function ($account) {
-            // On create, balance = opening_balance
-            $account->balance = $account->opening_balance;
+            if ($account->balance === null) {
+                $account->balance = $account->opening_balance;
+            }
         });
     }
+
 }
