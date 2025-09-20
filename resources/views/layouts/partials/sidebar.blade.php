@@ -132,7 +132,7 @@
                 </a>
                 <ul class="collapse submenu list-unstyled" id="Report" data-bs-parent="#accordionExample">
                     <li>
-                        <a href="./layout-blank-page.html"> Report 1 </a>
+                        <a href="{{ route('bankbook.report') }}"> Bank Book Report </a>
                     </li>
                     <li>
                         <a href="./layout-empty.html"> Report 2</a>
