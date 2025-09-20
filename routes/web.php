@@ -15,6 +15,7 @@ use App\Http\Middleware\CheckDomain;
 use App\Http\Controllers\AccountController;
 use App\Http\Controllers\BankBookReportController;
 use App\Http\Controllers\ExpenseReportController;
+use App\Http\Controllers\ImportBillReportController;
 
 
 Route::get('/', function () {
@@ -65,6 +66,9 @@ Route::middleware(['auth','verified', CheckDomain::class, SetPageTitle::class])-
 
     Route::get('/bankbook/report', [BankBookReportController::class, 'index'])->name('bankbook.report');
     Route::get('/expense/report', [ExpenseReportController::class, 'index'])->name('expense.report');
+    Route::get('/import/bill/report',[ImportBillReportController::class,'index'])->name('import.bill.report');
+    Route::get('/import-bill/dependent-options', [ImportBillReportController::class, 'getDependentOptions'])->name('importBill.dependent');
+
 
 
 });
