@@ -135,7 +135,7 @@
                         <a href="{{ route('bankbook.report') }}"> Bank Book Report </a>
                     </li>
                     <li>
-                        <a href="./layout-empty.html"> Report 2</a>
+                        <a href="{{ route('expense.report') }}"> Expense Report </a>
                     </li>
 
                 </ul>

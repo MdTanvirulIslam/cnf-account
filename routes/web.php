@@ -14,6 +14,7 @@ use App\Http\Controllers\ExportBillController;
 use App\Http\Middleware\CheckDomain;
 use App\Http\Controllers\AccountController;
 use App\Http\Controllers\BankBookReportController;
+use App\Http\Controllers\ExpenseReportController;
 
 
 Route::get('/', function () {
@@ -63,7 +64,8 @@ Route::middleware(['auth','verified', CheckDomain::class, SetPageTitle::class])-
     Route::get('export-bills-data',[ExportBillController::class,'data'])->name('export-bills.data');
 
     Route::get('/bankbook/report', [BankBookReportController::class, 'index'])->name('bankbook.report');
-    Route::post('/reports/bankbook/data', [BankBookReportController::class, 'data'])->name('reports.bankbook.data');
+    Route::get('/expense/report', [ExpenseReportController::class, 'index'])->name('expense.report');
+
 
 });
 
