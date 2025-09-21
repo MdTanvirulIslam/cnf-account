@@ -1,0 +1,36 @@
+@extends('layouts.layout')
+
+@section('content')
+    <div class="row layout-spacing">
+        <div class="col-xl-12 layout-top-spacing">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Import Bill Summary</h5>
+                    <input type="month" id="month" value="{{ $month }}" class="form-control form-control-sm">
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-12 layout-top-spacing dc-report-table" id="reportTable">
+            @include('partials.importBillSummaryTable', ['bills' => $bills, 'month' => $month])
+        </div>
+    </div>
+@endsection
+
+@section('scripts')
+    <script>
+        $(document).ready(function(){
+            $('#month').on('change', function(){
+                var month = $(this).val();
+                $.ajax({
+                    url: "{{ route('import.bill.summary.report') }}",
+                    type: "GET",
+                    data: { month: month },
+                    success: function(response){
+                        $('#reportTable').html(response);
+                    }
+                });
+            });
+        });
+    </script>
+@endsection

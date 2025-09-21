@@ -141,6 +141,9 @@
                         <a href="{{ route('import.bill.report') }}"> Import Bill Report </a>
                     </li>
                     <li>
+                        <a href="{{ route('import.bill.summary.report') }}"> Import Bill Statement </a>
+                    </li>
+                    <li>
                         <a href="{{ route('export.bill.report') }}"> Export Bill Report </a>
                     </li>
 
