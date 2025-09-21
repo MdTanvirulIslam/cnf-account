@@ -5,7 +5,7 @@
     [$year, $monthNum] = explode('-', $month);
     $monthName = Carbon::createFromDate($year, $monthNum, 1)->format('F Y');
 
-    $totalValue = $totalPort = $totalTotalBill = $totalDfVat = $totalDocFee = $totalScan = 0;
+    $totalUSD = $totalSubmitted = $totalDfVat = 0;
 @endphp
 <style>
     .company-header {
@@ -94,76 +94,64 @@
 </div>
 <hr style="border: none; border-top: 1px solid #222; margin: 10px 0 18px 0;" />
 <div class="invoice-info">
-    <div><strong>IMPORT BILL STATEMENT :</strong> {{ $monthName }}</div>
-    <div class="right"><strong> Date:</strong> {{ \Carbon\Carbon::now('Asia/Dhaka')->format('d-m-Y') }} </div>
+    <div><strong>Export Steatement :</strong>{{ $monthName }}</div>
+    <div class="right"><strong>Print Date:</strong> {{ \Carbon\Carbon::now()->format('d-m-Y') }}</div>
 </div>
-
+</br>
 <table class="invoice-table">
     <thead>
     <tr>
-        <th>L/C NO.</th>
-        <th>B/E</th>
-        <th>BE DT</th>
-        <th>BILL NO.</th>
-        <th>BILL DT</th>
-        <th>GOODS NAME</th>
-        <th>QNTY</th>
-        <th>NET WEIGHT</th>
-        <th>MONTH</th>
-        <th>VALUE</th>
-        <th>PORT BILL</th>
-        <th>TOTAL BILL AMOUNT</th>
+        <th>INVOICE NO</th>
+        <th>TOTAL DATE</th>
+        <th>CTN.</th>
+        <th>INVOICE PCS</th>
+        <th>VALUE($)</th>
+        <th>B/E NO.</th>
+        <th>DATE</th>
+        <th>BILL NO</th>
+        <th>ACTUAL DATE</th>
+        <th>SUBMITED EXP</th>
         <th>DF VAT</th>
-        <th>DOC FEE</th>
-        <th>SCAN FEE</th>
+        <th>APPROVED BILL (TK.)</th>
     </tr>
     </thead>
     <tbody>
     @forelse($bills as $bill)
         @php
-            $portBill = $bill->portBill();
-            $dfVat = $bill->dfVat();
-            $totalBillAmount = $bill->totalExpenses();
+            $submittedExp = $bill->submittedExpense(); // Sum of all expenses
+            $dfVat = $bill->dfVat(); // DF VAT from expense_type
 
-            $totalValue += $bill->value;
-            $totalPort += $portBill;
-            $totalTotalBill += $totalBillAmount;
+            $totalUSD += $bill->usd;
+            $totalSubmitted += $submittedExp;
             $totalDfVat += $dfVat;
-            $totalDocFee += $bill->doc_fee;
-            $totalScan += $bill->scan_fee;
         @endphp
         <tr>
-            <td>{{ $bill->lc_no }}</td>
+            <td>{{ $bill->invoice_no }}</td>
+            <td>{{ optional($bill->invoice_date)->format('d-M-Y') }}</td>
+            <td>{{ $bill->ctn_no }}</td>
+            <td>{{ $bill->qty_pcs }}</td>
+            <td>{{ number_format($bill->usd,2) }}</td>
             <td>{{ $bill->be_no }}</td>
-            <td>{{ optional($bill->be_date)->format('d-M') }}</td>
+            <td>{{ optional($bill->be_date)->format('d-M-Y') }}</td>
             <td>{{ $bill->bill_no }}</td>
-            <td>{{ optional($bill->bill_date)->format('d-M') }}</td>
-            <td>{{ $bill->item }}</td>
-            <td>{{ $bill->qty }}</td>
-            <td>{{ number_format($bill->weight, 2) }}</td>
-            <td>{{ $monthName }}</td>
-            <td>{{ number_format($bill->value, 2) }}</td>
-            <td>{{ number_format($portBill, 2) }}</td>
-            <td>{{ number_format($totalBillAmount, 2) }}</td>
-            <td>{{ number_format($dfVat, 2) }}</td>
-            <td>{{ number_format($bill->doc_fee, 2) }}</td>
-            <td>{{ number_format($bill->scan_fee, 2) }}</td>
+            <td>{{ optional($bill->bill_date)->format('d-M-Y') }}</td>
+            <td>{{ number_format($submittedExp,2) }}</td>
+            <td>{{ number_format($dfVat,2) }}</td>
+            <td></td> <!-- Approved Bill empty -->
         </tr>
     @empty
         <tr>
-            <td colspan="15" class="center">No records found for {{ $monthName }}</td>
+            <td colspan="12" class="text-center">No records found for {{ $monthName }}</td>
         </tr>
     @endforelse
     </tbody>
     <tfoot>
     <tr>
         <td colspan="9" class="right"><strong>GRAND TOTAL</strong></td>
-        <td class="right"><strong>{{ number_format($totalValue, 2) }}</strong></td>
-        <td class="right"><strong>{{ number_format($totalPort, 2) }}</strong></td>
-        <td class="right"><strong>{{ number_format($totalTotalBill, 2) }}</strong></td>
-        <td class="right"><strong>{{ number_format($totalDfVat, 2) }}</strong></td>
-        <td class="right"><strong>{{ number_format($totalDocFee, 2) }}</strong></td>
-        <td class="right"><strong>{{ number_format($totalScan, 2) }}</strong></td>
+
+        <td class="left"><strong>{{ number_format($totalSubmitted,2) }}</strong></td>
+        <td class="center"><strong>{{ number_format($totalDfVat,2) }}</strong></td>
+        <td></td>
     </tr>
     </tfoot>
 </table>

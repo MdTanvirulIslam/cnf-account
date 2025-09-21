@@ -18,6 +18,7 @@ use App\Http\Controllers\ExpenseReportController;
 use App\Http\Controllers\ImportBillReportController;
 use App\Http\Controllers\ExportBillReportController;
 use App\Http\Controllers\ImportBillSummaryReportController;
+use App\Http\Controllers\ExportBillSummaryReportController;
 
 
 Route::get('/', function () {
@@ -75,6 +76,7 @@ Route::middleware(['auth','verified', CheckDomain::class, SetPageTitle::class])-
     Route::get('/export-bill/dependent-options', [ExportBillReportController::class, 'getDependentOptions'])->name('exportBill.dependent');
 
     Route::get('/import/bill/summary/report',[ImportBillSummaryReportController::class,'index'])->name('import.bill.summary.report');
+    Route::get('/export/bill/summary/report',[ExportBillSummaryReportController::class,'index'])->name('export.bill.summary.report');
 
 
 });
