@@ -132,6 +132,9 @@
                 </a>
                 <ul class="collapse submenu list-unstyled" id="Report" data-bs-parent="#accordionExample">
                     <li>
+                        <a href="{{ route('summary.report') }}">Summary Report </a>
+                    </li>
+                    <li>
                         <a href="{{ route('bankbook.report') }}"> Bank Book Report </a>
                     </li>
                     <li>

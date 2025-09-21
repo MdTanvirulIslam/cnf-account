@@ -20,6 +20,7 @@ use App\Http\Controllers\ExportBillReportController;
 use App\Http\Controllers\ImportBillSummaryReportController;
 use App\Http\Controllers\ExportBillSummaryReportController;
 use App\Http\Controllers\EmployeeCashReportController;
+use App\Http\Controllers\SummaryReportController;
 
 
 Route::get('/', function () {
@@ -80,6 +81,7 @@ Route::middleware(['auth','verified', CheckDomain::class, SetPageTitle::class])-
     Route::get('/export/bill/summary/report',[ExportBillSummaryReportController::class,'index'])->name('export.bill.summary.report');
     Route::get('/employee/cash/report',[EmployeeCashReportController::class,'index'])->name('employee.cash.report');
     Route::post('/employee/cash/report/filter', [EmployeeCashReportController::class, 'filter'])->name('employee-cash-report.filter');
+    Route::get('/summary/report', [SummaryReportController::class, 'index'])->name('summary.report');
 
 
 });
