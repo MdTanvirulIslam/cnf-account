@@ -17,4 +17,10 @@ class Employee extends Model
         'department',
         'note',
     ];
+
+
+    public function transactions()
+    {
+        return $this->hasMany(Transaction::class);
+    }
 }

@@ -149,6 +149,9 @@
                     <li>
                         <a href="{{ route('export.bill.summary.report') }}"> Export Bill Statement </a>
                     </li>
+                    <li>
+                        <a href="{{ route('employee.cash.report') }}"> Employee Cash Report </a>
+                    </li>
 
                 </ul>
             </li>
