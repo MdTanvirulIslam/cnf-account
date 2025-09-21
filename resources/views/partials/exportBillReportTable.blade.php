@@ -85,6 +85,7 @@
             font-size: 13px;
         }
     </style>
+
     <div class="company-header">
         <h1>{{ $bill->company_name }}</h1>
         <p>(SELF C&F AGENTS)</p>

@@ -6,57 +6,64 @@
         <div class="col-xl-12 layout-top-spacing">
             <div class="card">
                 <div class="card-body">
-        <h4 class="mb-3">Bank Book Report</h4>
+                    <h4 class="mb-3">Bank Book Report</h4>
 
-        <!-- FILTER FORM: keep your visual classes if you already have different design -->
-        <form id="filterForm" class="mb-4 row g-3 BankBook">
-            <div class="row g-2 align-items-end">
-                <div class="col-md-3">
-                    <select name="bank" id="bank" class="form-control form-control-sm">
-                        @foreach($banks as $b)
-                            <option value="{{ $b }}" {{ (isset($bank) && $bank === $b) ? 'selected' : '' }}>
-                                {{ $b }}
-                            </option>
-                        @endforeach
-                        <option value="all" {{ (isset($bank) && strtolower($bank) === 'all') ? 'selected' : '' }}>All Banks</option>
-                    </select>
-                </div>
+                    <!-- FILTER FORM: keep your visual classes if you already have different design -->
+                    <form id="filterForm" class="mb-4 row g-3 BankBook">
+                        <div class="row g-2 align-items-end">
+                            <div class="col-md-3">
+                                <select name="bank" id="bank" class="form-control form-control-sm">
+                                    @foreach($banks as $b)
+                                        <option value="{{ $b }}" {{ (isset($bank) && $bank === $b) ? 'selected' : '' }}>
+                                            {{ $b }}
+                                        </option>
+                                    @endforeach
+                                    <option value="all" {{ (isset($bank) && strtolower($bank) === 'all') ? 'selected' : '' }}>All Banks</option>
+                                </select>
+                            </div>
 
-                <div class="col-md-3">
+                            <div class="col-md-3">
+                                <input type="month" id="month" name="month" class="form-control form-control-sm"
+                                       value="{{ $month ?? \Carbon\Carbon::now()->format('Y-m') }}">
+                            </div>
 
-                    <input type="month" id="month" name="month" class="form-control form-control-sm"
-                           value="{{ $month ?? \Carbon\Carbon::now()->format('Y-m') }}">
-                </div>
+                            <div class="col-md-3">
+                                <select name="type" id="type" class="form-control form-control-sm">
+                                    <option value="all" {{ (isset($type) && strtolower($type) === 'all') ? 'selected' : '' }}>All</option>
+                                    <option value="Receive" {{ (isset($type) && $type === 'Receive') ? 'selected' : '' }}>Receive</option>
+                                    <option value="Withdraw" {{ (isset($type) && $type === 'Withdraw') ? 'selected' : '' }}>Withdraw</option>
+                                    <option value="Pay Order" {{ (isset($type) && $type === 'Pay Order') ? 'selected' : '' }}>Pay Order</option>
+                                    <option value="Bank Transfer" {{ (isset($type) && $type === 'Bank Transfer') ? 'selected' : '' }}>Bank Transfer</option>
+                                </select>
+                            </div>
 
-                <div class="col-md-3">
+                            <div class="col-md-1 form-group">
+                                    <button type="button" id="reloadBtn" class="btn btn-primary btn-sm">Reload </button>
+                            </div>
+                            <div class="col-md-1 form-group">
+                                    <button type="button" id="resetBtn" class="btn btn-secondary btn-sm">Reset </button>
+                            </div>
+                        </div>
+                    </form>
 
-                    <select name="type" id="type" class="form-control form-control-sm">
-                        <option value="all" {{ (isset($type) && strtolower($type) === 'all') ? 'selected' : '' }}>All</option>
-                        <option value="Receive" {{ (isset($type) && $type === 'Receive') ? 'selected' : '' }}>Receive</option>
-                        <option value="Withdraw" {{ (isset($type) && $type === 'Withdraw') ? 'selected' : '' }}>Withdraw</option>
-                        <option value="Pay Order" {{ (isset($type) && $type === 'Pay Order') ? 'selected' : '' }}>Pay Order</option>
-                        <option value="Bank Transfer" {{ (isset($type) && $type === 'Bank Transfer') ? 'selected' : '' }}>Bank Transfer</option>
-                    </select>
-                </div>
-                <div class="col-md-2 form-group">
-                    <button type="button" id="reloadBtn" class="btn btn-primary">Reload</button>
+                    <!-- REPORT TABLE (this is replaced dynamically by AJAX) -->
+                    <div id="reportTable">
+                        @include('partials.bankbookReportTable', ['data' => $data])
+                    </div>
                 </div>
             </div>
-        </form>
-
-        <!-- REPORT TABLE (this is replaced dynamically by AJAX) -->
-        <div id="reportTable">
-            @include('partials.bankbookReportTable', ['data' => $data])
         </div>
-    </div>
-    </div>
-    </div>
     </div>
 @endsection
 
 @section('scripts')
     <script>
         $(document).ready(function () {
+            // Store original values for reset
+            const originalMonth = $('#month').val();
+            const originalBank = $('#bank').val();
+            const originalType = $('#type').val();
+
             // helper to load
             function loadReport(params) {
                 $('#reportTable').html('<div class="py-4 text-center">Loading...</div>');
@@ -83,12 +90,27 @@
                 });
             });
 
-            // optional reload button
+            // Reload button
             $('#reloadBtn').on('click', function () {
                 loadReport({
                     bank: $('#bank').val(),
                     month: $('#month').val(),
                     type: $('#type').val()
+                });
+            });
+
+            // Reset button
+            $('#resetBtn').on('click', function () {
+                // Reset form values
+                $('#month').val(originalMonth);
+                $('#bank').val(originalBank);
+                $('#type').val(originalType);
+
+                // Reload with reset values
+                loadReport({
+                    bank: originalBank,
+                    month: originalMonth,
+                    type: originalType
                 });
             });
 

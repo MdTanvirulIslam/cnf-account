@@ -53,6 +53,11 @@ class ExportBill extends Model
         return $this->hasMany(ExportBillExpense::class, 'export_bill_id');
     }
 
+    public function buyer()
+    {
+        return $this->belongsTo(Buyer::class, 'buyer_id');
+    }
+
     /** ───────────────
      * Helpers
      * ───────────────

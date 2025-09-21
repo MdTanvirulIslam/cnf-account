@@ -16,7 +16,7 @@ class ImportBillReportController extends Controller
         $lcNo = $request->input('lcNo', $lastBill->lc_no ?? 'all');
         $beNo = $request->input('be_no', $lastBill->be_no ?? 'all');
         $billNo = $request->input('bill_no', $lastBill->bill_no ?? 'all');
-        $billDate = $request->input('billDate', null);
+        $billDate = $request->input('billDate', $lastBill->bill_date ? $lastBill->bill_date->format('Y-m-d') : null);
 
         // Base query
         $query = ImportBill::with('expenses');
@@ -28,16 +28,10 @@ class ImportBillReportController extends Controller
 
         $importBills = $query->orderBy('bill_date', 'desc')->get();
 
-        // Fetch dropdowns and ensure last bill values exist
-        $lcNos = ImportBill::distinct()->pluck('lc_no')->toArray();
-        $beNos = ImportBill::distinct()->pluck('be_no')->toArray();
-        $billNos = ImportBill::distinct()->pluck('bill_no')->toArray();
-
-        if ($lastBill) {
-            if (!in_array($lastBill->lc_no, $lcNos)) $lcNos[] = $lastBill->lc_no;
-            if (!in_array($lastBill->be_no, $beNos)) $beNos[] = $lastBill->be_no;
-            if (!in_array($lastBill->bill_no, $billNos)) $billNos[] = $lastBill->bill_no;
-        }
+        // Fetch ALL options for dropdowns (not filtered)
+        $allLcNos = ImportBill::distinct()->orderBy('lc_no')->pluck('lc_no')->toArray();
+        $allBeNos = ImportBill::distinct()->orderBy('be_no')->pluck('be_no')->toArray();
+        $allBillNos = ImportBill::distinct()->orderBy('bill_no')->pluck('bill_no')->toArray();
 
         if ($request->ajax()) {
             $html = view('partials.importBillReportTable', compact('importBills'))->render();
@@ -45,44 +39,31 @@ class ImportBillReportController extends Controller
         }
 
         return view('reports.import_bill_report', compact(
-            'importBills', 'lcNo', 'beNo', 'billNo', 'billDate', 'lcNos', 'beNos', 'billNos'
+            'importBills', 'lcNo', 'beNo', 'billNo', 'billDate', 'allLcNos', 'allBeNos', 'allBillNos', 'lastBill'
         ));
     }
 
     public function getDependentOptions(Request $request)
     {
-        $lcNo = $request->input('lcNo', null);
-        $beNo = $request->input('be_no', null);
-        $billNo = $request->input('bill_no', null);
+        $lcNo = $request->input('lcNo', 'all');
+        $beNo = $request->input('be_no', 'all');
+        $billNo = $request->input('bill_no', 'all');
 
-        $query = ImportBill::query();
-
-        // Only filter if specific value selected, skip 'all'
-        if ($lcNo && $lcNo !== 'all') {
-            $query->where('lc_no', $lcNo);
-        }
-        if ($beNo && $beNo !== 'all') {
-            $query->where('be_no', $beNo);
-        }
-        if ($billNo && $billNo !== 'all') {
-            $query->where('bill_no', $billNo);
-        }
-
-        // Get distinct values for all three dropdowns
+        // Get filtered options based on selections
         $lcNos = ImportBill::select('lc_no')->distinct()
-            ->when($beNo && $beNo !== 'all', fn($q) => $q->where('be_no', $beNo))
-            ->when($billNo && $billNo !== 'all', fn($q) => $q->where('bill_no', $billNo))
-            ->pluck('lc_no');
+            ->when($beNo !== 'all', fn($q) => $q->where('be_no', $beNo))
+            ->when($billNo !== 'all', fn($q) => $q->where('bill_no', $billNo))
+            ->orderBy('lc_no')->pluck('lc_no')->toArray();
 
         $beNos = ImportBill::select('be_no')->distinct()
-            ->when($lcNo && $lcNo !== 'all', fn($q) => $q->where('lc_no', $lcNo))
-            ->when($billNo && $billNo !== 'all', fn($q) => $q->where('bill_no', $billNo))
-            ->pluck('be_no');
+            ->when($lcNo !== 'all', fn($q) => $q->where('lc_no', $lcNo))
+            ->when($billNo !== 'all', fn($q) => $q->where('bill_no', $billNo))
+            ->orderBy('be_no')->pluck('be_no')->toArray();
 
         $billNos = ImportBill::select('bill_no')->distinct()
-            ->when($lcNo && $lcNo !== 'all', fn($q) => $q->where('lc_no', $lcNo))
-            ->when($beNo && $beNo !== 'all', fn($q) => $q->where('be_no', $beNo))
-            ->pluck('bill_no');
+            ->when($lcNo !== 'all', fn($q) => $q->where('lc_no', $lcNo))
+            ->when($beNo !== 'all', fn($q) => $q->where('be_no', $beNo))
+            ->orderBy('bill_no')->pluck('bill_no')->toArray();
 
         return response()->json([
             'lcNos' => $lcNos,
@@ -90,6 +71,4 @@ class ImportBillReportController extends Controller
             'billNos' => $billNos,
         ]);
     }
-
-
 }
