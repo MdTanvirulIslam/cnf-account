@@ -5,7 +5,7 @@
         <div class="col-xl-12 layout-top-spacing">
             <div class="card">
                 <div class="card-body">
-                    <h5 class="card-title">Enter From</h5>
+                    <h5 class="card-title">Import Bill Summary</h5>
                     <div class="col-md-5 form-group">
                         <input type="month" id="month" value="{{ $month }}" class="form-control form-control-sm">
                     </div>
