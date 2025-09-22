@@ -10,7 +10,7 @@
                     <!-- Filter Form -->
                     <form action="#" method="POST" class="row g-3 employeeCash">
                         @csrf
-                        <div class="col-md-3 form-group">
+                        <div class="col-md-2 form-group">
                             <label for="department">Department</label>
                             <select name="department" id="department" class="form-control form-control-sm">
                                 <option value="">All Departments</option>
@@ -19,7 +19,7 @@
                             </select>
                         </div>
 
-                        <div class="col-md-3 form-group">
+                        <div class="col-md-2 form-group">
                             <label for="paymentType">Payment Type</label>
                             <select name="paymentType" id="paymentType" class="form-control form-control-sm">
                                 <option value="">All Types</option>
@@ -28,17 +28,22 @@
                             </select>
                         </div>
 
-                        <div class="col-md-3 form-group">
+                        <div class="col-md-2 form-group">
                             <label for="month">Month</label>
                             <input type="month" id="month" name="month" class="form-control form-control-sm"
                                    value="{{ $selectedMonth ?? \Carbon\Carbon::now()->format('Y-m') }}">
                         </div>
 
-                        <div class="col-md-2 d-flex align-items-end">
-                            <label for=""> &nbsp; </label>
-                            {{--<button type="submit" class="btn btn-primary btn-sm">Filter</button>--}}
-                            <button type="button" id="resetFilter" class="btn btn-secondary btn-sm ml-2">Reset</button>
+                        <div class="col-md-4 form-group d-flex align-items-end">
+                            <button type="button" id="resetFilter" class="btn btn-primary btn-sm me-2">Reset</button>
+                            <button type="button" id="printReport" class="btn btn-info btn-sm me-2">
+                                <i class="fas fa-print"></i> Print
+                            </button>
+                            <button type="button" id="exportExcel" class="btn btn-success btn-sm">
+                                <i class="fas fa-file-excel"></i> Excel
+                            </button>
                         </div>
+                        
                     </form>
                 </div>
             </div>
@@ -52,6 +57,7 @@
 @endsection
 
 @section('scripts')
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script>
         $(document).ready(function() {
             // AJAX form submission
@@ -82,95 +88,144 @@
             $('#department, #paymentType, #month').on('change', function() {
                 $('.employeeCash').submit();
             });
+
+            // Print functionality
+            $('#printReport').on('click', function() {
+                printReport();
+            });
+
+            // Excel export functionality
+            $('#exportExcel').on('click', function() {
+                exportToExcel();
+            });
+
+            function printReport() {
+                const printContent = document.getElementById('report-table').innerHTML;
+                const originalContent = document.body.innerHTML;
+
+                // Create a print-friendly version
+                const printWindow = window.open('', '_blank');
+                printWindow.document.write(`
+                    <!DOCTYPE html>
+                    <html>
+                    <head>
+                        <title>Employee Cash Report</title>
+                        <style>
+                            body {
+                                font-family: Arial, sans-serif;
+                                margin: 20px;
+                                color: #000;
+                            }
+                            .company-header {
+                                text-align: center;
+                                margin-bottom: 20px;
+                            }
+                            .company-header h1 {
+                                margin: 0;
+                                font-size: 22px;
+                                font-weight: bold;
+                            }
+                            .report-title {
+                                text-align: center;
+                                margin: 20px 0;
+                                font-size: 18px;
+                                font-weight: bold;
+                            }
+                            table {
+                                width: 100%;
+                                border-collapse: collapse;
+                                margin: 10px 0;
+                                font-size: 12px;
+                            }
+                            th, td {
+                                border: 1px solid #000;
+                                padding: 8px;
+                                text-align: left;
+                            }
+                            th {
+                                background-color: #f2f2f2;
+                                font-weight: bold;
+                            }
+                            .total-row {
+                                font-weight: bold;
+                                background-color: #e6e6e6;
+                            }
+                            .right { text-align: right; }
+                            .center { text-align: center; }
+                            .no-print { display: none; }
+                            @media print {
+                                body { margin: 0; }
+                                .page-break { page-break-after: always; }
+                            }
+                        </style>
+                    </head>
+                    <body>
+
+                        <div class="report-title">
+                            Employee Cash Report - ${getSelectedMonthText()}
+                        </div>
+                        ${printContent}
+                        <div style="margin-top: 30px; text-align: right; font-size: 12px;">
+                            <p>Printed on: ${new Date().toLocaleDateString()}</p>
+                        </div>
+                    </body>
+                    </html>
+                `);
+
+                printWindow.document.close();
+                printWindow.focus();
+
+                setTimeout(() => {
+                    printWindow.print();
+                    printWindow.close();
+                }, 500);
+            }
+
+            function exportToExcel() {
+                // Get table data
+                const table = document.querySelector('.invoice-table');
+                const data = [];
+
+                // Add headers
+                const headers = [];
+                table.querySelectorAll('thead th').forEach(th => {
+                    headers.push(th.innerText);
+                });
+                data.push(headers);
+
+                // Add rows
+                table.querySelectorAll('tbody tr').forEach(tr => {
+                    const row = [];
+                    tr.querySelectorAll('td').forEach(td => {
+                        row.push(td.innerText);
+                    });
+                    data.push(row);
+                });
+
+                // Create worksheet
+                const ws = XLSX.utils.aoa_to_sheet(data);
+
+                // Create workbook
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, 'Employee Cash Report');
+
+                // Generate file name
+                const fileName = `employee-cash-report-${getSelectedMonthText().toLowerCase().replace(' ', '-')}-${new Date().getTime()}.xlsx`;
+
+                // Download file
+                XLSX.writeFile(wb, fileName);
+            }
+
+            function getSelectedMonthText() {
+                const monthInput = document.getElementById('month').value;
+                if (monthInput) {
+                    const date = new Date(monthInput + '-01');
+                    return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+                }
+                return new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+            }
         });
     </script>
 @endsection
 
-<style>
-    .company-header {
-        text-align: center;
-    }
-    .company-header h1 {
-        margin: 0;
-        font-size: 22px;
-        font-weight: bold;
-    }
-    .company-header p {
-        margin: 2px 0;
-        font-size: 13px;
-        color: #333;
-    }
 
-    .invoice-info {
-        display: flex;
-        justify-content: space-between;
-        margin-top: 10px;
-        font-size: 14px;
-    }
-    .invoice-info div {
-        width: 48%;
-    }
-
-    h3 {
-        margin-top: 20px;
-        font-size: 15px;
-        text-transform: uppercase;
-    }
-
-    .info-table {
-        width: 100%;
-        border-collapse: collapse;
-        margin: 10px 0 20px;
-        font-size: 13px;
-    }
-    .info-table td {
-        border: 1px solid #222;
-        padding: 6px;
-        vertical-align: top;
-    }
-    .info-key {
-        font-weight: bold;
-        width: 10%;
-    }
-    .info-value {
-        width: 40%;
-    }
-
-    .invoice-table {
-        width: 100%;
-        border-collapse: collapse;
-        font-size: 13px;
-    }
-    .invoice-table th,
-    .invoice-table td {
-        border: 1px solid #000;
-        padding: 6px 8px;
-    }
-    .invoice-table th {
-        background-color: #f4f4f4;
-        text-align: left;
-    }
-    .right {
-        text-align: right;
-    }
-    .center {
-        text-align: center;
-    }
-    .total-row td {
-        font-weight: bold;
-        background: #f9f9f9;
-    }
-
-    .footer-note {
-        margin-top: 20px;
-        font-size: 13px;
-    }
-
-    .btn-sm {
-        padding: 0.25rem 0.5rem;
-        font-size: 0.75rem;
-    }
-    .ml-2 {
-        margin-left: 0.5rem;
-    }
-</style>

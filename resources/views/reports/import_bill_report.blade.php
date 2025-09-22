@@ -47,12 +47,18 @@
                             <input type="date" name="billDate" id="billDate" value="{{ $billDate }}" class="form-control form-control-sm">
                         </div>
 
-                        <div class="col-md-2 form-group d-flex align-items-end">
+                        <div class="col-md-4 form-group d-flex align-items-end">
                             <button type="submit" class="btn btn-primary btn-sm me-1">
                                 <i class="fas fa-filter"></i> Filter
                             </button>
-                            <button type="button" id="resetBtn" class="btn btn-secondary btn-sm">
+                            <button type="button" id="resetBtn" class="btn btn-secondary btn-sm me-1">
                                 <i class="fas fa-undo"></i> Reset
+                            </button>
+                            <button type="button" id="printBtn" class="btn btn-info btn-sm me-1">
+                                <i class="fas fa-print"></i> Print
+                            </button>
+                            <button type="button" id="excelBtn" class="btn btn-success btn-sm">
+                                <i class="fas fa-file-excel"></i> Excel
                             </button>
                         </div>
                     </form>
@@ -67,6 +73,9 @@
 @endsection
 
 @section('scripts')
+    <!-- Include SheetJS for Excel export -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
     <script>
         $(document).ready(function() {
             // Store original values for reset (last bill's values)
@@ -106,6 +115,16 @@
                     bill_no: originalBillNo,
                     billDate: originalBillDate
                 });
+            });
+
+            // Print button
+            $('#printBtn').on('click', function() {
+                printReport();
+            });
+
+            // Excel button
+            $('#excelBtn').on('click', function() {
+                exportToExcel();
             });
 
             // When any dropdown changes, update dependent dropdowns
@@ -168,16 +187,162 @@
                     type: "GET",
                     data: formData,
                     beforeSend: function() {
-                        $('#reportTable').html('<div class="text-center p-3">Loading...</div>');
+                        $('#reportTable').html('<div class="text-center p-3"><i class="fas fa-spinner fa-spin"></i> Loading...</div>');
                     },
                     success: function(res){
                         $('#reportTable').html(res.html);
                     },
                     error: function(xhr) {
                         console.error(xhr);
-                        $('#reportTable').html('<div class="text-danger p-3">Failed to load data. Please try again.</div>');
+                        $('#reportTable').html('<div class="alert alert-danger">Failed to load data. Please try again.</div>');
                     }
                 });
+            }
+
+            // Print functionality
+            function printReport() {
+                const currentLcNo = $('#lcNo option:selected').text();
+                const currentBeNo = $('#beNo option:selected').text();
+                const currentBillNo = $('#billNo option:selected').text();
+                const currentBillDate = $('#billDate').val();
+
+                // Create print-friendly HTML
+                const printWindow = window.open('', '_blank');
+                printWindow.document.write(`
+                    <!DOCTYPE html>
+                    <html>
+                    <head>
+                        <title>Import Bill Report</title>
+                        <style>
+                            body {
+                                font-family: Arial, sans-serif;
+                                margin: 20px;
+                                color: #000;
+                            }
+                            .print-container {
+                                max-width: 100%;
+                            }
+                            .print-header {
+                                margin-bottom: 20px;
+                                border-bottom: 2px solid #333;
+                                padding-bottom: 10px;
+                            }
+                            .print-header h2 {
+                                margin: 0 0 10px 0;
+                                color: #333;
+                            }
+                            .print-header p {
+                                margin: 5px 0;
+                            }
+                            table {
+                                width: 100%;
+                                border-collapse: collapse;
+                                margin: 20px 0;
+                                font-size: 12px;
+                            }
+                            th, td {
+                                border: 1px solid #ddd;
+                                padding: 8px;
+                                text-align: left;
+                            }
+                            th {
+                                background-color: #f5f5f5;
+                                font-weight: bold;
+                            }
+                            .text-right {
+                                text-align: right;
+                            }
+                            .text-center {
+                                text-align: center;
+                            }
+                            .total-row {
+                                font-weight: bold;
+                                background-color: #e9ecef;
+                            }
+                            .print-footer {
+                                margin-top: 30px;
+                                padding-top: 10px;
+                                border-top: 1px solid #333;
+                                font-size: 11px;
+                                color: #666;
+                            }
+                            .no-print { display: none; }
+                            @media print {
+                                body { margin: 0; }
+                                .print-header { border-bottom-color: #000; }
+                                th { background-color: #f0f0f0 !important; }
+                                .table-responsive { overflow: visible !important; }
+                            }
+                        </style>
+                    </head>
+                    <body>
+                        <div class="print-container">
+
+                            ${document.getElementById('reportTable').innerHTML}
+                            <div class="print-footer">
+                                <p>Generated by Import Bill Management System</p>
+                            </div>
+                        </div>
+                    </body>
+                    </html>
+                `);
+
+                printWindow.document.close();
+                setTimeout(() => {
+                    printWindow.print();
+                    printWindow.onafterprint = function() {
+                        printWindow.close();
+                    };
+                }, 500);
+            }
+
+            // Excel export functionality
+            function exportToExcel() {
+                const table = document.querySelector('#reportTable table');
+
+                if (!table) {
+                    alert('No data available to export.');
+                    return;
+                }
+
+                try {
+                    // Clone table to avoid modifying original
+                    const tableClone = table.cloneNode(true);
+
+                    // Clean up table for Excel (remove action buttons if any)
+                    $(tableClone).find('.btn, .no-export, .actions').remove();
+
+                    // Convert table to worksheet
+                    const ws = XLSX.utils.table_to_sheet(tableClone);
+
+                    // Set column widths (adjust based on your table structure)
+                    const colWidths = [
+                        { wch: 15 }, // L/C No
+                        { wch: 15 }, // B/E No
+                        { wch: 15 }, // Bill No
+                        { wch: 12 }, // Bill Date
+                        { wch: 20 }, // Supplier
+                        { wch: 15 }, // Amount
+                        { wch: 15 }, // Currency
+                        { wch: 20 }  // Description
+                    ];
+                    ws['!cols'] = colWidths;
+
+                    // Create workbook and append worksheet
+                    const wb = XLSX.utils.book_new();
+                    XLSX.utils.book_append_sheet(wb, ws, 'Import Bill Report');
+
+                    // Generate filename with current filters
+                    const currentLcNo = $('#lcNo').val() !== 'all' ? $('#lcNo').val() : 'all';
+                    const fileName = `Import_Bill_Report_${currentLcNo}_${new Date().toISOString().slice(0,10)}.xlsx`;
+
+                    // Export to Excel
+                    XLSX.writeFile(wb, fileName);
+
+                } catch (error) {
+                    console.error('Excel export error:', error);
+                    alert('Error exporting to Excel. Please try again.');
+                }
             }
         });
     </script>

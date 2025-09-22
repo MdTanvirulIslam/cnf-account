@@ -158,12 +158,12 @@
     <tfoot>
     <tr>
         <td colspan="9" class="right"><strong>GRAND TOTAL</strong></td>
-        <td class="right"><strong>{{ number_format($totalValue, 2) }}</strong></td>
-        <td class="right"><strong>{{ number_format($totalPort, 2) }}</strong></td>
-        <td class="right"><strong>{{ number_format($totalTotalBill, 2) }}</strong></td>
-        <td class="right"><strong>{{ number_format($totalDfVat, 2) }}</strong></td>
-        <td class="right"><strong>{{ number_format($totalDocFee, 2) }}</strong></td>
-        <td class="right"><strong>{{ number_format($totalScan, 2) }}</strong></td>
+        <td class="left"><strong>{{ number_format($totalValue, 2) }}</strong></td>
+        <td class="left"><strong>{{ number_format($totalPort, 2) }}</strong></td>
+        <td class="left"><strong>{{ number_format($totalTotalBill, 2) }}</strong></td>
+        <td class="left"><strong>{{ number_format($totalDfVat, 2) }}</strong></td>
+        <td class="left"><strong>{{ number_format($totalDocFee, 2) }}</strong></td>
+        <td class="left"><strong>{{ number_format($totalScan, 2) }}</strong></td>
     </tr>
     </tfoot>
 </table>
