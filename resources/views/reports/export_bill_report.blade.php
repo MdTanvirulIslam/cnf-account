@@ -82,7 +82,8 @@
             const originalBuyerId = "{{ $lastBill->buyer_id ?? 'all' }}";
             const originalBeNo = "{{ $lastBill->be_no ?? 'all' }}";
             const originalBillNo = "{{ $lastBill->bill_no ?? 'all' }}";
-            const originalBillDate = "{{ $lastBill->bill_date ? \Carbon\Carbon::parse($lastBill->bill_date)->format('Y-m-d') : '' }}";
+            const originalBillDate = "{{ \Carbon\Carbon::parse($lastBill?->bill_date ?? now())->format('Y-m-d') }}";
+
 
             // Store all options for reset
             const allBeNos = @json($allBeNos);

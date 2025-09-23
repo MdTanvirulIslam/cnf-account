@@ -53,7 +53,7 @@
                                 <input type="number" step="0.01" name="usd" class="form-control form-control-sm" required>
                             </div>
                             <div class="col-md-3 mb-3">
-                                <label>Total Qty *</label>
+                                <label>Total CTN *</label>
                                 <input type="number" name="total_qty" class="form-control form-control-sm" required>
                             </div>
                             <div class="col-md-3 mb-3">

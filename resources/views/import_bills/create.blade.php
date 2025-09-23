@@ -55,7 +55,7 @@
 
                         <div class="col-md-3 form-group">
                             <label for="qty">QTY</label>
-                            <input class="form-control form-control-sm" type="number" name="qty" id="qty">
+                            <input class="form-control form-control-sm" type="text" name="qty" id="qty">
                         </div>
 
                         <div class="col-md-3 form-group">

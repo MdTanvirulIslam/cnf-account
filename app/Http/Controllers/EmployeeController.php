@@ -87,15 +87,15 @@ class EmployeeController extends Controller
     {
         $request->validate([
             'name'          => 'required|string|max:255',
+            'address'       => 'nullable|string|max:255',
+            'department'    => 'required|in:Import,Export',
+            'note'          => 'nullable|string',
             'mobile_number' => [
                 'required',
                 'digits:11',
                 'unique:employees,mobile_number',
-                'regex:/^(013|016|017|018|019|015)[0-9]{8}$/'
+                'regex:^[0-9]+$/'
             ],
-            'address'       => 'nullable|string|max:255',
-            'department'    => 'required|in:Import,Export',
-            'note'          => 'nullable|string',
         ]);
 
         $employee = Employee::create($request->all());
@@ -132,15 +132,15 @@ class EmployeeController extends Controller
     {
         $request->validate([
             'name'          => 'required|string|max:255',
-            'mobile_number' => [
-                'required',
-                'digits:11',
-                'unique:employees,mobile_number,' . $id, // exclude current id for update
-                'regex:/^(013|016|017|018|019)[0-9]{8}$/'
-            ],
             'address'       => 'nullable|string|max:255',
             'department'    => 'required|in:Import,Export',
             'note'          => 'nullable|string',
+            'mobile_number' => [
+                'required',
+                'digits:11',
+                'unique:employees,mobile_number,' . $id,
+                'regex:/^[0-9]{11}$/'
+            ],
         ]);
 
         $employee = Employee::findOrFail($id);

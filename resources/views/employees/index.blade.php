@@ -141,7 +141,7 @@
                 const department = $('#department').val();
 
                 //  Frontend validation rules
-                const mobileRegex = /^(013|016|017|018|019)[0-9]{8}$/;
+                const mobileRegex = /^[0-9]+$/;
 
                 if (!name) {
                     Swal.fire('Validation Error', 'Name is required.', 'warning');
@@ -154,7 +154,7 @@
                 }
 
                 if (!mobileRegex.test(mobile)) {
-                    Swal.fire('Validation Error', 'Mobile number must be 11 digits and start with 013, 016, 017, 018, or 019.', 'warning');
+                    Swal.fire('Validation Error', 'Mobile number must be number.', 'warning');
                     return;
                 }
 

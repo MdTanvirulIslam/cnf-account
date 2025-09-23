@@ -133,7 +133,6 @@
     <thead>
     <tr>
         <th>SL</th>
-        <th>ID</th>
         <th>Employee Name</th>
         <th>Department</th>
         <th>Date</th>
@@ -162,7 +161,6 @@
         @endphp
         <tr>
             <td>{{ $sl++ }}</td>
-            <td>{{ $row->id }}</td>
             <td>{{ $row->employee_name ?? 'N/A' }}</td>
             <td>{{ $row->department ?? 'N/A' }}</td>
             <td>{{ \Carbon\Carbon::parse($row->date)->format('d-m-Y') }}</td>
