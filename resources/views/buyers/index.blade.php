@@ -1,158 +1,232 @@
-@extends('layouts.layout')
+@extends("layouts.layout")
+
+@section('styles')
+    <link rel="stylesheet" type="text/css" href="{{ asset("assets/src/plugins/src/table/datatable/datatables.css") }}">
+    <link rel="stylesheet" type="text/css" href="{{ asset("assets/src/plugins/css/light/table/datatable/dt-global_style.css") }}">
+    <link rel="stylesheet" type="text/css" href="{{ asset("assets/src/plugins/css/light/table/datatable/custom_dt_custom.css") }}">
+    <link rel="stylesheet" href="{{ asset("assets/src/plugins/src/sweetalerts2/sweetalerts2.css") }}">
+    <link href="{{ asset("assets/src/assets/css/light/scrollspyNav.css") }}" rel="stylesheet" type="text/css" />
+    <link href="{{ asset("assets/src/plugins/css/light/sweetalerts2/custom-sweetalert.css") }}" rel="stylesheet" type="text/css" />
+@endsection
 
 @section('content')
-    <div class="container mt-4">
+    <div class="row layout-spacing">
 
-        <h3 class="mb-3">Buyer Management</h3>
+        {{-- Left: Form --}}
+        <div class="col-xl-4 col-lg-12 col-md-12 col-sm-12 layout-top-spacing">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title mb-3">Buyer (Create / Update)</h5>
 
-        <button class="btn btn-primary mb-3" id="createNewBuyer">+ Add Buyer</button>
+                    <form id="buyerForm" class="row g-3">
+                        @csrf
+                        <input type="hidden" id="buyer_id" name="id">
 
-        <table class="table table-bordered" id="buyerTable">
-            <thead>
-            <tr>
-                <th>#</th>
-                <th>Name</th>
-                <th>Email</th>
-                <th>Phone</th>
-                <th>Address</th>
-                <th>Company</th>
-                <th width="150px">Action</th>
-            </tr>
-            </thead>
-        </table>
-    </div>
+                        <div class="col-md-12 form-group">
+                            <label for="name">Name *</label>
+                            <input class="form-control form-control-sm" type="text" name="name" id="name" placeholder="Full Name" required>
+                        </div>
 
-    <!-- Buyer Modal -->
-    <div class="modal fade" id="buyerModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog">
-            <form id="buyerForm">
-                @csrf
-                <input type="hidden" name="buyer_id" id="buyer_id">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title">Buyer</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                    </div>
-                    <div class="modal-body">
-                        <div class="mb-3">
-                            <label>Name</label>
-                            <input type="text" name="name" id="name" class="form-control" required>
+                        <div class="col-md-12 form-group">
+                            <label for="email">Email *</label>
+                            <input class="form-control form-control-sm" type="email" name="email" id="email" placeholder="email@example.com" required>
                         </div>
-                        <div class="mb-3">
-                            <label>Email</label>
-                            <input type="email" name="email" id="email" class="form-control" required>
+
+                        <div class="col-md-12 form-group">
+                            <label for="phone">Phone</label>
+                            <input class="form-control form-control-sm" type="text" name="phone" id="phone" placeholder="Phone Number">
                         </div>
-                        <div class="mb-3">
-                            <label>Phone</label>
-                            <input type="text" name="phone" id="phone" class="form-control">
+
+                        <div class="col-md-12 form-group">
+                            <label for="company">Company</label>
+                            <input class="form-control form-control-sm" type="text" name="company" id="company" placeholder="Company Name">
                         </div>
-                        <div class="mb-3">
-                            <label>Address</label>
-                            <textarea name="address" id="address" class="form-control"></textarea>
+
+                        <div class="col-md-12 form-group">
+                            <label for="address">Address</label>
+                            <input class="form-control form-control-sm" type="text" name="address" id="address" placeholder="Full Address">
                         </div>
-                        <div class="mb-3">
-                            <label>Company</label>
-                            <input type="text" name="company" id="company" class="form-control">
+
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary" id="formSubmitBtn">Create</button>
+                            <button type="button" class="btn btn-secondary d-none" id="formCancelBtn">Cancel</button>
                         </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                        <button type="submit" class="btn btn-success" id="saveBtn">Save</button>
-                    </div>
+                    </form>
+
                 </div>
-            </form>
+            </div>
         </div>
+
+        {{-- Right: DataTable --}}
+        <div class="col-xl-8 col-lg-12 col-md-12 col-sm-12 layout-top-spacing">
+            <div class="widget-content widget-content-area br-8">
+                <table id="buyerTable" class="table style-3 dt-table-hover">
+                    <thead>
+                    <tr>
+                        <th class="checkbox-column text-center">SL</th>
+                        <th class="text-center">Name</th>
+                        <th class="text-center">Email</th>
+                        <th class="text-center">Phone</th>
+                        <th class="text-center">Company</th>
+                        <th>Address</th>
+                        <th class="text-center dt-no-sorting">Action</th>
+                    </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+
     </div>
 @endsection
 
 @section('scripts')
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="{{ asset("assets/src/plugins/src/sweetalerts2/sweetalerts2.min.js") }}"></script>
+    <script src="{{ asset("assets/src/plugins/src/table/datatable/datatables.js") }}"></script>
+
     <script>
         $(function () {
+            let editId = null;
 
-            // CSRF Setup
             $.ajaxSetup({
-                headers: {'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')}
+                headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') }
             });
 
-            // Init DataTable
-            var table = $('#buyerTable').DataTable({
+            const buyerTable = $('#buyerTable').DataTable({
+                "dom": "<'dt--top-section'<'row'<'col-12 col-sm-6 d-flex justify-content-sm-start justify-content-center'l><'col-12 col-sm-6 d-flex justify-content-sm-end justify-content-center mt-sm-0 mt-3'f>>>" +
+                    "<'table-responsive'tr>" +
+                    "<'dt--bottom-section d-sm-flex justify-content-sm-between text-center'<'dt--pages-count  mb-sm-0 mb-3'i><'dt--pagination'p>>",
+                "oLanguage": {
+                    "oPaginate": { "sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>', "sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>' },
+                    "sInfo": "Showing page _PAGE_ of _PAGES_",
+                    "sSearch": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>',
+                    "sSearchPlaceholder": "Search...",
+                    "sLengthMenu": "Results :  _MENU_",
+                },
+                "lengthMenu": [5, 10, 20, 50, 100],
+                "pageLength": 10,
                 processing: true,
                 serverSide: true,
                 ajax: "{{ route('buyers.index') }}",
                 columns: [
-                    {data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false},
-                    {data: 'name', name: 'name'},
-                    {data: 'email', name: 'email'},
-                    {data: 'phone', name: 'phone'},
-                    {data: 'address', name: 'address'},
-                    {data: 'company', name: 'company'},
-                    {data: 'action', name: 'action', orderable: false, searchable: false},
+                    { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable:false, searchable:false, className:'text-center' },
+                    { data: 'name', name: 'name', className:'text-center' },
+                    { data: 'email', name: 'email', className:'text-center' },
+                    { data: 'phone', name: 'phone', className:'text-center' },
+                    { data: 'company', name: 'company', className:'text-center' },
+                    { data: 'address', name: 'address' },
+                    { data: 'action', name: 'action', orderable:false, searchable:false, className:'text-center' }
                 ]
             });
 
-            // Show Modal (Create)
-            $('#createNewBuyer').click(function () {
+            function resetFormToCreate() {
                 $('#buyerForm')[0].reset();
                 $('#buyer_id').val('');
-                let buyerModal = new bootstrap.Modal(document.getElementById('buyerModal'));
-                buyerModal.show();
-            });
+                editId = null;
+                $('#formSubmitBtn').text('Create');
+                $('#formCancelBtn').addClass('d-none');
+            }
 
-            // Edit Buyer
-            $(document).on('click', '.editBuyer', function () {
-                let id = $(this).data('id');
-                $.get("{{ url('buyers') }}/" + id + "/edit", function (data) {
-                    $('#buyer_id').val(data.id);
-                    $('#name').val(data.name);
-                    $('#email').val(data.email);
-                    $('#phone').val(data.phone);
-                    $('#address').val(data.address);
-                    $('#company').val(data.company);
-
-                    let buyerModal = new bootstrap.Modal(document.getElementById('buyerModal'));
-                    buyerModal.show();
-                });
-            });
-
-            // Save Buyer (Create/Update)
-            $('#buyerForm').submit(function (e) {
+            $('#buyerForm').on('submit', function (e) {
                 e.preventDefault();
-                $('#saveBtn').prop('disabled', true);
 
-                var formData = $(this).serialize();
-                $.post("{{ route('buyers.store') }}", formData, function (res) {
-                    $('#buyerModal').modal('hide');
-                    table.ajax.reload(null, false);
-                    Swal.fire('Success', res.message, 'success');
-                    $('#saveBtn').prop('disabled', false);
-                }).fail(function (xhr) {
-                    Swal.fire('Error', xhr.responseJSON.message ?? 'Something went wrong!', 'error');
-                    $('#saveBtn').prop('disabled', false);
-                });
+                const name  = $('#name').val().trim();
+                const email = $('#email').val().trim();
+
+                // Frontend validation
+                if (!name) {
+                    Swal.fire('Validation Error', 'Name is required.', 'warning');
+                    return;
+                }
+
+                if (!email) {
+                    Swal.fire('Validation Error', 'Email is required.', 'warning');
+                    return;
+                }
+
+                // Email validation
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                if (!emailRegex.test(email)) {
+                    Swal.fire('Validation Error', 'Please enter a valid email address.', 'warning');
+                    return;
+                }
+
+                // If all checks pass → submit via AJAX
+                const formData = $(this).serialize();
+                const isUpdate = !!$('#buyer_id').val();
+                const url      = isUpdate ? ("/buyers/" + $('#buyer_id').val()) : "{{ route('buyers.store') }}";
+                const payload  = isUpdate ? (formData + '&_method=PUT') : formData;
+
+                $.post(url, payload)
+                    .done(function (res) {
+                        resetFormToCreate();
+                        buyerTable.ajax.reload(null, false);
+                        Swal.fire({
+                            position: 'bottom-end',
+                            icon: 'success',
+                            title: res.message,
+                            showConfirmButton: false,
+                            timer: 1500
+                        });
+                    })
+                    .fail(function (xhr) {
+                        let msg = 'Something went wrong.';
+                        if (xhr.responseJSON && xhr.responseJSON.errors) {
+                            msg = Object.values(xhr.responseJSON.errors).map(e => e[0]).join('\n');
+                        }
+                        Swal.fire('Error!', msg, 'error');
+                    });
             });
 
-            // Delete Buyer
-            $(document).on('click', '.deleteBuyer', function () {
-                let id = $(this).data('id');
+            $(document).on('click', '.edit-btn', function () {
+                const id = $(this).data('id');
+                $.get("/buyers/" + id + "/edit")
+                    .done(function (data) {
+                        $('#buyer_id').val(data.id);
+                        $('#name').val(data.name);
+                        $('#email').val(data.email);
+                        $('#phone').val(data.phone || '');
+                        $('#company').val(data.company || '');
+                        $('#address').val(data.address || '');
+
+                        editId = id;
+                        $('#formSubmitBtn').text('Update');
+                        $('#formCancelBtn').removeClass('d-none');
+                    })
+                    .fail(function () {
+                        Swal.fire('Error!', 'Failed to load record for editing.', 'error');
+                    });
+            });
+
+            $('#formCancelBtn').on('click', function () {
+                resetFormToCreate();
+            });
+
+            $(document).on('click', '.delete-btn', function () {
+                const id = $(this).data('id');
 
                 Swal.fire({
-                    title: 'Are you sure?',
-                    text: "This record will be deleted!",
-                    icon: 'warning',
+                    title: "Are you sure?",
+                    text: "This buyer will be deleted!",
+                    icon: "warning",
                     showCancelButton: true,
-                    confirmButtonColor: '#d33',
-                    confirmButtonText: 'Yes, delete it!'
+                    confirmButtonColor: "#d33",
+                    cancelButtonColor: "#3085d6",
+                    confirmButtonText: "Yes, delete it!"
                 }).then((result) => {
                     if (result.isConfirmed) {
                         $.ajax({
-                            type: "DELETE",
-                            url: "{{ url('buyers') }}/" + id,
+                            url: "/buyers/" + id,
+                            type: 'POST',
+                            data: { _method: 'DELETE' },
                             success: function (res) {
-                                table.ajax.reload(null, false);
-                                Swal.fire('Deleted!', res.message, 'success');
+                                buyerTable.ajax.reload(null, false);
+                                Swal.fire("Deleted!", res.message, "success");
+                                if ($('#buyer_id').val() == id) resetFormToCreate();
                             },
-                            error: function (xhr) {
-                                Swal.fire('Error', xhr.responseJSON.message ?? 'Delete failed!', 'error');
+                            error: function () {
+                                Swal.fire("Error!", "Something went wrong.", "error");
                             }
                         });
                     }

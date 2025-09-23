@@ -17,10 +17,10 @@
                                 <i class="fas fa-filter"></i> Reset
                             </button>
                             <button type="button" id="printBtn" class="btn btn-secondary btn-sm me-1">
-                                <i class="fas fa-print"></i> Print Report
+                                <i class="fas fa-print"></i> Print
                             </button>
                             <button type="button" id="excelBtn" class="btn btn-success btn-sm">
-                                <i class="fas fa-file-excel"></i> Export to Excel
+                                <i class="fas fa-file-excel"></i>Excel
                             </button>
                         </div>
                     </div>
@@ -162,11 +162,7 @@
                         </style>
                     </head>
                     <body>
-                        <div class="print-header">
-                            <h2>Import Bill Summary</h2>
-                            <p>Period: ${formattedMonth}</p>
-                            <p>Generated on: ${new Date().toLocaleDateString()}</p>
-                        </div>
+
                         <div>${reportContent}</div>
                     </body>
                     </html>

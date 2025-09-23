@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Buyer;
 use Illuminate\Http\Request;
+use Yajra\DataTables\Facades\DataTables;
 
 class BuyerController extends Controller
 {
@@ -13,13 +14,50 @@ class BuyerController extends Controller
     public function index(Request $request)
     {
         if ($request->ajax()) {
-            $query = Buyer::latest();
-            return DataTables::of($query)
+            $data = Buyer::latest()->get();
+
+            return DataTables::of($data)
                 ->addIndexColumn()
                 ->addColumn('action', function ($row) {
+                    $editId   = $row->id;
+                    $deleteId = $row->id;
+
                     return '
-                        <button class="btn btn-sm btn-primary editBtn" data-id="'.$row->id.'">Edit</button>
-                        <button class="btn btn-sm btn-danger deleteBtn" data-id="'.$row->id.'">Delete</button>
+                        <ul class="table-controls text-center">
+                            <li>
+                                <a href="javascript:void(0);"
+                                   class="edit-btn bs-tooltip"
+                                   data-id="'.$editId.'"
+                                   data-bs-toggle="tooltip"
+                                   title="Edit">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"
+                                         viewBox="0 0 30 30" fill="none" stroke="currentColor"
+                                         stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                                         class="feather feather-edit-2 p-1 br-8 mb-1">
+                                        <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5
+                                                 2 22l1.5-5.5L17 3z"></path>
+                                    </svg>
+                                </a>
+                            </li>
+                            <li>
+                                <a href="javascript:void(0);"
+                                   class="delete-btn bs-tooltip text-danger"
+                                   data-id="'.$deleteId.'"
+                                   data-bs-toggle="tooltip"
+                                   title="Delete">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"
+                                         viewBox="0 0 30 30" fill="none" stroke="currentColor"
+                                         stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                                         class="feather feather-trash p-1 br-8 mb-1">
+                                        <polyline points="3 6 5 6 21 6"></polyline>
+                                        <path d="M19 6v14a2 2 0 0 1-2
+                                                 2H7a2 2 0 0 1-2-2V6m3
+                                                 0V4a2 2 0 0 1 2-2h4a2
+                                                 2 0 0 1 2 2v2"></path>
+                                    </svg>
+                                </a>
+                            </li>
+                        </ul>
                     ';
                 })
                 ->rawColumns(['action'])
@@ -42,19 +80,21 @@ class BuyerController extends Controller
      */
     public function store(Request $request)
     {
-        $id = $request->id;
-
-        $validated = $request->validate([
-            'name' => 'required|string',
-            'email' => 'required|email|unique:buyers,email,' . $id,
-            'phone' => 'nullable|string',
-            'address' => 'nullable|string',
-            'company' => 'nullable|string',
+        $request->validate([
+            'name'    => 'required|string|max:255',
+            'email'   => 'required|email|unique:buyers,email',
+            'phone'   => 'nullable|string|max:20',
+            'address' => 'nullable|string|max:255',
+            'company' => 'nullable|string|max:255',
         ]);
 
-        $buyer = Buyer::updateOrCreate(['id' => $id], $validated);
+        $buyer = Buyer::create($request->all());
 
-        return response()->json(['success' => true, 'message' => $id ? 'Buyer updated!' : 'Buyer created!']);
+        return response()->json([
+            'success' => true,
+            'message' => 'Buyer created successfully!',
+            'data'    => $buyer,
+        ]);
     }
 
     /**
@@ -71,15 +111,30 @@ class BuyerController extends Controller
     public function edit($id)
     {
         $buyer = Buyer::findOrFail($id);
+
         return response()->json($buyer);
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, Buyer $buyer)
+    public function update(Request $request, $id)
     {
-        //
+        $request->validate([
+            'name'    => 'required|string|max:255',
+            'email'   => 'required|email|unique:buyers,email,' . $id,
+            'phone'   => 'nullable|string|max:20',
+            'address' => 'nullable|string|max:255',
+            'company' => 'nullable|string|max:255',
+        ]);
+
+        $buyer = Buyer::findOrFail($id);
+        $buyer->update($request->all());
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Buyer updated successfully!',
+        ]);
     }
 
     /**
@@ -87,7 +142,12 @@ class BuyerController extends Controller
      */
     public function destroy($id)
     {
-        Buyer::findOrFail($id)->delete();
-        return response()->json(['success' => true, 'message' => 'Buyer deleted!']);
+        $buyer = Buyer::findOrFail($id);
+        $buyer->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Buyer deleted successfully!',
+        ]);
     }
 }

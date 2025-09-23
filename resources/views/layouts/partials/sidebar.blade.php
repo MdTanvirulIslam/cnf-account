@@ -175,6 +175,9 @@
                         <a href="{{ route('accounts.index') }}"> Account Settings </a>
                     </li>
                     <li>
+                        <a href="{{ route('buyers.index') }}"> Buyers </a>
+                    </li>
+                    <li>
                         <a href="user-account-settings.php"> Profile Settings </a>
                     </li>
 

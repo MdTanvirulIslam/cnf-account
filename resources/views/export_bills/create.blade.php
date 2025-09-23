@@ -99,7 +99,7 @@
                                     <input type="number" step="0.01" min="0"
                                            name="expenses[{{ $exp }}]"
                                            class="form-control form-control-sm expense-input"
-                                           value="0">
+                                           value="0" onkeydown="return event.key !== 'Enter';">
                                 </div>
                             </div>
                         @endforeach
@@ -118,37 +118,67 @@
 @section('scripts')
     <script src="{{ asset('assets/src/plugins/src/sweetalerts2/sweetalerts2.min.js') }}"></script>
     <script>
-        $('#exportBillForm').submit(function(e) {
-            e.preventDefault();
-
-            let $form = $(this);
-            let $submitBtn = $form.find('button[type="submit"]');
-
-            // Disable button to prevent double-click
-            $submitBtn.prop('disabled', true);
-
-            $.ajax({
-                url: "{{ route('export-bills.store') }}",
-                type: "POST",
-                data: $form.serialize(),
-                success: function(res) {
-                    Swal.fire("Success", res.message ?? "Bill saved successfully!", "success").then(() => {
-                        // Optionally redirect
-                         window.location.href = "{{ route('export-bills.index') }}";
-                    });
-                },
-                error: function(xhr) {
-                    let errors = xhr.responseJSON?.errors;
-                    let msg = "Something went wrong.";
-                    if (errors) {
-                        msg = Object.values(errors).join("<br>");
-                    }
-                    Swal.fire("Error", msg, "error");
-                },
-                complete: function() {
-                    $submitBtn.prop('disabled', false);
+        $(function () {
+            // Completely disable Enter key for the entire document when focused on form elements
+            // Approach 1: Event delegation on form
+            $('#exportBillForm').on('keydown', 'input, select, textarea', function(e) {
+                if (e.key === 'Enter' || e.keyCode === 13) {
+                    e.preventDefault();
+                    return false;
                 }
             });
+
+            // Approach 2: Also bind directly to expense inputs after page load
+            $('.expense-input').on('keydown', function(e) {
+                if (e.key === 'Enter' || e.keyCode === 13) {
+                    e.preventDefault();
+                    return false;
+                }
+            });
+
+            // Approach 3: Prevent form submit on Enter at form level
+            $('#exportBillForm').submit(function(e) {
+                if (e.originalEvent && e.originalEvent.submitter === undefined) {
+                    // Form was submitted by Enter key
+                    e.preventDefault();
+                    return false;
+                }
+            });
+
+            $('#exportBillForm').submit(function(e) {
+
+                e.preventDefault();
+
+                let $form = $(this);
+                let $submitBtn = $form.find('button[type="submit"]');
+
+                // Disable button to prevent double-click
+                $submitBtn.prop('disabled', true);
+
+                $.ajax({
+                    url: "{{ route('export-bills.store') }}",
+                    type: "POST",
+                    data: $form.serialize(),
+                    success: function(res) {
+                        Swal.fire("Success", res.message ?? "Bill saved successfully!", "success").then(() => {
+                            // Optionally redirect
+                            window.location.href = "{{ route('export-bills.index') }}";
+                        });
+                    },
+                    error: function(xhr) {
+                        let errors = xhr.responseJSON?.errors;
+                        let msg = "Something went wrong.";
+                        if (errors) {
+                            msg = Object.values(errors).join("<br>");
+                        }
+                        Swal.fire("Error", msg, "error");
+                    },
+                    complete: function() {
+                        $submitBtn.prop('disabled', false);
+                    }
+                });
+            });
         });
+
     </script>
 @endsection

@@ -118,7 +118,7 @@
                                 <div class="col-md-7"><label>{{ $exp }}</label></div>
                                 <div class="col-md-4">
                                     <input type="number" class="form-control form-control-sm expense-input"
-                                           name="expenses[{{ $exp }}]" value="0" min="0" step="0.01">
+                                           name="expenses[{{ $exp }}]" value="0" min="0" step="0.01" onkeydown="return event.key !== 'Enter';">
                                 </div>
                             </div>
                         @endforeach
@@ -143,6 +143,18 @@
 
     <script>
         $(function () {
+            // Prevent form submission on Enter key for ALL input fields
+            $(document).on('keydown', function(e) {
+                // Check if the focused element is inside our form
+                if ($(e.target).closest('#importBillForm').length &&
+                    (e.key === 'Enter' || e.keyCode === 13)) {
+                    e.preventDefault();
+                    e.stopImmediatePropagation();
+                    console.log('Enter prevented in form');
+                    return false;
+                }
+            });
+
             $.ajaxSetup({ headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') } });
 
             $("#importBillForm").validate({

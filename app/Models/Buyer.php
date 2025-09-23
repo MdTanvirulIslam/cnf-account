@@ -13,6 +13,8 @@ class Buyer extends Model
 
     protected $fillable = ['name', 'email', 'phone', 'company', 'address'];
 
+    protected $dates = ['deleted_at'];
+
     public function exportBills()
     {
         return $this->hasMany(ExportBill::class);
