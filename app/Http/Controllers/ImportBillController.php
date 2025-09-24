@@ -86,10 +86,26 @@ class ImportBillController extends Controller
                 ->addColumn('action', function ($row) {
                     $editUrl   = route('import-bills.edit', $row->id);
                     $deleteUrl = route('import-bills.destroy', $row->id);
+                    $viewUrl   = route('import-bills.print', $row->id);
 
                     return '
                     <ul class="table-controls text-center">
                         <li>
+                            <a href="'.$viewUrl.'" target="_blank"
+                               class="bs-tooltip text-success"
+                               title="View / Print"
+                               data-id="'.$row->id.'">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"
+                                     viewBox="0 0 30 30" fill="none" stroke="currentColor"
+                                     stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                                     class="feather feather-printer p-1 br-8 mb-1">
+                                    <path d="M6 9V2h18v7"></path>
+                                    <path d="M6 18H4a2 2 0 0 1-2-2v-6a2 2 0 0 1
+                                             2-2h22a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2h-2"></path>
+                                    <rect x="6" y="14" width="18" height="10"></rect>
+                                </svg>
+
+                            </a>
                             <a href="'.$editUrl.'"
                                class="bs-tooltip"
                                title="Edit"
@@ -379,6 +395,16 @@ class ImportBillController extends Controller
             'message' => 'Bill deleted successfully',
         ]);
     }
+
+    public function print($id)
+    {
+        $bill = ImportBill::with('expenses')->findOrFail($id);
+
+        $total = $bill->expenses->sum('amount');
+
+        return view('import_bills.print', compact('bill', 'total'));
+    }
+
 
 
 }

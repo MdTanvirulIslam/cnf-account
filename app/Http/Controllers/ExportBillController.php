@@ -85,10 +85,25 @@ class ExportBillController extends Controller
                 ->addColumn('action', function ($row) {
                     $editUrl   = route('export-bills.edit', $row->id);
                     $deleteUrl = route('export-bills.destroy', $row->id);
+                    $viewUrl   = route('export-bills.print', $row->id);
 
                     return '
                 <ul class="table-controls text-center">
                     <li>
+                        <a href="'.$viewUrl.'" target="_blank"
+                           class="view-btn bs-tooltip text-primary"
+                           title="View / Print"
+                           data-bs-toggle="tooltip">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"
+                                 viewBox="0 0 30 30" fill="none" stroke="currentColor"
+                                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                                 class="feather feather-printer p-1 br-8 mb-1">
+                                <path d="M6 9V2h18v7"></path>
+                                <path d="M6 18H4a2 2 0 0 1-2-2v-6a2 2 0 0 1
+                                         2-2h22a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2h-2"></path>
+                                <rect x="6" y="14" width="18" height="10"></rect>
+                            </svg>
+                        </a>
                         <a href="'.$editUrl.'"
                            class="edit-btn bs-tooltip"
                            title="Edit"
@@ -425,4 +440,23 @@ class ExportBillController extends Controller
             return response()->json(['success'=>false,'message'=>'Something went wrong'],500);
         }
     }
+
+    public function print($id)
+    {
+        $bill = ExportBill::with(['buyer', 'expenses'])->findOrFail($id);
+
+        // Map expenses into array for easier access
+        $expenses = $bill->expenses->pluck('amount', 'expense_type')->toArray();
+
+        // Calculate total
+        $total = array_sum($expenses);
+
+        return view('export_bills.print', [
+            'bill'         => $bill,
+            'expenses'     => $expenses,
+            'expenseTypes' => $this->expenseTypes,
+            'total'        => $total,
+        ]);
+    }
+
 }

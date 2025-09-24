@@ -63,11 +63,15 @@ Route::middleware(['auth','verified', CheckDomain::class, SetPageTitle::class])-
 
     Route::resource('import-bills', ImportBillController::class);
     Route::get('import-bills-data', [ImportBillController::class, 'data'])->name('import-bills.data');
+    // routes/web.php
+    Route::get('/import-bills/{id}/print', [ImportBillController::class, 'print'])->name('import-bills.print');
+
 
     Route::resource('buyers', BuyerController::class);
 
     Route::resource('export-bills', ExportBillController::class);
     Route::get('export-bills-data',[ExportBillController::class,'data'])->name('export-bills.data');
+    Route::get('/export-bills/{id}/print', [ExportBillController::class, 'print'])->name('export-bills.print');
 
     Route::get('/bankbook/report', [BankBookReportController::class, 'index'])->name('bankbook.report');
     Route::get('/expense/report', [ExpenseReportController::class, 'index'])->name('expense.report');
