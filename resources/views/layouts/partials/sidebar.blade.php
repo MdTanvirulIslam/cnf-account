@@ -155,6 +155,9 @@
                     <li>
                         <a href="{{ route('employee.cash.report') }}"> Employee Cash Report </a>
                     </li>
+                    <li>
+                        <a href="{{ route('employee-daily-cash-report.index') }}"> Employee Daily Cash Report </a>
+                    </li>
 
                 </ul>
             </li>
