@@ -116,7 +116,7 @@ class SummaryReportController extends Controller
     {
         $totalQty = ExportBill::whereYear('created_at', $month->year)
             ->whereMonth('created_at', $month->month)
-            ->sum('qty_pcs');
+            ->count('id');
 
         $exportBillIds = ExportBill::whereYear('created_at', $month->year)
             ->whereMonth('created_at', $month->month)
@@ -133,7 +133,7 @@ class SummaryReportController extends Controller
 
         return [
             'qty' => $totalQty,
-            'total' => $totalExpenses - $subtractExpenses
+            'total' => $totalExpenses
         ];
     }
 
@@ -144,7 +144,7 @@ class SummaryReportController extends Controller
     {
         $totalQty = ImportBill::whereYear('created_at', $month->year)
             ->whereMonth('created_at', $month->month)
-            ->sum('qty');
+            ->count('id');
 
         $importBillIds = ImportBill::whereYear('created_at', $month->year)
             ->whereMonth('created_at', $month->month)
@@ -170,7 +170,7 @@ class SummaryReportController extends Controller
 
         return [
             'qty' => $totalQty,
-            'total' => $totalExpenses - $subtractExpenses + $totalFees
+            'total' => $totalExpenses
         ];
     }
 
