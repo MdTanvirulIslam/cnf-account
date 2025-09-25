@@ -12,7 +12,7 @@ class BankBook extends Model
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
-        'account_id', 'type', 'amount', 'note', 'transfer_uuid', 'adjust_balance'
+        'account_id', 'import_bill_id','type', 'amount', 'note', 'transfer_uuid', 'adjust_balance'
     ];
 
     public function account()

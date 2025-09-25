@@ -197,7 +197,7 @@ class ImportBillController extends Controller
                 'scan_fee','doc_fee'
             ]));
 
-            // 2️⃣ Create ImportBillExpenses
+            //  Create ImportBillExpenses
             $expenses = (array)$request->input('expenses', []);
             foreach ($this->expenseTypes as $type) {
                 $amount = isset($expenses[$type]) ? floatval($expenses[$type]) : 0;
@@ -208,7 +208,7 @@ class ImportBillController extends Controller
                 ]);
             }
 
-            // 3️⃣ Create BankBook entries **without adjusting account**
+            //  Create BankBook entries **without adjusting account**
             // AIT (Sonali Bank)
             $aitType = 'AIT (As Per Receipt)';
             $aitAmount = floatval($expenses[$aitType] ?? 0);
@@ -226,6 +226,7 @@ class ImportBillController extends Controller
                     'type'           => 'Pay Order',
                     'amount'         => $aitAmount,
                     'note'           => "Import Bill #{$bill->id} — {$aitType}",
+                    'import_bill_id' => $bill->id,
 
                 ]);
             }
@@ -247,6 +248,7 @@ class ImportBillController extends Controller
                     'type'           => 'Pay Order',
                     'amount'         => $portAmount,
                     'note'           => "Import Bill #{$bill->id} — {$portType}",
+                    'import_bill_id' => $bill->id,
 
                 ]);
             }
@@ -325,6 +327,7 @@ class ImportBillController extends Controller
             if ($aitAmount > 0) {
                 BankBook::create([
                     'account_id'     => $aitAccountId,
+                    'import_bill_id'     => $bill->id,
                     'type'           => 'Pay Order',
                     'amount'         => $aitAmount,
                     'note'           => "Import Bill #{$bill->id} — {$aitType}",
@@ -377,24 +380,30 @@ class ImportBillController extends Controller
         }
 
         DB::transaction(function () use ($bill) {
-            // delete all related Pay Order bankbooks created for this import bill note pattern
-            $bankbooks = BankBook::where('type', 'Pay Order')
-                ->where('note', 'like', "%Import Bill #{$bill->id}%")
-                ->get();
+            // Step 1: Restore balances & delete bank_books
+            $bankbooks = BankBook::where('import_bill_id', $bill->id)->get();
 
             foreach ($bankbooks as $bk) {
-                $bk->delete(); // BankBook deleting handler will restore account balance
+                if ($bk->account) {
+                    //$bk->account->balance += $bk->amount; // restore deducted amount
+                    $bk->account->save();
+                }
+                $bk->delete();
             }
 
-            // then delete bill (and expenses)
+            // Step 2: Delete related expenses
+            ImportBillExpense::where('import_bill_id', $bill->id)->delete();
+
+            // Step 3: Delete the bill
             $bill->delete();
         });
 
         return response()->json([
             'success' => true,
-            'message' => 'Bill deleted successfully',
+            'message' => 'Bill, related bank books, and expenses deleted successfully & balances adjusted',
         ]);
     }
+
 
     public function print($id)
     {

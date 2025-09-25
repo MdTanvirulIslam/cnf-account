@@ -417,7 +417,7 @@ class ExportBillController extends Controller
 
             // reverse balance if Bank Vat exists
             $bankVatAmount = $bill->expenses
-                    ->where('expense_type', 'Bank C & F Vat & Others (As Per Recipt)')
+                    ->where('expense_type', 'Bank C & F Vat & Others (As Per Receipt)')
                     ->first()->amount ?? 0;
 
             if($bankVatAmount > 0 && $bill->from_account_id){

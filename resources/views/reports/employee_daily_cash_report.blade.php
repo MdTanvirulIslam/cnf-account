@@ -78,6 +78,11 @@
 @section('scripts')
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script>
+        $.ajaxSetup({
+            headers: {
+                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+            }
+        });
         $(document).ready(function() {
             // Store original values for reset
             const originalDepartment = "";
