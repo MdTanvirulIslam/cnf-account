@@ -16,8 +16,7 @@ class ImportBillReportController extends Controller
         $lcNo = $request->input('lcNo', $lastBill->lc_no ?? 'all');
         $beNo = $request->input('be_no', $lastBill->be_no ?? 'all');
         $billNo = $request->input('bill_no', $lastBill->bill_no ?? 'all');
-        $billDate = $request->input('billDate', $lastBill->bill_date ? $lastBill->bill_date->format('Y-m-d') : null);
-
+        $billDate = $request->input('billDate', $lastBill?->bill_date?->format('Y-m-d'));
         // Base query
         $query = ImportBill::with('expenses');
 
