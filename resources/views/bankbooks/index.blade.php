@@ -39,7 +39,7 @@
                             <select name="type" id="type" class="form-control form-control-sm">
                                 <option value="" selected>Select Type</option>
                                 <option value="Receive">Receive</option>
-                                <option value="Withdraw">Withdraw</option>
+                                {{--<option value="Withdraw">Withdraw</option>--}}
                                 <option value="Pay Order">Pay Order</option>
                                 <option value="Bank Transfer">Bank Transfer</option>
                             </select>

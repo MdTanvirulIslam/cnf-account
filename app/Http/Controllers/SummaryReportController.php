@@ -170,7 +170,7 @@ class SummaryReportController extends Controller
 
         return [
             'qty' => $totalQty,
-            'total' => $totalExpenses
+            'total' => $totalExpenses + $totalFees
         ];
     }
 

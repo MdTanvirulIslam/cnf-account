@@ -131,7 +131,7 @@
 
                                                                             {{-- File input --}}
                                                                             <input class="form-control file-upload-input" type="file" id="formFile" name="profile_picture">
-                                                                            
+
                                                                         </div>
                                                                     </div>
 

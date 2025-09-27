@@ -28,8 +28,8 @@
                         </div>
 
                         <div class="col-md-12 form-group">
-                            <label for="email">Email *</label>
-                            <input class="form-control form-control-sm" type="email" name="email" id="email" placeholder="email@example.com" required>
+                            <label for="email">Email </label>
+                            <input class="form-control form-control-sm" type="email" name="email" id="email" placeholder="email@example.com">
                         </div>
 
                         <div class="col-md-12 form-group">
