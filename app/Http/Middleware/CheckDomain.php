@@ -13,7 +13,7 @@ class CheckDomain
      * Base domains that are authorized (all subdomains included).
      */
     protected $allowedBaseDomains = [
-        'ctgupdate.com',
+        '127.0.0.1',
     ];
 
     /**
