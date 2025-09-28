@@ -14,7 +14,8 @@ class Expenses extends Model
         'sub_category_id',
         'date',
         'amount',
-        'note'
+        'note',
+        'account_id',
     ];
 
     public function category()

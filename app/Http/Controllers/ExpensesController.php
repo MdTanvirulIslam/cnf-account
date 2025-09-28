@@ -2,6 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Account;
+use App\Models\BankBook;
+use App\Models\Buyer;
 use App\Models\Category;
 use App\Models\Expenses;
 use Illuminate\Http\Request;
@@ -14,6 +17,7 @@ class ExpensesController extends Controller
      */
     public function index(Request $request)
     {
+
         if ($request->ajax()) {
             $expenses = expenses::with(['category', 'subCategory'])->latest();
 
@@ -54,7 +58,8 @@ class ExpensesController extends Controller
         }
 
         $categories = Category::whereNull('parent_id')->get();
-        return view('expenses.index', compact('categories'));
+        $accounts = Account::pluck('name','id');
+        return view('expenses.index', compact('categories','accounts'));
     }
 
     /**
@@ -75,10 +80,19 @@ class ExpensesController extends Controller
             'sub_category_id' => 'nullable|exists:categories,id',
             'date' => 'required|date',
             'amount' => 'required|numeric',
-            'note' => 'nullable|string'
+            'note' => 'nullable|string',
+            'account_id' => 'required|exists:accounts,id',
         ]);
 
         $expense = Expenses::create($data);
+
+        $bank_books = BankBook::create([
+            'expense_id' => $expense->id,
+            'account_id' => $request->account_id,
+            'amount' => $request->amount,
+            'note' => $request->note,
+            'type' => 'Expense',
+        ]);
 
         return response()->json(['success' => true, 'message' => 'Expense created successfully!', 'data' => $expense]);
     }
@@ -112,10 +126,20 @@ class ExpensesController extends Controller
             'sub_category_id' => 'nullable|exists:categories,id',
             'date' => 'required|date',
             'amount' => 'required|numeric',
-            'note' => 'nullable|string'
+            'note' => 'nullable|string',
+            'account_id' => 'required|exists:accounts,id',
         ]);
 
         $expense->update($data);
+        $bankBook = BankBook::where('expense_id', $expense->id)->first();
+        if ($bankBook) {
+            $bankBook->update([
+                'account_id' => $request->account_id,
+                'amount'     => $request->amount,
+                'note'       => $request->note,
+                'type'       => 'Expense',
+            ]);
+        }
 
         return response()->json(['success' => true, 'message' => 'Expense updated successfully!']);
     }
@@ -126,10 +150,20 @@ class ExpensesController extends Controller
     public function destroy($id)
     {
         $expense = Expenses::findOrFail($id);
+
+        // Delete related BankBook entry (this will auto adjust balance via deleting event)
+        $bankBook = BankBook::where('expense_id', $expense->id)->first();
+        if ($bankBook) {
+            $bankBook->delete();
+        }
         $expense->delete();
 
-        return response()->json(['success' => true, 'message' => 'Expense deleted successfully!']);
+        return response()->json([
+            'success' => true,
+            'message' => 'Expense deleted successfully!'
+        ]);
     }
+
 
     public function getSubCategories($categoryId)
     {

@@ -12,12 +12,17 @@ class BankBook extends Model
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
-        'account_id', 'import_bill_id','type', 'amount', 'note', 'transfer_uuid', 'adjust_balance'
+        'account_id', 'import_bill_id','type', 'amount', 'note', 'transfer_uuid', 'adjust_balance','expense_id',
     ];
 
     public function account()
     {
         return $this->belongsTo(Account::class);
+    }
+
+    public function expense()
+    {
+        return $this->belongsTo(Expenses::class,'expense_id');
     }
 
     protected static function booted()
@@ -29,7 +34,7 @@ class BankBook extends Model
 
             // Only adjust balance if adjust_balance is true
             if (!isset($bankBook->adjust_balance) || $bankBook->adjust_balance) {
-                if (in_array($bankBook->type, ['Withdraw', 'Pay Order', 'Bank Transfer']) && $bankBook->amount > $account->balance) {
+                if (in_array($bankBook->type, ['Withdraw', 'Pay Order', 'Bank Transfer','Expense']) && $bankBook->amount > $account->balance) {
                     throw new \Exception("Insufficient account balance!");
                 }
 

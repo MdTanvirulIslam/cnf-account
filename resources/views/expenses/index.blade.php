@@ -17,7 +17,15 @@
                     <form id="expenseForm">
                         @csrf
                         <input type="hidden" id="expense_id" name="expense_id">
-
+                        <div class="form-group mb-3">
+                            <label>Account*</label>
+                            <select name="account_id" id="account_id" class="form-control form-control-sm" required>
+                                <option value="">Select Account</option>
+                                @foreach($accounts as $id => $name)
+                                    <option value="{{ $id }}">{{ $name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
                         <div class="form-group mb-3">
                             <label>Category</label>
                             <select name="category_id" id="category_id" class="form-control form-control-sm">
@@ -153,6 +161,7 @@
                 let id = $(this).data('id');
                 $.get('/expenses/' + id + '/edit', function (res) {
                     $('#expense_id').val(res.id);
+                    $('#account_id').val(res.account_id);
                     $('#category_id').val(res.category_id).trigger('change');
 
                     setTimeout(() => {
