@@ -91,12 +91,24 @@
 
                             {{-- Bank Account --}}
                             <div class="col-md-3 mb-3">
-                                <label>Bank Account *</label>
+                                <label>Vat Account *</label>
                                 <select name="from_account_id" class="form-control form-control-sm" required>
                                     <option value="">-- Select Account --</option>
                                     @foreach($accounts as $account)
-                                        <option value="{{ $account->id }}" {{ $bill->from_account_id == $account->id ? 'selected' : '' }}>
+                                        <option value="{{ $account->id }}" {{ $bill->from_account_id == $account->id ? 'selected' : '' }} readonly="">
                                             {{ $account->name }} (Balance: {{ number_format($account->balance, 2) }})
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+
+                            <div class="col-md-3 mb-3">
+                                <label>From Account *</label>
+                                <select name="account_id" id="account_id" class="form-control form-control-sm" readonly="">
+                                    @foreach($accounts as $account)
+                                        <option value="{{ $account->id }}"
+                                            {{ str_contains(strtolower($account->name), 'dhaka') ? 'selected' : '' }}>
+                                            {{ $account->name }} (Balance: {{ number_format($account->balance,2) }})
                                         </option>
                                     @endforeach
                                 </select>

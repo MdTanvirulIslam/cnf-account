@@ -168,6 +168,7 @@ class ExportBillController extends Controller
     /**
      * Store a newly created resource in storage.
      */
+
     public function store(Request $request)
     {
         $request->validate([
@@ -183,94 +184,89 @@ class ExportBillController extends Controller
             'be_date'         => 'nullable|date',
             'qty_pcs'         => 'required|integer',
             'from_account_id' => 'required|exists:accounts,id',
+            'account_id'      => 'required|exists:accounts,id',
+            'expenses'        => 'nullable|array',
+            'expenses.*'      => 'nullable|numeric|min:0',
         ]);
 
         $formToken = $request->input('form_token');
-        if (Cache::has("export_bill_token_{$formToken}")) {
+        if ($formToken && Cache::has("export_bill_token_{$formToken}")) {
             return response()->json(['success' => true, 'message' => 'Duplicate submission ignored']);
         }
-        Cache::put("export_bill_token_{$formToken}", true, 3600);
+        if ($formToken) {
+            Cache::put("export_bill_token_{$formToken}", true, 3600);
+        }
 
         try {
             DB::beginTransaction();
 
-            // Lock the account to prevent race conditions
-            $account = Account::where('id', $request->from_account_id)
-                ->lockForUpdate()
-                ->first();
+            $vatAccount = Account::where('id', $request->from_account_id)->lockForUpdate()->first();
+            $mainAccount = Account::where('id', $request->account_id)->lockForUpdate()->first();
 
-            if (!$account) {
+            if (!$vatAccount || !$mainAccount) {
                 throw new \Exception("Account not found");
             }
 
-            Log::info("Account locked for transaction", [
-                'account_id' => $account->id,
-                'balance'    => $account->balance
-            ]);
-
-            // 1. Create Export Bill
+            // 1️⃣ Create Export Bill
             $bill = ExportBill::create($request->only([
-                'buyer_id', 'invoice_no', 'invoice_date', 'bill_no', 'bill_date',
-                'usd', 'total_qty', 'ctn_no', 'be_no', 'be_date', 'qty_pcs', 'from_account_id'
+                'buyer_id','invoice_no','invoice_date','bill_no','bill_date',
+                'usd','total_qty','ctn_no','be_no','be_date','qty_pcs','from_account_id','account_id'
             ]));
 
-            // 2. Save all expenses
-            foreach (isset($request->expenses) ? $request->expenses : [] as $type => $amount) {
+            $vatType = 'Bank C & F Vat & Others (As Per Receipt)';
+            $vatAmount = (float) ($request->input('expenses')[$vatType] ?? 0);
+
+            // 2️⃣ Save all expenses individually and calculate other amount correctly
+            $otherAmount = 0;
+            foreach ($request->input('expenses', []) as $type => $amount) {
+                $amount = (float) $amount;
                 if ($amount > 0) {
                     ExportBillExpense::create([
                         'export_bill_id' => $bill->id,
                         'expense_type'   => $type,
-                        'amount'         => (float) $amount,
+                        'amount'         => $amount,
                     ]);
+
+                    // Calculate other amount (all expenses except VAT type)
+                    if ($type !== $vatType) {
+                        $otherAmount += $amount;
+                    }
                 }
             }
 
-            // 3. Process bank expense - ONLY create BankBook entry (balance adjustment is handled by BankBook model)
-            $bankExpense = (float) $request->input("expenses.Bank C & F Vat & Others (As Per Receipt)", 0);
-
-            if ($bankExpense > 0) {
-                $bankBook = BankBook::create([
-                    'account_id' => $request->from_account_id,
+            // 3️⃣ Create BankBook entries
+            if ($vatAmount > 0) {
+                BankBook::create([
+                    'export_bill_id' => $bill->id,
+                    'account_id' => $vatAccount->id,
                     'type'       => 'Pay Order',
-                    'amount'     => $bankExpense,
-                    'note'       => 'Bank C & F Vat & Others (As Per Receipt) for Export Bill #' . $bill->id,
+                    'amount'     => $vatAmount,
+                    'note'       => "{$vatType} for Export Bill #{$bill->id}",
                 ]);
+            }
 
-                Log::info("Bank expense processed via BankBook", [
-                    'account_id'    => $request->from_account_id,
-                    'bank_expense'  => $bankExpense,
-                    'bankbook_id'   => $bankBook->id,
-                    'export_bill_id'=> $bill->id
+            if ($otherAmount > 0) {
+                BankBook::create([
+                    'export_bill_id' => $bill->id,
+                    'account_id' => $mainAccount->id,
+                    'type'       => 'Export Bill',
+                    'amount'     => $otherAmount,
+                    'note'       => "{$otherAmount} Amount deduct for export bill #{$bill->id}",
                 ]);
             }
 
             DB::commit();
 
-            // Final verification
-            $finalAccount = Account::find($request->from_account_id);
-            Log::info("Transaction completed successfully", [
-                'account_id'     => $request->from_account_id,
-                'final_balance'  => $finalAccount->balance,
-                'export_bill_id' => $bill->id
-            ]);
-
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error("Export bill creation failed: " . $e->getMessage(), [
-                'account_id' => $request->from_account_id,
-                'error'      => $e->getTraceAsString()
+                'request' => $request->all()
             ]);
-            return response()->json([
-                'success' => false,
-                'message' => 'Error processing request: ' . $e->getMessage()
-            ], 500);
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
         }
 
         return response()->json(['success' => true, 'message' => 'Export Bill created successfully']);
     }
-
-
-
 
 
 
@@ -308,8 +304,6 @@ class ExportBillController extends Controller
      */
     public function update(Request $request, $id)
     {
-        $bankExpenseType = 'Bank C & F Vat & Others (As Per Receipt)';
-
         $request->validate([
             'buyer_id'        => 'required|exists:buyers,id',
             'invoice_no'      => 'required|string|max:255',
@@ -323,81 +317,113 @@ class ExportBillController extends Controller
             'be_date'         => 'nullable|date',
             'qty_pcs'         => 'required|integer',
             'from_account_id' => 'required|exists:accounts,id',
+            'account_id'      => 'required|exists:accounts,id',
             'expenses'        => 'nullable|array',
             'expenses.*'      => 'nullable|numeric|min:0',
         ]);
 
-        // prevent duplicate submission
-        $formToken = $request->input('form_token');
-        if ($formToken && Cache::has("export_bill_token_{$formToken}")) {
-            return response()->json(['success' => true, 'message' => 'Duplicate submission ignored']);
-        }
-        if ($formToken) {
-            Cache::put("export_bill_token_{$formToken}", true, 3600);
-        }
+        try {
+            DB::beginTransaction();
 
-        DB::transaction(function () use ($request, $id, $bankExpenseType) {
+            // Find the existing bill with expenses
             $bill = ExportBill::with('expenses')->findOrFail($id);
 
-            $oldAccountId   = $bill->from_account_id;
-            $newAccountId   = (int) $request->input('from_account_id');
-            $newBankExpense = (float) ($request->input('expenses')[$bankExpenseType] ?? 0);
-
-            // 1️⃣ Update Export Bill
+            // Update the bill
             $bill->update($request->only([
                 'buyer_id','invoice_no','invoice_date','bill_no','bill_date',
-                'usd','total_qty','ctn_no','be_no','be_date','qty_pcs','from_account_id'
+                'usd','total_qty','ctn_no','be_no','be_date','qty_pcs','from_account_id','account_id'
             ]));
 
-            // 2️⃣ Update/create expenses
+            $vatType = 'Bank C & F Vat & Others (As Per Receipt)';
+            $vatAmount = (float) ($request->input('expenses')[$vatType] ?? 0);
+            $totalExpenses = array_sum(array_map('floatval', $request->input('expenses', [])));
+            $otherAmount = max($totalExpenses - $vatAmount, 0);
+
+            // Delete all existing expenses and create new ones (consistent with store method)
+            $bill->expenses()->delete();
+
             foreach ($request->input('expenses', []) as $type => $amount) {
-                $bill->expenses()->updateOrCreate(
-                    ['expense_type' => $type],
-                    ['amount' => (float) $amount]
-                );
+                if ($amount > 0) {
+                    ExportBillExpense::create([
+                        'export_bill_id' => $bill->id,
+                        'expense_type'   => $type,
+                        'amount'         => (float) $amount,
+                    ]);
+                }
             }
 
-            // 3️⃣ Sync with BankBook (always Pay Order)
-            $bankBook = BankBook::where('note', 'like', "%Export Bill #{$bill->id}%")
+            // Find existing BankBook entries
+            $vatBankBook = BankBook::where('note', 'like', "%Export Bill #{$bill->id}%")
                 ->where('type', 'Pay Order')
+                ->where('note', 'like', "%{$vatType}%")
                 ->first();
 
-            if ($oldAccountId == $newAccountId) {
-                // same account → just update BankBook if exists
-                if ($bankBook) {
-                    $bankBook->update([
-                        'account_id' => $newAccountId,
-                        'amount'     => $newBankExpense,
-                        'note'       => "Export Bill #{$bill->id} — {$bankExpenseType}",
+            $otherBankBook = BankBook::where('note', 'like', "%Export Bill #{$bill->id}%")
+                ->where('type', 'Export Bill')
+                ->where('note', 'like', "%Amount deduct for export bill #{$bill->id}%")
+                ->first();
+
+            // Handle VAT BankBook entry
+            if ($vatAmount > 0) {
+                if ($vatBankBook) {
+                    // Update existing entry - BankBook model events will handle balance adjustment
+                    $vatBankBook->update([
+                        'account_id' => $bill->from_account_id,
+                        'amount'     => $vatAmount,
+                        'note'       => "{$vatType} for Export Bill #{$bill->id}",
                     ]);
                 } else {
-                    if ($newBankExpense > 0) {
-                        BankBook::create([
-                            'account_id' => $newAccountId,
-                            'type'       => 'Pay Order',
-                            'amount'     => $newBankExpense,
-                            'note'       => "Export Bill #{$bill->id} — {$bankExpenseType}",
-                        ]);
-                    }
-                }
-            } else {
-                // account changed → delete old entry and create new one
-                if ($bankBook) {
-                    $bankBook->delete();
-                }
-                if ($newBankExpense > 0) {
+                    // Create new entry - BankBook model events will handle balance adjustment
                     BankBook::create([
-                        'account_id' => $newAccountId,
+                        'account_id' => $bill->from_account_id,
                         'type'       => 'Pay Order',
-                        'amount'     => $newBankExpense,
-                        'note'       => "Export Bill #{$bill->id} — {$bankExpenseType}",
+                        'amount'     => $vatAmount,
+                        'note'       => "{$vatType} for Export Bill #{$bill->id}",
                     ]);
                 }
+            } elseif ($vatBankBook) {
+                // Delete if amount is 0 but entry exists - BankBook model events will handle balance adjustment
+                $vatBankBook->delete();
             }
-        });
+
+            // Handle Other Amount BankBook entry
+            if ($otherAmount > 0) {
+                if ($otherBankBook) {
+                    // Update existing entry - BankBook model events will handle balance adjustment
+                    $otherBankBook->update([
+                        'account_id' => $bill->account_id,
+                        'type'       => 'Export Bill',
+                        'amount'     => $otherAmount,
+                        'note'       => "{$otherAmount} Amount deduct for export bill #{$bill->id}",
+                    ]);
+                } else {
+                    // Create new entry - BankBook model events will handle balance adjustment
+                    BankBook::create([
+                        'account_id' => $bill->account_id,
+                        'type'       => 'Export Bill',
+                        'amount'     => $otherAmount,
+                        'note'       => "{$otherAmount} Amount deduct for export bill #{$bill->id}",
+                    ]);
+                }
+            } elseif ($otherBankBook) {
+                // Delete if amount is 0 but entry exists - BankBook model events will handle balance adjustment
+                $otherBankBook->delete();
+            }
+
+            DB::commit();
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error("Export bill update failed: " . $e->getMessage(), [
+                'request' => $request->all(),
+                'bill_id' => $id
+            ]);
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
 
         return response()->json(['success' => true, 'message' => 'Export Bill updated successfully']);
     }
+
 
 
 
