@@ -50,6 +50,9 @@ class ImportBillController extends Controller
             ->withSum(['expenses as ait_sum_amount' => function ($q) {
                 $q->where('expense_type', 'AIT (As Per Receipt)'); // only AIT expenses
             }], 'amount')
+                ->withSum(['expenses as port_bill_sum_amount' => function ($q) {
+                    $q->where('expense_type', 'Port Bill (As Per Receipt)'); // only Port Bill expenses
+                }], 'amount')
                 ->latest();
 
             return datatables()->of($query)
@@ -83,61 +86,64 @@ class ImportBillController extends Controller
                 ->addColumn('ait_amount', function ($row) {
                     return number_format(isset($row->ait_sum_amount) ? $row->ait_sum_amount : 0, 2);
                 })
+                ->addColumn('port_bill_amount', function ($row) {
+                    return number_format(isset($row->port_bill_sum_amount) ? $row->port_bill_sum_amount : 0, 2);
+                })
                 ->addColumn('action', function ($row) {
                     $editUrl   = route('import-bills.edit', $row->id);
                     $deleteUrl = route('import-bills.destroy', $row->id);
                     $viewUrl   = route('import-bills.print', $row->id);
 
                     return '
-                    <ul class="table-controls text-center">
-                        <li>
-                            <a href="'.$viewUrl.'" target="_blank"
-                               class="bs-tooltip text-success"
-                               title="View / Print"
-                               data-id="'.$row->id.'">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"
-                                     viewBox="0 0 30 30" fill="none" stroke="currentColor"
-                                     stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                                     class="feather feather-printer p-1 br-8 mb-1">
-                                    <path d="M6 9V2h18v7"></path>
-                                    <path d="M6 18H4a2 2 0 0 1-2-2v-6a2 2 0 0 1
-                                             2-2h22a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2h-2"></path>
-                                    <rect x="6" y="14" width="18" height="10"></rect>
-                                </svg>
+                <ul class="table-controls text-center">
+                    <li>
+                        <a href="'.$viewUrl.'" target="_blank"
+                           class="bs-tooltip text-success"
+                           title="View / Print"
+                           data-id="'.$row->id.'">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"
+                                 viewBox="0 0 30 30" fill="none" stroke="currentColor"
+                                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                                 class="feather feather-printer p-1 br-8 mb-1">
+                                <path d="M6 9V2h18v7"></path>
+                                <path d="M6 18H4a2 2 0 0 1-2-2v-6a2 2 0 0 1
+                                         2-2h22a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2h-2"></path>
+                                <rect x="6" y="14" width="18" height="10"></rect>
+                            </svg>
 
-                            </a>
-                            <a href="'.$editUrl.'"
-                               class="bs-tooltip"
-                               title="Edit"
-                               data-id="'.$row->id.'">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"
-                                     viewBox="0 0 30 30" fill="none" stroke="currentColor"
-                                     stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                                     class="feather feather-edit-2 p-1 br-8 mb-1">
-                                    <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5
-                                    20.5 2 22l1.5-5.5L17 3z"></path>
-                                </svg>
-                            </a>
-                        </li>
-                        <li>
-                            <a href="javascript:void(0);"
-                               class="delete-btn bs-tooltip text-danger"
-                               title="Delete"
-                               data-route="'.$deleteUrl.'"
-                               data-id="'.$row->id.'">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"
-                                     viewBox="0 0 30 30" fill="none" stroke="currentColor"
-                                     stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                                     class="feather feather-trash p-1 br-8 mb-1">
-                                    <polyline points="3 6 5 6 21 6"></polyline>
-                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0
-                                    1-2-2V6m3 0V4a2 2 0 0 1
-                                    2-2h4a2 2 0 0 1 2 2v2"></path>
-                                </svg>
-                            </a>
-                        </li>
-                    </ul>
-                ';
+                        </a>
+                        <a href="'.$editUrl.'"
+                           class="bs-tooltip"
+                           title="Edit"
+                           data-id="'.$row->id.'">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"
+                                 viewBox="0 0 30 30" fill="none" stroke="currentColor"
+                                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                                 class="feather feather-edit-2 p-1 br-8 mb-1">
+                                <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5
+                                20.5 2 22l1.5-5.5L17 3z"></path>
+                            </svg>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="javascript:void(0);"
+                           class="delete-btn bs-tooltip text-danger"
+                           title="Delete"
+                           data-route="'.$deleteUrl.'"
+                           data-id="'.$row->id.'">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"
+                                 viewBox="0 0 30 30" fill="none" stroke="currentColor"
+                                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                                 class="feather feather-trash p-1 br-8 mb-1">
+                                <polyline points="3 6 5 6 21 6"></polyline>
+                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0
+                                1-2-2V6m3 0V4a2 2 0 0 1
+                                2-2h4a2 2 0 0 1 2 2v2"></path>
+                            </svg>
+                        </a>
+                    </li>
+                </ul>
+            ';
                 })
                 ->rawColumns(['action'])
                 ->make(true);

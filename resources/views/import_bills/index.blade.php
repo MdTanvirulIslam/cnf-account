@@ -8,7 +8,7 @@
 @endsection
 
 @section('content')
-    <div class="row layout-spacing ">
+    <div class="row layout-spacing">
         <div class="row mt-2 w-100">
             <div class="col-md-6"><h5 class="card-title">View Import Bills</h5></div>
             <div class="col-md-6 d-flex justify-content-end">
@@ -20,30 +20,32 @@
             <div class="widget-content widget-content-area br-8">
                 <table id="importBillTable" class="table style-3 dt-table-hover">
                     <thead>
-                        <tr>
-                            <th>#</th> {{-- DT_RowIndex --}}
-                            <th class="text-center">L/C NO</th>
-                            <th class="text-center">L/C DATE</th>
-                            <th class="text-center">B/E NO</th>
-                            <th class="text-center">B/E DATE</th>
-                            <th class="text-center">BILL NO</th>
-                            <th class="text-center">BILL DATE</th>
-                            <th class="text-center">ITEM</th>
-                            <th class="text-center">DOC QTY</th>
-                            <th class="text-center">TTL WT.</th>
-                            <th class="text-center">MONTH</th>
-                            <th class="text-center">VALUE</th>
-                            <th class="text-center">BILL AMOUNT</th>
-                            <th class="text-center">DF VAT</th>
-                            <th class="text-center">DOC FEE</th>
-                            <th class="text-center">SCAN FEE</th>
-                            <th class="text-center">Action</th>
-                        </tr>
+                    <tr>
+                        <th>#</th>
+                        <th class="text-center">L/C NO</th>
+                        <th class="text-center">L/C DATE</th>
+                        <th class="text-center">B/E NO</th>
+                        <th class="text-center">B/E DATE</th>
+                        <th class="text-center">BILL NO</th>
+                        <th class="text-center">BILL DATE</th>
+                        <th class="text-center">ITEM</th>
+                        <th class="text-center">DOC QTY</th>
+                        <th class="text-center">TTL WT.</th>
+                        <th class="text-center">MONTH</th>
+                        <th class="text-center">VALUE</th>
+                        <th class="text-center">BILL AMOUNT</th>
+                        <th class="text-center">PORT BILL</th>
+                        <th class="text-center">AIT AMOUNT</th>
+                        <th class="text-center">DOC FEE</th>
+                        <th class="text-center">SCAN FEE</th>
+                        <th class="text-center">Action</th>
+                    </tr>
                     </thead>
                     <tfoot>
                     <tr>
                         <th colspan="12" style="text-align:right">Total Amount:</th>
                         <th id="total_amount"></th>
+                        <th id="total_port_bill"></th>
                         <th id="total_ait"></th>
                         <th id="total_doc"></th>
                         <th id="total_scan"></th>
@@ -95,12 +97,13 @@
                     { data: 'month_name', name: 'month_name' },
                     { data: 'value', name: 'value' },
                     { data: 'amount', name: 'amount' },
+                    { data: 'port_bill_amount', name: 'port_bill_amount' },
                     { data: 'ait_amount', name: 'ait_amount' },
                     { data: 'doc_fee', name: 'doc_fee' },
                     { data: 'scan_fee', name: 'scan_fee' },
                     { data: 'action', name: 'action', orderable: false, searchable: false }
                 ],
-                order: [[15, 'desc']],
+                order: [[0, 'desc']],
                 drawCallback: function () {
                     // re-init tooltips if needed
                     if (window.bootstrap) {
@@ -115,7 +118,7 @@
                     // Helper to parse numbers
                     var intVal = function (i) {
                         return typeof i === 'string'
-                            ? i.replace(/[\$,]/g, '') * 1
+                            ? i.replace(/[^\d.-]/g, '') * 1
                             : typeof i === 'number'
                                 ? i
                                 : 0;
@@ -123,18 +126,19 @@
 
                     // Compute totals for current page
                     var totalAmount = api.column(12, { page: 'current' }).data().reduce((a, b) => intVal(a) + intVal(b), 0);
-                    var totalAIT = api.column(13, { page: 'current' }).data().reduce((a, b) => intVal(a) + intVal(b), 0);
-                    var totalDoc = api.column(14, { page: 'current' }).data().reduce((a, b) => intVal(a) + intVal(b), 0);
-                    var totalScan = api.column(15, { page: 'current' }).data().reduce((a, b) => intVal(a) + intVal(b), 0);
+                    var totalPortBill = api.column(13, { page: 'current' }).data().reduce((a, b) => intVal(a) + intVal(b), 0);
+                    var totalAIT = api.column(14, { page: 'current' }).data().reduce((a, b) => intVal(a) + intVal(b), 0);
+                    var totalDoc = api.column(15, { page: 'current' }).data().reduce((a, b) => intVal(a) + intVal(b), 0);
+                    var totalScan = api.column(16, { page: 'current' }).data().reduce((a, b) => intVal(a) + intVal(b), 0);
 
                     // Update footer cells
                     $('#total_amount').html(totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2 }));
+                    $('#total_port_bill').html(totalPortBill.toLocaleString(undefined, { minimumFractionDigits: 2 }));
                     $('#total_ait').html(totalAIT.toLocaleString(undefined, { minimumFractionDigits: 2 }));
                     $('#total_doc').html(totalDoc.toLocaleString(undefined, { minimumFractionDigits: 2 }));
                     $('#total_scan').html(totalScan.toLocaleString(undefined, { minimumFractionDigits: 2 }));
                 }
             });
-
 
             // Delete via SweetAlert + reload table
             $(document).on('click', '.delete-btn', function () {
@@ -165,7 +169,6 @@
                     }
                 });
             });
-
         });
     </script>
 @endsection

@@ -32,7 +32,11 @@ class BankBookController extends Controller
                         return '<span class="badge badge-light-success">Withdraw</span>';
                     } elseif ($row->type === 'Bank Transfer') {
                         return '<span class="badge badge-light-info">Bank Transfer</span>';
-                    } else {
+                    } elseif ($row->type === 'Import Bill') {
+                        return '<span class="badge badge-light-success">Import Bill</span>';
+                    } elseif ($row->type === 'Export Bill') {
+                        return '<span class="badge badge-light-success">Export Bill</span>';
+                    }else {
                         return '<span class="badge badge-light-warning">Pay Order</span>';
                     }
                 })
@@ -44,7 +48,8 @@ class BankBookController extends Controller
                     $restrictedNotes = [
                         'Bank C & F Vat & Others (As Per Receipt)',
                         'Import Bill',
-                        'Export Bill'
+                        'Export Bill',
+                        'Amount deduct for'
                     ];
 
                     $disableActions = false;
