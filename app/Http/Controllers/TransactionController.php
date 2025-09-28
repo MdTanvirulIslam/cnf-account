@@ -7,6 +7,7 @@ use App\Models\Employee;
 use Illuminate\Http\Request;
 use Yajra\DataTables\Facades\DataTables;
 use Illuminate\Validation\Rule;
+use Carbon\Carbon;
 
 class TransactionController extends Controller
 {
@@ -109,6 +110,11 @@ class TransactionController extends Controller
             'note' => 'nullable|string|max:1000'
         ]);
 
+        // Validate return amount if type is 'return'
+        if ($request->type === 'return') {
+            $this->validateReturnAmount($request);
+        }
+
         $transaction = Transaction::create($request->only(['employee_id','date','amount','type','note']));
 
         return response()->json([
@@ -147,6 +153,11 @@ class TransactionController extends Controller
             'note' => 'nullable|string|max:1000'
         ]);
 
+        // Validate return amount if type is 'return'
+        if ($request->type === 'return') {
+            $this->validateReturnAmount($request, $id);
+        }
+
         $transaction = Transaction::findOrFail($id);
         $transaction->update($request->only(['employee_id','date','amount','type','note']));
 
@@ -165,5 +176,50 @@ class TransactionController extends Controller
             'success' => true,
             'message' => 'Transaction deleted successfully!'
         ]);
+    }
+
+    /**
+     * Validate return amount against overall received amounts (across all dates)
+     */
+    private function validateReturnAmount(Request $request, $transactionId = null)
+    {
+        $employeeId = $employeeId;
+        $returnAmount = $request->amount;
+
+        // Get total received amount for this employee (all dates)
+        $totalReceived = Transaction::where('employee_id', $employeeId)
+            ->where('type', 'receive');
+
+        // Get total returned amount for this employee (all dates)
+        $totalReturned = Transaction::where('employee_id', $employeeId)
+            ->where('type', 'return');
+
+        // Exclude current transaction when updating
+        if ($transactionId) {
+            $totalReceived->where('id', '!=', $transactionId);
+            $totalReturned->where('id', '!=', $transactionId);
+        }
+
+        $totalReceivedAmount = $totalReceived->sum('amount');
+        $totalReturnedAmount = $totalReturned->sum('amount');
+
+        // Calculate net available amount (overall)
+        $netAvailable = $totalReceivedAmount - $totalReturnedAmount;
+
+        // Check if return amount exceeds overall available amount
+        if ($returnAmount > $netAvailable) {
+            $message = "Return amount (৳" . number_format($returnAmount, 2) .
+                ") exceeds available balance (৳" . number_format($netAvailable, 2) .
+                ") for this employee.";
+
+            // If no received amount at all
+            if ($totalReceivedAmount == 0) {
+                $message = "No received amount found for this employee. Cannot process return.";
+            }
+
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'amount' => [$message]
+            ]);
+        }
     }
 }
