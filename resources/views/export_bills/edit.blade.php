@@ -2,136 +2,343 @@
 
 @section('styles')
     <link rel="stylesheet" href="{{ asset('assets/src/plugins/src/sweetalerts2/sweetalerts2.css') }}">
+    <style>
+        .form-section {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 25px;
+            border-left: 4px solid #007bff;
+        }
+        .section-title {
+            color: #2c3e50;
+            font-weight: 600;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e9ecef;
+        }
+        .form-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        .form-card .card-body {
+            background: white;
+            margin: 1px;
+            border-radius: 14px;
+        }
+        .expense-row {
+            transition: all 0.3s ease;
+            border-radius: 8px;
+            padding: 10px 0;
+        }
+        .expense-row:hover {
+            background-color: #f8f9ff;
+            transform: translateX(5px);
+        }
+        .account-balance {
+            font-size: 0.85em;
+            color: #28a745;
+            font-weight: 500;
+        }
+        .required-field::after {
+            content: " *";
+            color: #dc3545;
+        }
+        .input-highlight {
+            border: 2px solid #e9ecef;
+            transition: all 0.3s ease;
+        }
+        .input-highlight:focus {
+            border-color: #007bff;
+            box-shadow: 0 0 0 0.2rem rgba(0,123,255,.25);
+            transform: translateY(-2px);
+        }
+        .expense-badge {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.75em;
+        }
+        .total-display {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 20px;
+        }
+        .readonly-field {
+            background-color: #f8f9fa;
+            border: 2px solid #e9ecef;
+            color: #6c757d;
+        }
+        .update-btn {
+            background: linear-gradient(45deg, #28a745, #20c997);
+            border: none;
+            border-radius: 25px;
+            padding: 10px 30px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        .update-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(40, 167, 69, 0.4);
+        }
+        .back-btn {
+            border-radius: 25px;
+            padding: 10px 30px;
+            font-weight: 600;
+        }
+        .edit-indicator {
+            background: linear-gradient(45deg, #ff6b6b, #ffa726);
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.8em;
+            font-weight: 600;
+        }
+    </style>
 @endsection
 
 @section('content')
     <div class="row layout-spacing">
         <div class="col-xl-12 layout-top-spacing">
-            <div class="card">
+            <div class="card form-card">
                 <div class="card-body">
-                    <div class="row mb-2">
+                    <div class="row mb-4">
                         <div class="col-md-6">
-                            <h5 class="card-title">Edit Export Bill</h5>
+                            <h4 class="card-title mb-1">✏️ Edit Export Bill</h4>
+                            <p class="text-muted mb-0">Update export bill #{{ $bill->bill_no }} - {{ $bill->buyer->name ?? 'N/A' }}</p>
                         </div>
-                        <div class="col-md-6 d-flex justify-content-end">
-                            <a href="{{ route('export-bills.index') }}" class="btn btn-info btn-rounded mb-2 me-4">View Export Bill Summary</a>
+                        <div class="col-md-6 d-flex justify-content-end align-items-center">
+                            <span class="edit-indicator me-3">
+                                <i class="fas fa-edit me-1"></i>Editing Mode
+                            </span>
+                            <a href="{{ route('export-bills.index') }}" class="btn btn-info btn-rounded mb-2">
+                                <i class="fas fa-list me-2"></i>View All Bills
+                            </a>
                         </div>
                     </div>
-                    <hr>
+                    <hr class="mb-4">
 
-                    <form id="importBillForm">
+                    <form id="exportBillForm">
                         @csrf
                         @method('PUT')
                         <input type="hidden" name="form_token" value="{{ Str::uuid() }}">
 
-                        <div class="row">
-                            <div class="col-md-3 mb-3">
-                                <label>Buyer Name *</label>
-                                <select id="select-beast" name="buyer_id" class="form-control form-control-sm" required>
-                                    @foreach($buyers as $buyer)
-                                        <option value="{{ $buyer->id }}" {{ $bill->buyer_id == $buyer->id ? 'selected' : '' }}>
-                                            {{ $buyer->name }}
-                                        </option>
-                                    @endforeach
-                                </select>
-                            </div>
+                        {{-- Basic Information Section --}}
+                        <div class="form-section">
+                            <h5 class="section-title">📋 Basic Information</h5>
+                            <div class="row">
+                                <div class="col-md-3 mb-3">
+                                    <label class="required-field">Buyer Name</label>
+                                    <select name="buyer_id" class="form-control form-control-sm input-highlight" required>
+                                        @foreach($buyers as $buyer)
+                                            <option value="{{ $buyer->id }}" {{ $bill->buyer_id == $buyer->id ? 'selected' : '' }}>
+                                                {{ $buyer->name }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </div>
 
-                            <div class="col-md-3 mb-3">
-                                <label>Bill No *</label>
-                                <input type="text" name="bill_no" class="form-control form-control-sm" value="{{ $bill->bill_no }}" required>
-                            </div>
+                                <div class="col-md-3 mb-3">
+                                    <label class="required-field">Bill No</label>
+                                    <input type="text" name="bill_no" class="form-control form-control-sm input-highlight"
+                                           value="{{ $bill->bill_no }}" required>
+                                </div>
 
-                            <div class="col-md-3 mb-3">
-                                <label>Bill Date *</label>
-                                <input type="date" name="bill_date" class="form-control form-control-sm"
-                                       value="{{ $bill->bill_date ? $bill->bill_date->format('Y-m-d') : '' }}" required>
-                            </div>
+                                <div class="col-md-3 mb-3">
+                                    <label class="required-field">Bill Date</label>
+                                    <input type="date" name="bill_date" class="form-control form-control-sm input-highlight"
+                                           value="{{ $bill->bill_date ? $bill->bill_date->format('Y-m-d') : '' }}" required>
+                                </div>
 
-                            <div class="col-md-3 mb-3">
-                                <label>Invoice No *</label>
-                                <input type="text" name="invoice_no" class="form-control form-control-sm" value="{{ $bill->invoice_no }}" required>
-                            </div>
+                                <div class="col-md-3 mb-3">
+                                    <label class="required-field">Invoice No</label>
+                                    <input type="text" name="invoice_no" class="form-control form-control-sm input-highlight"
+                                           value="{{ $bill->invoice_no }}" required>
+                                </div>
 
-                            <div class="col-md-3 mb-3">
-                                <label>Invoice Date *</label>
-                                <input type="date" name="invoice_date" class="form-control form-control-sm"
-                                       value="{{ $bill->invoice_date ? $bill->invoice_date->format('Y-m-d') : '' }}">
-                            </div>
+                                <div class="col-md-3 mb-3">
+                                    <label class="required-field">Invoice Date</label>
+                                    <input type="date" name="invoice_date" class="form-control form-control-sm input-highlight"
+                                           value="{{ $bill->invoice_date ? $bill->invoice_date->format('Y-m-d') : '' }}">
+                                </div>
 
-                            <div class="col-md-3 mb-3">
-                                <label>USD *</label>
-                                <input type="number" step="0.01" name="usd" class="form-control form-control-sm" value="{{ $bill->usd }}" required>
-                            </div>
+                                <div class="col-md-3 mb-3">
+                                    <label class="required-field">USD Amount</label>
+                                    <input type="number" step="0.01" name="usd" class="form-control form-control-sm input-highlight"
+                                           value="{{ $bill->usd }}" required>
+                                    <small class="text-muted">Amount in USD</small>
+                                </div>
 
-                            <div class="col-md-3 mb-3">
-                                <label>Total Qty</label>
-                                <input type="number" name="total_qty" class="form-control form-control-sm" value="{{ $bill->total_qty }}">
-                            </div>
+                                <div class="col-md-3 mb-3">
+                                    <label>Total Qty</label>
+                                    <input type="number" name="total_qty" class="form-control form-control-sm input-highlight"
+                                           value="{{ $bill->total_qty }}">
+                                </div>
 
-                            <div class="col-md-3 mb-3">
-                                <label>CTN No</label>
-                                <input type="text" name="ctn_no" class="form-control form-control-sm" value="{{ $bill->ctn_no }}">
-                            </div>
+                                <div class="col-md-3 mb-3">
+                                    <label>CTN No</label>
+                                    <input type="text" name="ctn_no" class="form-control form-control-sm input-highlight"
+                                           value="{{ $bill->ctn_no }}">
+                                </div>
 
-                            <div class="col-md-3 mb-3">
-                                <label>B/E No</label>
-                                <input type="text" name="be_no" class="form-control form-control-sm" value="{{ $bill->be_no }}">
-                            </div>
+                                <div class="col-md-3 mb-3">
+                                    <label>B/E No</label>
+                                    <input type="text" name="be_no" class="form-control form-control-sm input-highlight"
+                                           value="{{ $bill->be_no }}">
+                                </div>
 
-                            <div class="col-md-3 mb-3">
-                                <label>B/E Date</label>
-                                <input type="date" name="be_date" class="form-control form-control-sm"
-                                       value="{{ $bill->be_date ? $bill->be_date->format('Y-m-d') : '' }}">
-                            </div>
+                                <div class="col-md-3 mb-3">
+                                    <label>B/E Date</label>
+                                    <input type="date" name="be_date" class="form-control form-control-sm input-highlight"
+                                           value="{{ $bill->be_date ? $bill->be_date->format('Y-m-d') : '' }}">
+                                </div>
 
-                            <div class="col-md-3 mb-3">
-                                <label>Qty PCS</label>
-                                <input type="number" name="qty_pcs" class="form-control form-control-sm" value="{{ $bill->qty_pcs }}">
-                            </div>
-
-                            {{-- Bank Account --}}
-                            <div class="col-md-3 mb-3">
-                                <label>Vat Account *</label>
-                                <select name="from_account_id" class="form-control form-control-sm" required>
-                                    <option value="">-- Select Account --</option>
-                                    @foreach($accounts as $account)
-                                        <option value="{{ $account->id }}" {{ $bill->from_account_id == $account->id ? 'selected' : '' }} readonly="">
-                                            {{ $account->name }} (Balance: {{ number_format($account->balance, 2) }})
-                                        </option>
-                                    @endforeach
-                                </select>
-                            </div>
-
-                            <div class="col-md-3 mb-3">
-                                <label>From Account *</label>
-                                <select name="account_id" id="account_id" class="form-control form-control-sm" readonly="">
-                                    @foreach($accounts as $account)
-                                        <option value="{{ $account->id }}"
-                                            {{ str_contains(strtolower($account->name), 'dhaka') ? 'selected' : '' }}>
-                                            {{ $account->name }} (Balance: {{ number_format($account->balance,2) }})
-                                        </option>
-                                    @endforeach
-                                </select>
+                                <div class="col-md-3 mb-3">
+                                    <label>Quantity PCS</label>
+                                    <input type="number" name="qty_pcs" class="form-control form-control-sm input-highlight"
+                                           value="{{ $bill->qty_pcs }}">
+                                </div>
                             </div>
                         </div>
 
-                        <h6 class="mt-4">Expenses</h6>
-                        @foreach($expenseTypes as $i => $exp)
-                            <div class="row mb-2">
-                                <div class="col-md-1">{{ $i+1 }}</div>
-                                <div class="col-md-7"><label>{{ $exp }}</label></div>
-                                <div class="col-md-4">
-                                    <input type="number" step="0.01" min="0"
-                                           name="expenses[{{ $exp }}]"
-                                           class="form-control form-control-sm expense-input"
-                                           value="{{ $expenses[$exp] ?? 0 }}">
+                        {{-- Bank Accounts Section --}}
+                        <div class="form-section">
+                            <h5 class="section-title">🏦 Bank Accounts</h5>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="required-field">VAT Account</label>
+                                    <select name="from_account_id" class="form-control form-control-sm readonly-field" readonly>
+                                        @foreach($accounts as $account)
+                                            <option value="{{ $account->id }}" {{ $bill->from_account_id == $account->id ? 'selected' : '' }}>
+                                                {{ $account->name }}
+                                                <span class="account-balance">(Balance: {{ number_format($account->balance, 2) }})</span>
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                    <small class="text-info">
+                                        <i class="fas fa-info-circle me-1"></i>
+                                        For VAT & Other expenses (Auto-managed)
+                                    </small>
+                                </div>
+
+                                <div class="col-md-6 mb-3">
+                                    <label class="required-field">Main Account</label>
+                                    <select name="account_id" class="form-control form-control-sm readonly-field" readonly>
+                                        @foreach($accounts as $account)
+                                            <option value="{{ $account->id }}"
+                                                {{ ($bill->account_id == $account->id) || (str_contains(strtolower($account->name), 'dhaka') && !$bill->account_id) ? 'selected' : '' }}>
+                                                {{ $account->name }}
+                                                <span class="account-balance">(Balance: {{ number_format($account->balance,2) }})</span>
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                    <small class="text-info">
+                                        <i class="fas fa-info-circle me-1"></i>
+                                        For other expenses (Auto-managed)
+                                    </small>
                                 </div>
                             </div>
-                        @endforeach
+                        </div>
 
-                        <button type="submit" class="btn btn-primary btn-sm mt-3">Update</button>
-                        <a href="{{ route('export-bills.index') }}" class="btn btn-secondary btn-sm mt-3">Back</a>
+                        {{-- Expenses Section --}}
+                        <div class="form-section">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h5 class="section-title mb-0">💰 Expenses Breakdown</h5>
+                                <span class="expense-badge">{{ count($expenseTypes) }} Expense Types</span>
+                            </div>
+
+                            @php
+                                $specialExpenses = [
+                                    'Bank C & F Vat & Others (As Per Receipt)' => 'vatAccount'
+                                ];
+                            @endphp
+
+                            @foreach($expenseTypes as $i => $exp)
+                                <div class="row mb-2 expense-row" data-expense-type="{{ $exp }}">
+                                    <div class="col-md-1 d-flex align-items-center justify-content-center">
+                                        <span class="badge bg-primary rounded-circle">{{ $i+1 }}</span>
+                                    </div>
+                                    <div class="col-md-7 d-flex align-items-center">
+                                        <div>
+                                            <label class="mb-1">{{ $exp }}</label>
+                                            @if(isset($specialExpenses[$exp]))
+                                                <small class="text-info d-block">
+                                                    <i class="fas fa-university me-1"></i>
+                                                    Deducts from VAT Account
+                                                </small>
+                                            @else
+                                                <small class="text-success d-block">
+                                                    <i class="fas fa-university me-1"></i>
+                                                    Deducts from Main Account
+                                                </small>
+                                            @endif
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4 d-flex align-items-center">
+                                        <div class="input-group input-group-sm">
+                                            <span class="input-group-text">৳</span>
+                                            <input type="number" step="0.01" min="0"
+                                                   name="expenses[{{ $exp }}]"
+                                                   class="form-control form-control-sm expense-input input-highlight"
+                                                   value="{{ $expenses[$exp] ?? 0 }}"
+                                                   onkeydown="return event.key !== 'Enter';">
+                                        </div>
+                                    </div>
+                                </div>
+                            @endforeach
+
+                            {{-- Total Calculation Display --}}
+                            <div class="total-display mt-4">
+                                <div class="row text-center">
+                                    <div class="col-md-4">
+                                        <h6 class="mb-1">VAT & Other Amount</h6>
+                                        <h4 id="vatTotal">{{ number_format($expenses['Bank C & F Vat & Others (As Per Receipt)'] ?? 0, 2) }}</h4>
+                                        <small>VAT Account</small>
+                                    </div>
+                                    <div class="col-md-4">
+                                        @php
+                                            $otherTotal = 0;
+                                            foreach($expenses as $type => $amount) {
+                                                if($type !== 'Bank C & F Vat & Others (As Per Receipt)') {
+                                                    $otherTotal += $amount;
+                                                }
+                                            }
+                                        @endphp
+                                        <h6 class="mb-1">Other Expenses</h6>
+                                        <h4 id="otherTotal">{{ number_format($otherTotal, 2) }}</h4>
+                                        <small>Main Account</small>
+                                    </div>
+                                    <div class="col-md-4">
+                                        @php
+                                            $grandTotal = ($expenses['Bank C & F Vat & Others (As Per Receipt)'] ?? 0) + $otherTotal;
+                                        @endphp
+                                        <h6 class="mb-1">Grand Total</h6>
+                                        <h4 id="grandTotal">{{ number_format($grandTotal, 2) }}</h4>
+                                        <small>Total Deduction</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {{-- Form Actions --}}
+                        <div class="row mt-4">
+                            <div class="col-md-12 text-center">
+                                <button type="submit" class="btn update-btn me-3">
+                                    <i class="fas fa-save me-2"></i>Update Export Bill
+                                </button>
+                                <a href="{{ route('export-bills.index') }}" class="btn btn-light back-btn">
+                                    <i class="fas fa-arrow-left me-2"></i>Back to List
+                                </a>
+                            </div>
+                        </div>
                     </form>
+
+                    <div id="formAlert" class="mt-4"></div>
                 </div>
             </div>
         </div>
@@ -140,31 +347,97 @@
 
 @section('scripts')
     <script src="{{ asset('assets/src/plugins/src/sweetalerts2/sweetalerts2.min.js') }}"></script>
+    <script src="https://kit.fontawesome.com/your-fontawesome-kit.js"></script>
     <script>
-        $(function(){
-            $('#importBillForm').submit(function(e){
+        $(function () {
+            // Prevent Enter key submission
+            $('#exportBillForm').on('keydown', 'input, select, textarea', function(e) {
+                if (e.key === 'Enter' || e.keyCode === 13) {
+                    e.preventDefault();
+                    return false;
+                }
+            });
+
+            // Calculate totals when expense values change
+            function calculateTotals() {
+                let vatTotal = 0;
+                let otherTotal = 0;
+                const vatType = 'Bank C & F Vat & Others (As Per Receipt)';
+
+                $('.expense-input').each(function() {
+                    let value = parseFloat($(this).val()) || 0;
+                    let expenseType = $(this).closest('.expense-row').data('expense-type');
+
+                    if (expenseType === vatType) {
+                        vatTotal += value;
+                    } else {
+                        otherTotal += value;
+                    }
+                });
+
+                $('#vatTotal').text(vatTotal.toFixed(2));
+                $('#otherTotal').text(otherTotal.toFixed(2));
+                $('#grandTotal').text((vatTotal + otherTotal).toFixed(2));
+            }
+
+            // Bind calculation to expense inputs
+            $('.expense-input').on('input', calculateTotals);
+
+            // Form submission
+            $('#exportBillForm').submit(function(e) {
                 e.preventDefault();
+
                 let $form = $(this);
                 let $submitBtn = $form.find('button[type="submit"]');
-                $submitBtn.prop('disabled', true);
+                let originalText = $submitBtn.html();
+
+                // Disable button and show loading
+                $submitBtn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-2"></i>Updating...');
 
                 $.ajax({
                     url: "{{ route('export-bills.update', $bill->id) }}",
                     type: "POST",
                     data: $form.serialize(),
-                    success: function(res){
-                        Swal.fire("Success", res.message ?? "Bill updated successfully!", "success")
-                            .then(() => window.location.href = "{{ route('export-bills.index') }}");
+                    success: function(res) {
+                        Swal.fire({
+                            icon: "success",
+                            title: "Success!",
+                            text: res.message || "Export Bill updated successfully!",
+                            showConfirmButton: false,
+                            timer: 2000,
+                            background: '#f8f9fa',
+                            iconColor: '#28a745'
+                        }).then(() => {
+                            window.location.href = "{{ route('export-bills.index') }}";
+                        });
                     },
-                    error: function(xhr){
+                    error: function(xhr) {
                         let errors = xhr.responseJSON?.errors;
-                        let msg = errors ? Object.values(errors).join("<br>") : (xhr.responseJSON?.message ?? "Something went wrong.");
-                        Swal.fire("Error", msg, "error");
+                        let msg = "Something went wrong. Please try again.";
+
+                        if (errors) {
+                            msg = Object.values(errors).map(error => Array.isArray(error) ? error[0] : error).join("<br>");
+                        } else if (xhr.responseJSON?.message) {
+                            msg = xhr.responseJSON.message;
+                        }
+
+                        Swal.fire({
+                            icon: "error",
+                            title: "Error",
+                            html: msg,
+                            background: '#f8f9fa',
+                            iconColor: '#dc3545'
+                        });
                     },
-                    complete: function(){
-                        $submitBtn.prop('disabled', false);
+                    complete: function() {
+                        $submitBtn.prop('disabled', false).html(originalText);
                     }
                 });
+            });
+
+            // Add animation to form sections
+            $('.form-section').each(function(index) {
+                $(this).delay(100 * index).animate({ opacity: 1 }, 500);
             });
         });
     </script>
