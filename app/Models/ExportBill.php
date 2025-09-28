@@ -22,6 +22,7 @@ class ExportBill extends Model
         'be_no',
         'be_date',
         'qty_pcs',
+        'from_account_id'
     ];
 
     protected $casts = [
