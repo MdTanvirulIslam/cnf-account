@@ -18,15 +18,13 @@
             border-bottom: 2px solid #e9ecef;
         }
         .form-card {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: white;
             border: none;
-            border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
         }
         .form-card .card-body {
-            background: white;
-            margin: 1px;
-            border-radius: 14px;
+            padding: 25px;
         }
         .expense-row {
             transition: all 0.3s ease;
@@ -56,15 +54,15 @@
             transform: translateY(-2px);
         }
         .expense-badge {
-            background: linear-gradient(45deg, #667eea, #764ba2);
+            background: #007bff;
             color: white;
             padding: 3px 8px;
             border-radius: 12px;
             font-size: 0.75em;
         }
         .total-display {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
+            background: #f8f9fa;
+            border: 2px solid #e9ecef;
             border-radius: 10px;
             padding: 15px;
             margin-top: 20px;
@@ -75,7 +73,7 @@
             color: #6c757d;
         }
         .update-btn {
-            background: linear-gradient(45deg, #28a745, #20c997);
+            background: #28a745;
             border: none;
             border-radius: 25px;
             padding: 10px 30px;
@@ -84,16 +82,29 @@
         }
         .update-btn:hover {
             transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(40, 167, 69, 0.4);
+            box-shadow: 0 5px 15px rgba(40,167,69,0.3);
+            background: #218838;
         }
-        .back-btn {
+        .cancel-btn {
             border-radius: 25px;
             padding: 10px 30px;
             font-weight: 600;
         }
-        .edit-indicator {
-            background: linear-gradient(45deg, #ff6b6b, #ffa726);
+        .expense-number {
+            background: #007bff;
             color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+        .edit-indicator {
+            background: #ffc107;
+            color: #212529;
             padding: 5px 15px;
             border-radius: 20px;
             font-size: 0.8em;
@@ -110,13 +121,13 @@
                     <div class="row mb-4">
                         <div class="col-md-6">
                             <h4 class="card-title mb-1">✏️ Edit Export Bill</h4>
-                            <p class="text-muted mb-0">Update export bill #{{ $bill->bill_no }} - {{ $bill->buyer->name ?? 'N/A' }}</p>
+                            <p class="text-muted mb-0">Update export bill #{{ $bill->bill_no }}</p>
                         </div>
                         <div class="col-md-6 d-flex justify-content-end align-items-center">
                             <span class="edit-indicator me-3">
                                 <i class="fas fa-edit me-1"></i>Editing Mode
                             </span>
-                            <a href="{{ route('export-bills.index') }}" class="btn btn-info btn-rounded mb-2">
+                            <a href="{{ route('export-bills.index') }}" class="btn btn-info btn-rounded">
                                 <i class="fas fa-list me-2"></i>View All Bills
                             </a>
                         </div>
@@ -220,7 +231,7 @@
                                             </option>
                                         @endforeach
                                     </select>
-                                    <small class="text-info">
+                                    <small class="text-muted">
                                         <i class="fas fa-info-circle me-1"></i>
                                         For VAT & Other expenses (Auto-managed)
                                     </small>
@@ -237,7 +248,7 @@
                                             </option>
                                         @endforeach
                                     </select>
-                                    <small class="text-info">
+                                    <small class="text-muted">
                                         <i class="fas fa-info-circle me-1"></i>
                                         For other expenses (Auto-managed)
                                     </small>
@@ -248,7 +259,7 @@
                         {{-- Expenses Section --}}
                         <div class="form-section">
                             <div class="d-flex justify-content-between align-items-center mb-3">
-                                <h5 class="section-title mb-0">💰 Expenses Breakdown</h5>
+                                <h5 class="section-title mb-0">💰 Expenses</h5>
                                 <span class="expense-badge">{{ count($expenseTypes) }} Expense Types</span>
                             </div>
 
@@ -259,27 +270,25 @@
                             @endphp
 
                             @foreach($expenseTypes as $i => $exp)
-                                <div class="row mb-2 expense-row" data-expense-type="{{ $exp }}">
-                                    <div class="col-md-1 d-flex align-items-center justify-content-center">
-                                        <span class="badge bg-primary rounded-circle">{{ $i+1 }}</span>
+                                <div class="row mb-2 expense-row align-items-center" data-expense-type="{{ $exp }}">
+                                    <div class="col-md-1 d-flex justify-content-center">
+                                        <div class="expense-number">{{ $i+1 }}</div>
                                     </div>
-                                    <div class="col-md-7 d-flex align-items-center">
-                                        <div>
-                                            <label class="mb-1">{{ $exp }}</label>
-                                            @if(isset($specialExpenses[$exp]))
-                                                <small class="text-info d-block">
-                                                    <i class="fas fa-university me-1"></i>
-                                                    Deducts from VAT Account
-                                                </small>
-                                            @else
-                                                <small class="text-success d-block">
-                                                    <i class="fas fa-university me-1"></i>
-                                                    Deducts from Main Account
-                                                </small>
-                                            @endif
-                                        </div>
+                                    <div class="col-md-7">
+                                        <label class="mb-1">{{ $exp }}</label>
+                                        @if(isset($specialExpenses[$exp]))
+                                            <small class="text-info d-block">
+                                                <i class="fas fa-university me-1"></i>
+                                                Deducts from VAT Account
+                                            </small>
+                                        @else
+                                            <small class="text-success d-block">
+                                                <i class="fas fa-university me-1"></i>
+                                                Deducts from Main Account
+                                            </small>
+                                        @endif
                                     </div>
-                                    <div class="col-md-4 d-flex align-items-center">
+                                    <div class="col-md-4">
                                         <div class="input-group input-group-sm">
                                             <span class="input-group-text">৳</span>
                                             <input type="number" step="0.01" min="0"
@@ -293,12 +302,12 @@
                             @endforeach
 
                             {{-- Total Calculation Display --}}
-                            <div class="total-display mt-4">
-                                <div class="row text-center">
+                            <div class="total-display">
+                                <h6 class="card-title">Total Amount Breakdown</h6>
+                                <div class="row">
                                     <div class="col-md-4">
-                                        <h6 class="mb-1">VAT & Other Amount</h6>
-                                        <h4 id="vatTotal">{{ number_format($expenses['Bank C & F Vat & Others (As Per Receipt)'] ?? 0, 2) }}</h4>
-                                        <small>VAT Account</small>
+                                        <strong>VAT Amount:</strong>
+                                        <span id="vatTotal">{{ number_format($expenses['Bank C & F Vat & Others (As Per Receipt)'] ?? 0, 2) }}</span>
                                     </div>
                                     <div class="col-md-4">
                                         @php
@@ -309,17 +318,15 @@
                                                 }
                                             }
                                         @endphp
-                                        <h6 class="mb-1">Other Expenses</h6>
-                                        <h4 id="otherTotal">{{ number_format($otherTotal, 2) }}</h4>
-                                        <small>Main Account</small>
+                                        <strong>Other Amount:</strong>
+                                        <span id="otherTotal">{{ number_format($otherTotal, 2) }}</span>
                                     </div>
                                     <div class="col-md-4">
                                         @php
                                             $grandTotal = ($expenses['Bank C & F Vat & Others (As Per Receipt)'] ?? 0) + $otherTotal;
                                         @endphp
-                                        <h6 class="mb-1">Grand Total</h6>
-                                        <h4 id="grandTotal">{{ number_format($grandTotal, 2) }}</h4>
-                                        <small>Total Deduction</small>
+                                        <strong>Grand Total:</strong>
+                                        <span id="grandTotal">{{ number_format($grandTotal, 2) }}</span>
                                     </div>
                                 </div>
                             </div>
@@ -328,10 +335,10 @@
                         {{-- Form Actions --}}
                         <div class="row mt-4">
                             <div class="col-md-12 text-center">
-                                <button type="submit" class="btn update-btn me-3">
+                                <button type="submit" class="btn btn-info btn-rounded _effect--ripple waves-effect waves-light">
                                     <i class="fas fa-save me-2"></i>Update Export Bill
                                 </button>
-                                <a href="{{ route('export-bills.index') }}" class="btn btn-light back-btn">
+                                <a href="{{ route('export-bills.index') }}" class="btn btn-light cancel-btn">
                                     <i class="fas fa-arrow-left me-2"></i>Back to List
                                 </a>
                             </div>
@@ -404,7 +411,7 @@
                             title: "Success!",
                             text: res.message || "Export Bill updated successfully!",
                             showConfirmButton: false,
-                            timer: 2000,
+                            timer: 1500,
                             background: '#f8f9fa',
                             iconColor: '#28a745'
                         }).then(() => {
@@ -433,11 +440,6 @@
                         $submitBtn.prop('disabled', false).html(originalText);
                     }
                 });
-            });
-
-            // Add animation to form sections
-            $('.form-section').each(function(index) {
-                $(this).delay(100 * index).animate({ opacity: 1 }, 500);
             });
         });
     </script>

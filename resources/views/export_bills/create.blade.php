@@ -18,15 +18,13 @@
             border-bottom: 2px solid #e9ecef;
         }
         .form-card {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: white;
             border: none;
-            border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
         }
         .form-card .card-body {
-            background: white;
-            margin: 1px;
-            border-radius: 14px;
+            padding: 25px;
         }
         .expense-row {
             transition: all 0.3s ease;
@@ -56,15 +54,15 @@
             transform: translateY(-2px);
         }
         .expense-badge {
-            background: linear-gradient(45deg, #667eea, #764ba2);
+            background: #007bff;
             color: white;
             padding: 3px 8px;
             border-radius: 12px;
             font-size: 0.75em;
         }
         .total-display {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
+            background: #f8f9fa;
+            border: 2px solid #e9ecef;
             border-radius: 10px;
             padding: 15px;
             margin-top: 20px;
@@ -75,7 +73,7 @@
             color: #6c757d;
         }
         .submit-btn {
-            background: linear-gradient(45deg, #667eea, #764ba2);
+            background: #007bff;
             border: none;
             border-radius: 25px;
             padding: 10px 30px;
@@ -84,12 +82,25 @@
         }
         .submit-btn:hover {
             transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+            box-shadow: 0 5px 15px rgba(0,123,255,0.3);
+            background: #0056b3;
         }
-        .back-btn {
+        .cancel-btn {
             border-radius: 25px;
             padding: 10px 30px;
             font-weight: 600;
+        }
+        .expense-number {
+            background: #007bff;
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 0.9rem;
         }
     </style>
 @endsection
@@ -101,11 +112,11 @@
                 <div class="card-body">
                     <div class="row mb-4">
                         <div class="col-md-6">
-                            <h4 class="card-title mb-1">📦 Export Bill Entry Form</h4>
-                            <p class="text-muted mb-0">Create a new export bill with expense details</p>
+                            <h4 class="card-title mb-1">📦 Export Bill Creation</h4>
+                            <p class="text-muted mb-0">Create a new export bill with detailed expense breakdown</p>
                         </div>
                         <div class="col-md-6 d-flex justify-content-end align-items-center">
-                            <a href="{{ route('export-bills.index') }}" class="btn btn-info btn-rounded mb-2 me-2">
+                            <a href="{{ route('export-bills.index') }}" class="btn btn-info btn-rounded">
                                 <i class="fas fa-list me-2"></i>View Export Bills
                             </a>
                         </div>
@@ -148,7 +159,7 @@
                                 <div class="col-md-3 mb-3">
                                     <label class="required-field">USD Amount</label>
                                     <input type="number" step="0.01" name="usd" class="form-control form-control-sm input-highlight" required>
-                                    <small class="text-muted">Enter amount in USD</small>
+                                    <small class="text-muted">Amount in USD</small>
                                 </div>
                                 <div class="col-md-3 mb-3">
                                     <label class="required-field">Total CTN</label>
@@ -179,7 +190,7 @@
                             <div class="row">
                                 <div class="col-md-6 mb-3">
                                     <label class="required-field">VAT Account</label>
-                                    <select name="from_account_id" id="from_account_id" class="form-control form-control-sm readonly-field" readonly>
+                                    <select name="from_account_id" class="form-control form-control-sm readonly-field" readonly>
                                         @foreach($accounts as $account)
                                             <option value="{{ $account->id }}"
                                                 {{ str_contains(strtolower($account->name), 'sonali') ? 'selected' : '' }}>
@@ -188,14 +199,14 @@
                                             </option>
                                         @endforeach
                                     </select>
-                                    <small class="text-info">
+                                    <small class="text-muted">
                                         <i class="fas fa-info-circle me-1"></i>
                                         For VAT & Other expenses (Auto-selected Sonali Bank)
                                     </small>
                                 </div>
                                 <div class="col-md-6 mb-3">
                                     <label class="required-field">Main Account</label>
-                                    <select name="account_id" id="account_id" class="form-control form-control-sm readonly-field" readonly>
+                                    <select name="account_id" class="form-control form-control-sm readonly-field" readonly>
                                         @foreach($accounts as $account)
                                             <option value="{{ $account->id }}"
                                                 {{ str_contains(strtolower($account->name), 'dhaka') ? 'selected' : '' }}>
@@ -204,7 +215,7 @@
                                             </option>
                                         @endforeach
                                     </select>
-                                    <small class="text-info">
+                                    <small class="text-muted">
                                         <i class="fas fa-info-circle me-1"></i>
                                         For other expenses (Auto-selected Dhaka Bank)
                                     </small>
@@ -215,7 +226,7 @@
                         {{-- Expenses Section --}}
                         <div class="form-section">
                             <div class="d-flex justify-content-between align-items-center mb-3">
-                                <h5 class="section-title mb-0">💰 Expenses Breakdown</h5>
+                                <h5 class="section-title mb-0">💰 Expenses</h5>
                                 <span class="expense-badge">{{ count($expenseTypes) }} Expense Types</span>
                             </div>
 
@@ -226,27 +237,25 @@
                             @endphp
 
                             @foreach($expenseTypes as $i => $exp)
-                                <div class="row mb-2 expense-row" data-expense-type="{{ $exp }}">
-                                    <div class="col-md-1 d-flex align-items-center justify-content-center">
-                                        <span class="badge bg-primary rounded-circle">{{ $i+1 }}</span>
+                                <div class="row mb-2 expense-row align-items-center" data-expense-type="{{ $exp }}">
+                                    <div class="col-md-1 d-flex justify-content-center">
+                                        <div class="expense-number">{{ $i+1 }}</div>
                                     </div>
-                                    <div class="col-md-7 d-flex align-items-center">
-                                        <div>
-                                            <label class="mb-1">{{ $exp }}</label>
-                                            @if(isset($specialExpenses[$exp]))
-                                                <small class="text-info d-block">
-                                                    <i class="fas fa-university me-1"></i>
-                                                    Deducts from VAT Account (Sonali Bank)
-                                                </small>
-                                            @else
-                                                <small class="text-success d-block">
-                                                    <i class="fas fa-university me-1"></i>
-                                                    Deducts from Main Account (Dhaka Bank)
-                                                </small>
-                                            @endif
-                                        </div>
+                                    <div class="col-md-7">
+                                        <label class="mb-1">{{ $exp }}</label>
+                                        @if(isset($specialExpenses[$exp]))
+                                            <small class="text-info d-block">
+                                                <i class="fas fa-university me-1"></i>
+                                                Deducts from VAT Account
+                                            </small>
+                                        @else
+                                            <small class="text-success d-block">
+                                                <i class="fas fa-university me-1"></i>
+                                                Deducts from Main Account
+                                            </small>
+                                        @endif
                                     </div>
-                                    <div class="col-md-4 d-flex align-items-center">
+                                    <div class="col-md-4">
                                         <div class="input-group input-group-sm">
                                             <span class="input-group-text">৳</span>
                                             <input type="number" step="0.01" min="0"
@@ -259,22 +268,20 @@
                             @endforeach
 
                             {{-- Total Calculation Display --}}
-                            <div class="total-display mt-4">
-                                <div class="row text-center">
+                            <div class="total-display">
+                                <h6 class="card-title">Total Amount Breakdown</h6>
+                                <div class="row">
                                     <div class="col-md-4">
-                                        <h6 class="mb-1">VAT & Other Amount</h6>
-                                        <h4 id="vatTotal">0.00</h4>
-                                        <small>Sonali Bank</small>
+                                        <strong>VAT Amount:</strong>
+                                        <span id="vatTotal">0.00</span>
                                     </div>
                                     <div class="col-md-4">
-                                        <h6 class="mb-1">Other Expenses</h6>
-                                        <h4 id="otherTotal">0.00</h4>
-                                        <small>Dhaka Bank</small>
+                                        <strong>Other Amount:</strong>
+                                        <span id="otherTotal">0.00</span>
                                     </div>
                                     <div class="col-md-4">
-                                        <h6 class="mb-1">Grand Total</h6>
-                                        <h4 id="grandTotal">0.00</h4>
-                                        <small>Total Deduction</small>
+                                        <strong>Grand Total:</strong>
+                                        <span id="grandTotal">0.00</span>
                                     </div>
                                 </div>
                             </div>
@@ -283,10 +290,10 @@
                         {{-- Form Actions --}}
                         <div class="row mt-4">
                             <div class="col-md-12 text-center">
-                                <button type="submit" class="btn submit-btn me-3">
+                                <button type="submit" class="btn btn-info btn-rounded _effect--ripple waves-effect waves-light">
                                     <i class="fas fa-paper-plane me-2"></i>Create Export Bill
                                 </button>
-                                <a href="{{ route('export-bills.index') }}" class="btn btn-light back-btn">
+                                <a href="{{ route('export-bills.index') }}" class="btn btn-light cancel-btn">
                                     <i class="fas fa-arrow-left me-2"></i>Back to List
                                 </a>
                             </div>
@@ -350,7 +357,7 @@
                 let originalText = $submitBtn.html();
 
                 // Disable button and show loading
-                $submitBtn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-2"></i>Processing...');
+                $submitBtn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-2"></i>Creating...');
 
                 $.ajax({
                     url: "{{ route('export-bills.store') }}",
@@ -362,7 +369,7 @@
                             title: "Success!",
                             text: res.message || "Export Bill created successfully!",
                             showConfirmButton: false,
-                            timer: 2000,
+                            timer: 1500,
                             background: '#f8f9fa',
                             iconColor: '#28a745'
                         }).then(() => {
@@ -391,11 +398,6 @@
                         $submitBtn.prop('disabled', false).html(originalText);
                     }
                 });
-            });
-
-            // Add animation to form sections
-            $('.form-section').each(function(index) {
-                $(this).delay(100 * index).animate({ opacity: 1 }, 500);
             });
         });
     </script>
