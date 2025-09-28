@@ -23,6 +23,10 @@ class ImportBill extends Model
         'be_date',
         'scan_fee',
         'doc_fee',
+        'account_id',
+        'ait_account_id',
+        'port_account_id'
+
     ];
 
     protected $casts = [
