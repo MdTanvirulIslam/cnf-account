@@ -183,7 +183,7 @@ class TransactionController extends Controller
      */
     private function validateReturnAmount(Request $request, $transactionId = null)
     {
-        $employeeId = $employeeId;
+        $employeeId = $request->employee_id;
         $returnAmount = $request->amount;
 
         // Get total received amount for this employee (all dates)
