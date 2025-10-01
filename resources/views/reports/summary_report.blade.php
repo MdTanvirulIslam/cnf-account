@@ -11,8 +11,14 @@
                             <input type="month" id="month" name="month" class="form-control form-control-sm"
                                    value="{{ $selectedMonth->format('Y-m') }}">
                         </div>
-                        <div class="col-md-2 d-flex align-items-end">
-                            <button type="button" id="resetFilter" class="btn btn-secondary btn-sm ml-2">Reset</button>
+                        <div class="col-md-4 d-flex align-items-end gap-2">
+                            <button type="button" id="resetFilter" class="btn btn-secondary btn-sm">Reset</button>
+                            <button type="button" id="printBtn" class="btn btn-info btn-sm">
+                                <i class="fas fa-print"></i> Print
+                            </button>
+                            <button type="button" id="excelBtn" class="btn btn-success btn-sm">
+                                <i class="fas fa-file-excel"></i> Excel
+                            </button>
                         </div>
                     </form>
                 </div>
@@ -39,6 +45,14 @@
                     z-index: 1000; justify-content: center; align-items: center;
                 }
                 .negative { color: red; }
+                .action-buttons { margin-bottom: 15px; text-align: right; }
+                @media print {
+                    .no-print { display: none !important; }
+                    body { -webkit-print-color-adjust: exact; }
+                    .invoice-table th { background-color: #f4f4f4 !important; }
+                    .total-row td { background: #f9f9f9 !important; }
+                    .section-header { background-color: #e9ecef !important; }
+                }
             </style>
 
             <div class="loading-overlay" id="loadingOverlay">
@@ -145,6 +159,7 @@
 @endsection
 
 @section('scripts')
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script>
         $(document).ready(function() {
             const originalAction = "{{ route('summary.report') }}";
@@ -158,6 +173,16 @@
             $('#resetFilter').on('click', function() {
                 $('#month').val('{{ \Carbon\Carbon::now()->format('Y-m') }}');
                 loadReportData();
+            });
+
+            // Print button functionality
+            $('#printBtn').on('click', function() {
+                printReport();
+            });
+
+            // Excel download button functionality
+            $('#excelBtn').on('click', function() {
+                downloadExcel();
             });
 
             // Function to load report data via AJAX
@@ -218,6 +243,118 @@
 
                 // Update print date
                 $('.invoice-info .right strong').html(`Date: ${new Date().toLocaleDateString('en-GB')}`);
+            }
+
+            // Print function
+            function printReport() {
+                const originalContent = $('body').html();
+                const reportContent = $('#reportContent').html();
+
+                // Create print window
+                const printWindow = window.open('', '_blank', 'width=1000,height=600');
+                printWindow.document.write(`
+                    <!DOCTYPE html>
+                    <html>
+                    <head>
+                        <title>Monthly Summary Report - {{ $selectedMonth->format('M Y') }}</title>
+                        <style>
+                            body { font-family: Arial, sans-serif; margin: 20px; }
+                            .company-header { text-align: center; }
+                            .company-header h1 { margin: 0; font-size: 22px; font-weight: bold; }
+                            .company-header p { margin: 2px 0; font-size: 13px; color: #333; }
+                            .invoice-info { display: flex; justify-content: space-between; margin-top: 10px; font-size: 14px; }
+                            .invoice-info div { width: 48%; }
+                            .invoice-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 10px; }
+                            .invoice-table th, .invoice-table td { border: 1px solid #000; padding: 6px 8px; }
+                            .invoice-table th { background-color: #f4f4f4; text-align: left; }
+                            .right { text-align: right; }
+                            .center { text-align: center; }
+                            .total-row td { font-weight: bold; background: #f9f9f9; }
+                            .section-header { font-weight: bold; background-color: #e9ecef; }
+                            .negative { color: red; }
+                            @media print {
+                                body { margin: 0; }
+                                .invoice-table th { background-color: #f4f4f4 !important; }
+                                .total-row td { background: #f9f9f9 !important; }
+                                .section-header { background-color: #e9ecef !important; }
+                            }
+                        </style>
+                    </head>
+                    <body>
+                        ${reportContent}
+                        <script>
+                            window.onload = function() {
+                                window.print();
+                                setTimeout(function() {
+                                    window.close();
+                                }, 500);
+                            };
+                        <\/script>
+                    </body>
+                    </html>
+                `);
+                printWindow.document.close();
+            }
+
+            // Excel download function
+            function downloadExcel() {
+                // Get current month for filename
+                const month = $('#month').val();
+                const fileName = `Monthly_Summary_Report_${month}.xlsx`;
+
+                // Prepare data for Excel
+                const excelData = [
+                    ['MULTI FABS LTD'],
+                    ['(SELF C&F AGENTS)'],
+                    ['314, SK. MUJIB ROAD, CHOWDHURY BHABAN (4TH FLOOR) AGRABAD, CHITTAGONG.'],
+                    [''],
+                    ['CASH RECEIVED AND PAYMENT STATEMENT FOR THE MONTH', $('.invoice-info strong:first').text().split('MONTH ')[1]],
+                    ['Date:', $('.invoice-info .right strong').text().split('Date: ')[1]],
+                    [''],
+                    ['SL', 'DESCRIPTION', 'TOTAL TAKA', 'G.TOTAL TAKA.']
+                ];
+
+                // Add table rows
+                $('.invoice-table tbody tr').each(function() {
+                    const row = [];
+                    $(this).find('td, th').each(function() {
+                        let text = $(this).text().trim();
+                        // Remove formatting from numbers for Excel
+                        text = text.replace(/,/g, '');
+                        row.push(text);
+                    });
+                    excelData.push(row);
+                });
+
+                // Add footer
+                $('.invoice-table tfoot tr').each(function() {
+                    const row = [];
+                    $(this).find('th, td').each(function() {
+                        let text = $(this).text().trim();
+                        text = text.replace(/,/g, '');
+                        row.push(text);
+                    });
+                    excelData.push(row);
+                });
+
+                // Create worksheet
+                const ws = XLSX.utils.aoa_to_sheet(excelData);
+
+                // Set column widths
+                const colWidths = [
+                    { wch: 5 },  // SL
+                    { wch: 60 }, // DESCRIPTION
+                    { wch: 15 }, // TOTAL TAKA
+                    { wch: 15 }  // G.TOTAL TAKA
+                ];
+                ws['!cols'] = colWidths;
+
+                // Create workbook and add worksheet
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, 'Monthly Summary');
+
+                // Generate and download Excel file
+                XLSX.writeFile(wb, fileName);
             }
         });
     </script>
