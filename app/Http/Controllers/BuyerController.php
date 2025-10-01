@@ -82,7 +82,6 @@ class BuyerController extends Controller
     {
         $request->validate([
             'name'    => 'required|string|max:255',
-            'email'   => 'email|unique:buyers,email',
             'phone'   => 'nullable|string|max:20',
             'address' => 'nullable|string|max:255',
             'company' => 'nullable|string|max:255',

@@ -140,18 +140,6 @@
                     return;
                 }
 
-                if (!email) {
-                    Swal.fire('Validation Error', 'Email is required.', 'warning');
-                    return;
-                }
-
-                // Email validation
-                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-                if (!emailRegex.test(email)) {
-                    Swal.fire('Validation Error', 'Please enter a valid email address.', 'warning');
-                    return;
-                }
-
                 // If all checks pass → submit via AJAX
                 const formData = $(this).serialize();
                 const isUpdate = !!$('#buyer_id').val();
