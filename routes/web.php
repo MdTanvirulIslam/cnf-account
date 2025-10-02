@@ -22,6 +22,7 @@ use App\Http\Controllers\ExportBillSummaryReportController;
 use App\Http\Controllers\EmployeeCashReportController;
 use App\Http\Controllers\SummaryReportController;
 use App\Http\Controllers\EmployeeDailyCashReportController;
+use App\Http\Controllers\ChartController;
 
 
 Route::get('/', function () {
@@ -91,6 +92,8 @@ Route::middleware(['auth','verified', CheckDomain::class, SetPageTitle::class])-
     Route::post('/employee-daily-cash-report/filter', [EmployeeDailyCashReportController::class, 'filter'])->name('employee-daily-cash-report.filter');
 
     Route::get('/summary/report', [SummaryReportController::class, 'index'])->name('summary.report');
+
+    Route::get('/chart-data', [ChartController::class, 'getExpenseData'])->name('chart.data');
 
 
 });
