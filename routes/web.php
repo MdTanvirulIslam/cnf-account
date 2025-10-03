@@ -23,15 +23,16 @@ use App\Http\Controllers\EmployeeCashReportController;
 use App\Http\Controllers\SummaryReportController;
 use App\Http\Controllers\EmployeeDailyCashReportController;
 use App\Http\Controllers\ChartController;
+use App\Http\Controllers\YearlyReportController;
 
 
 Route::get('/', function () {
     return view('auth.login');
 });
 
-Route::get('/dashboard', function () {
-    return view('dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
+Route::middleware(['auth','verified'])->group(function () {
+    Route::get('/dashboard', [YearlyReportController::class, 'index'])->name('dashboard');
+});
 
 Route::middleware(['auth','verified', CheckDomain::class, SetPageTitle::class])->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -94,6 +95,8 @@ Route::middleware(['auth','verified', CheckDomain::class, SetPageTitle::class])-
     Route::get('/summary/report', [SummaryReportController::class, 'index'])->name('summary.report');
 
     Route::get('/chart-data', [ChartController::class, 'getExpenseData'])->name('chart.data');
+
+
 
 
 });
