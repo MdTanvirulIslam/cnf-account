@@ -225,11 +225,7 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="widget-content">
-                            <div class="w-chart">
-                                <div id="hybrid_followers"></div>
-                            </div>
-                        </div>
+                        
                     </div>
                 </div>
                 <div class="col-xl-4 col-lg-4 col-md-4 col-sm-4 col-12 layout-spacing">
@@ -249,11 +245,7 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="widget-content">
-                            <div class="w-chart">
-                                <div id="hybrid_followers1"></div>
-                            </div>
-                        </div>
+
                     </div>
                 </div>
             </div>
