@@ -225,7 +225,7 @@
                                 </div>
                             </div>
                         </div>
-                        
+
                     </div>
                 </div>
                 <div class="col-xl-4 col-lg-4 col-md-4 col-sm-4 col-12 layout-spacing">
@@ -373,7 +373,7 @@
                     return response.json();
                 })
                 .then(data => {
-                    console.log('Chart data loaded:', data); // For debugging
+                    //console.log('Chart data loaded:', data); // For debugging
 
                     // Update chart series with dynamic data
                     chart.updateSeries([
