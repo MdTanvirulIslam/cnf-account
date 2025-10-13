@@ -365,8 +365,8 @@
                 let aitTotal = 0;
                 let portTotal = 0;
                 let otherTotal = 0;
-                let docFee = parseFloat($('#docFee').val()) || 0;
-                let scanFee = parseFloat($('#scanFee').val()) || 0;
+                //let docFee = parseFloat($('#docFee').val()) || 0;
+                //let scanFee = parseFloat($('#scanFee').val()) || 0;
 
                 $('.expense-input').each(function() {
                     let value = parseFloat($(this).val()) || 0;
@@ -382,7 +382,7 @@
                 });
 
                 // Add doc fee and scan fee to other total
-                otherTotal += docFee + scanFee;
+                //otherTotal += docFee + scanFee;
 
                 $('#aitTotal').text(aitTotal.toFixed(2));
                 $('#portTotal').text(portTotal.toFixed(2));

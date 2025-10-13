@@ -33,6 +33,7 @@ class ImportBillController extends Controller
         "Assistance Commissioner With Pion (Random Selection)",
         "Extra Expenses For Marine Policy",
         "Documents Expenses",
+        "Other Expense",
     ];
 
     // list view
@@ -234,9 +235,6 @@ class ImportBillController extends Controller
                 }
             }
 
-            // Add doc_fee and scan_fee
-            $otherAmount += floatval($request->doc_fee ?? 0);
-            $otherAmount += floatval($request->scan_fee ?? 0);
 
             // Create ImportBillExpenses
             foreach ($this->expenseTypes as $type) {
