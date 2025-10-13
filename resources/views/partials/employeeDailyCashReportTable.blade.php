@@ -35,9 +35,9 @@
     <div class="right"><strong> Report Date:</strong> {{ now()->format('d/m/Y') }}</div>
 </div>
 
-<table class="invoice-table" style="width: 100%; margin-top: 10px;">
+<table class="invoice-table">
     <thead>
-    <tr>
+    <tr style="page-break-inside: avoid; break-inside: avoid;">
         <th>SL</th>
         <th>Date</th>
         <th>Employee Name</th>
@@ -61,7 +61,7 @@
             $totalTransactions += $row->transaction_count;
         @endphp
 
-        <tr>
+        <tr style="page-break-inside: avoid; break-inside: avoid;">
             <td>{{ $sl++ }}</td>
             <td>{{ \Carbon\Carbon::parse($row->date)->format('d-m-Y') }}</td>
             <td>{{ $row->employee_name ?? 'N/A' }}</td>
@@ -71,15 +71,15 @@
             <td class="right">{{ number_format($finalAmount, 2) }}</td>
         </tr>
     @empty
-        <tr>
+        <tr style="page-break-inside: avoid; break-inside: avoid;">
             <td colspan="7" class="center">No Data Found for the selected date range and filters</td>
         </tr>
     @endforelse
     </tbody>
 
     @if($dailyTransactions->count() > 0)
-        <tfoot>
-        <tr class="total-row">
+        <tfoot style="display: table-footer-group;">
+        <tr class="total-row" style="page-break-inside: avoid; break-inside: avoid; page-break-before: avoid; break-before: avoid;">
             <td colspan="4" class="right"><strong>Grand Total:</strong></td>
             <td class="right"><strong>{{ number_format($totalReceive, 2) }}</strong></td>
             <td class="right"><strong>{{ number_format($totalReturn, 2) }}</strong></td>
@@ -90,7 +90,7 @@
 </table>
 
 @if($dailyTransactions->count() > 0)
-    <div class="footer-note">
+    <div class="footer-note" style="page-break-inside: avoid; break-inside: avoid;">
         <p><strong>Summary:</strong>
             {{ $dailyTransactions->count() }} daily record(s) found |
             Total Receive: {{ number_format($totalReceive, 2) }} |
