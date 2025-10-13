@@ -1,5 +1,34 @@
 @extends('layouts.layout')
-
+@section('styles')
+    <style>
+        .company-header { text-align: center; }
+        .company-header h1 { margin: 0; font-size: 22px; font-weight: bold; }
+        .company-header p { margin: 2px 0; font-size: 13px; color: #333; }
+        .invoice-info { display: flex; justify-content: space-between; margin-top: 10px; font-size: 14px; }
+        .invoice-info div { width: 48%; }
+        .invoice-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        .invoice-table th, .invoice-table td { border: 1px solid #000; padding: 6px 8px; }
+        .invoice-table th { background-color: #f4f4f4; text-align: left; }
+        .right { text-align: right; }
+        .center { text-align: center; }
+        .total-row td { font-weight: bold; background: #f9f9f9; }
+        .section-header { font-weight: bold; background-color: #e9ecef; }
+        .loading-overlay {
+            display: none; position: absolute; top: 0; left: 0;
+            width: 100%; height: 100%; background: rgba(255,255,255,0.8);
+            z-index: 1000; justify-content: center; align-items: center;
+        }
+        .negative { color: red; }
+        .action-buttons { margin-bottom: 15px; text-align: right; }
+        @media print {
+            .no-print { display: none !important; }
+            body { -webkit-print-color-adjust: exact; }
+            .invoice-table th { background-color: #f4f4f4 !important; }
+            .total-row td { background: #f9f9f9 !important; }
+            .section-header { background-color: #e9ecef !important; }
+        }
+    </style>
+@endsection
 @section('content')
     <div class="row layout-spacing">
         <div class="col-xl-12 layout-top-spacing">
@@ -26,34 +55,7 @@
         </div>
 
         <div class="col-xl-12 layout-top-spacing dc-report-table" id="reportContent">
-            <style>
-                .company-header { text-align: center; }
-                .company-header h1 { margin: 0; font-size: 22px; font-weight: bold; }
-                .company-header p { margin: 2px 0; font-size: 13px; color: #333; }
-                .invoice-info { display: flex; justify-content: space-between; margin-top: 10px; font-size: 14px; }
-                .invoice-info div { width: 48%; }
-                .invoice-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-                .invoice-table th, .invoice-table td { border: 1px solid #000; padding: 6px 8px; }
-                .invoice-table th { background-color: #f4f4f4; text-align: left; }
-                .right { text-align: right; }
-                .center { text-align: center; }
-                .total-row td { font-weight: bold; background: #f9f9f9; }
-                .section-header { font-weight: bold; background-color: #e9ecef; }
-                .loading-overlay {
-                    display: none; position: absolute; top: 0; left: 0;
-                    width: 100%; height: 100%; background: rgba(255,255,255,0.8);
-                    z-index: 1000; justify-content: center; align-items: center;
-                }
-                .negative { color: red; }
-                .action-buttons { margin-bottom: 15px; text-align: right; }
-                @media print {
-                    .no-print { display: none !important; }
-                    body { -webkit-print-color-adjust: exact; }
-                    .invoice-table th { background-color: #f4f4f4 !important; }
-                    .total-row td { background: #f9f9f9 !important; }
-                    .section-header { background-color: #e9ecef !important; }
-                }
-            </style>
+
 
             <div class="loading-overlay" id="loadingOverlay">
                 <div class="spinner-border text-primary" role="status">
@@ -161,7 +163,36 @@
 @section('scripts')
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script>
+        // Excel download button functionality
+
         $(document).ready(function() {
+
+
+            $('#excelBtn').on('click', function() {
+                // If we're using AJAX, we need to get the current data from the page
+                if ($('#month').val() !== "{{ $selectedMonth->format('Y-m') }}") {
+                    // We're viewing AJAX data, so we need to extract from current page
+                    downloadExcelFromCurrentPage();
+                } else {
+                    // We're viewing original page load data
+                    downloadExcel();
+                }
+            });
+
+            // Alternative function that extracts data from current page for AJAX updates
+            function downloadExcelFromCurrentPage() {
+                // Extract all data from the current visible page
+                const reportContent = document.getElementById('reportContent');
+
+                // This function would extract data from the current HTML
+                // Similar to the main downloadExcel function but reads from DOM
+
+                // For now, we'll use the main function which should work with both
+                downloadExcel();
+            }
+
+
+
             const originalAction = "{{ route('summary.report') }}";
 
             // Month change event
@@ -296,66 +327,11 @@
                 printWindow.document.close();
             }
 
-            // Excel download function
-            function downloadExcel() {
-                // Get current month for filename
-                const month = $('#month').val();
-                const fileName = `Monthly_Summary_Report_${month}.xlsx`;
 
-                // Prepare data for Excel
-                const excelData = [
-                    ['MULTI FABS LTD'],
-                    ['(SELF C&F AGENTS)'],
-                    ['314, SK. MUJIB ROAD, CHOWDHURY BHABAN (4TH FLOOR) AGRABAD, CHITTAGONG.'],
-                    [''],
-                    ['CASH RECEIVED AND PAYMENT STATEMENT FOR THE MONTH', $('.invoice-info strong:first').text().split('MONTH ')[1]],
-                    ['Date:', $('.invoice-info .right strong').text().split('Date: ')[1]],
-                    [''],
-                    ['SL', 'DESCRIPTION', 'TOTAL TAKA', 'G.TOTAL TAKA.']
-                ];
 
-                // Add table rows
-                $('.invoice-table tbody tr').each(function() {
-                    const row = [];
-                    $(this).find('td, th').each(function() {
-                        let text = $(this).text().trim();
-                        // Remove formatting from numbers for Excel
-                        text = text.replace(/,/g, '');
-                        row.push(text);
-                    });
-                    excelData.push(row);
-                });
 
-                // Add footer
-                $('.invoice-table tfoot tr').each(function() {
-                    const row = [];
-                    $(this).find('th, td').each(function() {
-                        let text = $(this).text().trim();
-                        text = text.replace(/,/g, '');
-                        row.push(text);
-                    });
-                    excelData.push(row);
-                });
 
-                // Create worksheet
-                const ws = XLSX.utils.aoa_to_sheet(excelData);
 
-                // Set column widths
-                const colWidths = [
-                    { wch: 5 },  // SL
-                    { wch: 60 }, // DESCRIPTION
-                    { wch: 15 }, // TOTAL TAKA
-                    { wch: 15 }  // G.TOTAL TAKA
-                ];
-                ws['!cols'] = colWidths;
-
-                // Create workbook and add worksheet
-                const wb = XLSX.utils.book_new();
-                XLSX.utils.book_append_sheet(wb, ws, 'Monthly Summary');
-
-                // Generate and download Excel file
-                XLSX.writeFile(wb, fileName);
-            }
         });
     </script>
 @endsection
