@@ -258,194 +258,197 @@
             }
 
             // Print functionality
+            // Print functionality
             function printReport() {
-                // Create print-friendly HTML
+                // Get the report content
+                const reportContent = document.getElementById('reportTable').cloneNode(true);
+
+                // Remove tfoot from the table to prevent repetition
+                const table = reportContent.querySelector('.invoice-table');
+                const tfoot = table.querySelector('tfoot');
+                const grandTotalRow = tfoot ? tfoot.innerHTML : '';
+
+                // Remove footer note to prevent repetition
+                const footerNote = reportContent.querySelector('.footer-note');
+                const summaryContent = footerNote ? footerNote.innerHTML : '';
+
+                if (tfoot) {
+                    tfoot.remove();
+                }
+                if (footerNote) {
+                    footerNote.remove();
+                }
+
+                // Create print window
                 const printWindow = window.open('', '_blank');
-                const reportContent = document.getElementById('reportTable').innerHTML;
-
                 printWindow.document.write(`
-                    <!DOCTYPE html>
-                    <html>
-                    <head>
-                        <title>Employee Daily Cash Report</title>
-                        <style>
-                            body {
-                                font-family: Arial, sans-serif;
-                                margin: 0;
-                                padding: 20px;
-                                color: #000;
-                                font-size: 12px;
-                            }
-                            .print-container {
-                                max-width: 100%;
-                            }
-                            .company-header {
-                                text-align: center;
-                                margin-bottom: 15px;
-                            }
-                            .company-header h1 {
-                                margin: 0;
-                                font-size: 20px;
-                                font-weight: bold;
-                            }
-                            .company-header p {
-                                margin: 2px 0;
-                                font-size: 12px;
-                            }
-                            .invoice-info {
-                                display: flex;
-                                justify-content: space-between;
-                                margin: 10px 0;
-                                font-size: 12px;
-                            }
-                            table {
-                                width: 100%;
-                                border-collapse: collapse;
-                                margin: 15px 0;
-                                font-size: 11px;
-                            }
-                            th, td {
-                                border: 1px solid #000;
-                                padding: 6px;
-                                text-align: left;
-                            }
-                            th {
-                                background-color: #f5f5f5;
-                                font-weight: bold;
-                            }
-                            .right {
-                                text-align: right;
-                            }
-                            .center {
-                                text-align: center;
-                            }
-                            .total-row {
-                                font-weight: bold;
-                                background-color: #e9ecef;
-                            page-break-inside: avoid;
-                            page-break-after: avoid;
-                            page-break-before: avoid;
-                            -webkit-print-color-adjust: exact;
-                            print-color-adjust: exact;
-                            color-adjust: exact;
-                            background: #e9ecef !important;
-                            position: relative;
-                            z-index: 100;
-                            break-inside: avoid;
-                            break-after: avoid;
-                                break-before: avoid;
-                            }
-                            .footer-note {
-                                margin-top: 20px;
-                                font-size: 11px;
-                                page-break-inside: avoid;
-                            }
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Employee Daily Cash Report</title>
+            <style>
+                body {
+                    font-family: Arial, sans-serif;
+                    margin: 0;
+                    padding: 20px;
+                    color: #000;
+                    font-size: 12px;
+                }
+                .print-container {
+                    max-width: 100%;
+                }
+                .company-header {
+                    text-align: center;
+                    margin-bottom: 15px;
+                }
+                .company-header h1 {
+                    margin: 0;
+                    font-size: 20px;
+                    font-weight: bold;
+                }
+                .company-header p {
+                    margin: 2px 0;
+                    font-size: 12px;
+                }
+                .invoice-info {
+                    display: flex;
+                    justify-content: space-between;
+                    margin: 10px 0;
+                    font-size: 12px;
+                }
+                table {
+                    width: 100%;
+                    border-collapse: collapse;
+                    margin: 15px 0;
+                    font-size: 11px;
+                }
+                th, td {
+                    border: 1px solid #000;
+                    padding: 6px;
+                    text-align: left;
+                }
+                th {
+                    background-color: #f5f5f5;
+                    font-weight: bold;
+                }
+                .right {
+                    text-align: right;
+                }
+                .center {
+                    text-align: center;
+                }
+                .total-row {
+                    font-weight: bold;
+                    background-color: #e9ecef;
+                }
+                .footer-note {
+                    margin-top: 20px;
+                    font-size: 11px;
+                }
 
-                            /* Print-specific styles */
-                            @media print {
-                                body {
-                                    margin: 0.5cm;
-                                    font-size: 11px;
-                                    -webkit-print-color-adjust: exact;
-                                    print-color-adjust: exact;
-                                }
+                /* Print-specific styles */
+                @media print {
+                    body {
+                        margin: 0.5cm;
+                        font-size: 11px;
+                        -webkit-print-color-adjust: exact;
+                        print-color-adjust: exact;
+                    }
 
-                                .invoice-table {
-                                    page-break-inside: auto;
-                                    break-inside: auto;
-                                }
+                    .invoice-table {
+                        page-break-inside: auto;
+                    }
 
-                                tr {
-                                    page-break-inside: avoid;
-                                    break-inside: avoid;
-                                    page-break-after: auto;
-                                }
+                    tr {
+                        page-break-inside: avoid;
+                        page-break-after: auto;
+                    }
 
-                                thead {
-                                    display: table-header-group;
-                                }
+                    thead {
+                        display: table-header-group;
+                    }
 
-                                tfoot {
-                                    display: table-footer-group;
-                                    page-break-inside: avoid;
-                                    break-inside: avoid;
-                                }
+                    .total-row {
+                        background: #e9ecef !important;
+                        -webkit-print-color-adjust: exact;
+                        print-color-adjust: exact;
+                    }
 
-                                tfoot tr {
-                                    page-break-inside: avoid;
-                                    break-inside: avoid;
-                                    page-break-before: avoid;
-                                    break-before: avoid;
-                                }
+                    th {
+                        background-color: #f5f5f5 !important;
+                        -webkit-print-color-adjust: exact;
+                        print-color-adjust: exact;
+                    }
 
-                                .total-row {
-                                    background: #e9ecef !important;
-                                    -webkit-print-color-adjust: exact;
-                                    print-color-adjust: exact;
-                                    color-adjust: exact;
-                                }
+                    @page {
+                        margin: 1cm;
+                        size: portrait;
+                    }
 
-                                th {
-                                    background-color: #f5f5f5 !important;
-                                    -webkit-print-color-adjust: exact;
-                                    print-color-adjust: exact;
-                                    color-adjust: exact;
-                                }
+                    @page :first {
+                        margin-top: 1.5cm;
+                    }
 
-                                @page {
-                                    margin: 1cm;
-                                    size: portrait;
-                                }
+                    /* Prevent page break immediately before grand total */
+                    .grand-total-section {
+                        page-break-before: avoid;
+                        page-break-inside: avoid;
+                    }
+                }
 
-                                @page :first {
-                                    margin-top: 1.5cm;
-                                }
-                            }
+                .print-footer {
+                    margin-top: 30px;
+                    padding-top: 10px;
+                    border-top: 1px solid #333;
+                    font-size: 10px;
+                    color: #666;
+                }
+                .no-print {
+                    display: none !important;
+                }
+            </style>
+        </head>
+        <body>
+            <div class="print-container">
+                ${reportContent.innerHTML}
 
-                            .print-footer {
-                                margin-top: 30px;
-                                padding-top: 10px;
-                                border-top: 1px solid #333;
-                                font-size: 10px;
-                                color: #666;
-                                page-break-inside: avoid;
-                            }
-                            .no-print {
-                                display: none !important;
-                            }
-                        </style>
-                    </head>
-                    <body>
-                        <div class="print-container">
-                            ${reportContent}
-                            <div class="print-footer">
-                                <p>Generated by DifferentCoder | Printed on: ${new Date().toLocaleString()}</p>
-                            </div>
-                        </div>
-                    </body>
-                    </html>
-                `);
+                <!-- Add grand total as a separate table at the end -->
+                ${grandTotalRow ? `
+                <div class="grand-total-section">
+                    <table class="invoice-table">
+                        <tbody>
+                            ${grandTotalRow}
+                        </tbody>
+                    </table>
+                </div>
+                ` : ''}
+
+                <!-- Add summary as separate element -->
+                ${summaryContent ? `
+                <div class="footer-note">
+                    ${summaryContent}
+                </div>
+                ` : ''}
+
+                <div class="print-footer">
+                    <p>Generated by DifferentCoder | Printed on: ${new Date().toLocaleString()}</p>
+                </div>
+            </div>
+            <script>
+                window.onload = function() {
+                    setTimeout(function() {
+                        window.print();
+                        setTimeout(function() {
+                            window.close();
+                        }, 500);
+                    }, 300);
+                };
+            <\/script>
+        </body>
+        </html>
+    `);
 
                 printWindow.document.close();
-
-                // Wait for content to load then print
-                setTimeout(() => {
-                    printWindow.focus();
-                    printWindow.print();
-
-                    // Close window after printing
-                    printWindow.onafterprint = function() {
-                        printWindow.close();
-                    };
-
-                    // Fallback to close window if onafterprint doesn't fire
-                    setTimeout(() => {
-                        if (!printWindow.closed) {
-                            printWindow.close();
-                        }
-                    }, 1000);
-
-                }, 500);
             }
 
             // Excel export functionality
