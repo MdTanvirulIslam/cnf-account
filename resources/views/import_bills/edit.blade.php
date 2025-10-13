@@ -327,11 +327,11 @@
                                     </div>
                                     <div class="col-md-4">
                                         @php
-                                            $otherExpenses = $bill->expenses->whereNotIn('expense_type', ['AIT (As Per Receipt)', 'Port Bill (As Per Receipt)'])->sum('amount');
-                                            $otherTotal = $otherExpenses + $bill->doc_fee + $bill->scan_fee;
+                                            $totalExpenses = $bill->expenses->whereNotIn('expense_type', ['AIT (As Per Receipt)', 'Port Bill (As Per Receipt)'])->sum('amount');
+                                            //$otherTotal = $otherExpenses + $bill->doc_fee + $bill->scan_fee;
                                         @endphp
                                         <strong>Other Amount:</strong>
-                                        <span id="otherTotal">{{ number_format($otherTotal, 2) }}</span>
+                                        <span id="otherTotal">{{ number_format($totalExpenses, 2) }}</span>
                                     </div>
                                 </div>
                                 <div class="row mt-2">
@@ -339,7 +339,7 @@
                                         @php
                                             $grandTotal = ($bill->expenses->where('expense_type', 'AIT (As Per Receipt)')->first()->amount ?? 0)
                                                         + ($bill->expenses->where('expense_type', 'Port Bill (As Per Receipt)')->first()->amount ?? 0)
-                                                        + $otherTotal;
+                                                        + $totalExpenses;
                                         @endphp
                                         <strong>Grand Total:</strong>
                                         <span id="grandTotal">{{ number_format($grandTotal, 2) }}</span>
@@ -389,8 +389,8 @@
                 let aitTotal = 0;
                 let portTotal = 0;
                 let otherTotal = 0;
-                let docFee = parseFloat($('#docFee').val()) || 0;
-                let scanFee = parseFloat($('#scanFee').val()) || 0;
+                //let docFee = parseFloat($('#docFee').val()) || 0;
+                //let scanFee = parseFloat($('#scanFee').val()) || 0;
 
                 $('.expense-input').each(function() {
                     let value = parseFloat($(this).val()) || 0;
@@ -406,7 +406,7 @@
                 });
 
                 // Add doc fee and scan fee to other total
-                otherTotal += docFee + scanFee;
+                //otherTotal += docFee + scanFee;
 
                 $('#aitTotal').text(aitTotal.toFixed(2));
                 $('#portTotal').text(portTotal.toFixed(2));

@@ -368,8 +368,8 @@ class ImportBillController extends Controller
             }
 
             // Add doc_fee and scan_fee
-            $otherAmount += floatval($request->doc_fee ?? 0);
-            $otherAmount += floatval($request->scan_fee ?? 0);
+            //$otherAmount += floatval($request->doc_fee ?? 0);
+            //$otherAmount += floatval($request->scan_fee ?? 0);
 
             // Delete and recreate expenses (consistent approach)
             $bill->expenses()->delete();
