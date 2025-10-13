@@ -97,7 +97,7 @@
 
                 <tr>
                     <td>1</td>
-                    <td>TOTAL OPENING BALANCE {{ $selectedMonth->copy()->subMonth()->format('M') }} {{ $selectedMonth->copy()->subMonth()->format('d.m.Y') }}</td>
+                    <td>TOTAL OPENING BALANCE {{ $selectedMonth->copy()->subMonth()->format('M') }} {{ $selectedMonth->copy()->subMonth()->startOfMonth()->format('d.m.Y') }}</td>
                     <td class="right {{ $previousMonthClosing < 0 ? 'negative' : '' }}">{{ number_format($previousMonthClosing, 2) }}</td>
                     <td></td>
                 </tr>
@@ -118,7 +118,7 @@
 
                 <tr class="total-row">
                     <td></td>
-                    <td>OFFICE BALANCE ON {{ $selectedMonth->format('d.m.Y') }} TO {{ $selectedMonth->endOfMonth()->format('d.m.Y') }}</td>
+                    <td>OFFICE BALANCE ON {{ $selectedMonth->startOfMonth()->format('d.m.Y') }} TO {{ $selectedMonth->endOfMonth()->format('d.m.Y') }}</td>
                     <td></td>
                     <td class="left {{ $officeBalance < 0 ? 'negative' : '' }}">{{ number_format($officeBalance, 2) }}</td>
                 </tr>
@@ -163,35 +163,49 @@
 @section('scripts')
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script>
-        // Excel download button functionality
-
         $(document).ready(function() {
-
-
             $('#excelBtn').on('click', function() {
-                // If we're using AJAX, we need to get the current data from the page
                 if ($('#month').val() !== "{{ $selectedMonth->format('Y-m') }}") {
-                    // We're viewing AJAX data, so we need to extract from current page
                     downloadExcelFromCurrentPage();
                 } else {
-                    // We're viewing original page load data
                     downloadExcel();
                 }
             });
 
-            // Alternative function that extracts data from current page for AJAX updates
             function downloadExcelFromCurrentPage() {
-                // Extract all data from the current visible page
-                const reportContent = document.getElementById('reportContent');
-
-                // This function would extract data from the current HTML
-                // Similar to the main downloadExcel function but reads from DOM
-
-                // For now, we'll use the main function which should work with both
                 downloadExcel();
             }
 
+            function downloadExcel() {
+                try {
+                    const table = document.querySelector('.invoice-table');
+                    if (!table) {
+                        alert('No data available to export.');
+                        return;
+                    }
 
+                    const ws = XLSX.utils.table_to_sheet(table);
+                    const colWidths = [
+                        { wch: 5 },   // SL
+                        { wch: 50 },  // DESCRIPTION
+                        { wch: 15 },  // TOTAL TAKA
+                        { wch: 15 }   // G.TOTAL TAKA
+                    ];
+                    ws['!cols'] = colWidths;
+
+                    const wb = XLSX.utils.book_new();
+                    XLSX.utils.book_append_sheet(wb, ws, 'Monthly Summary Report');
+
+                    const currentDate = new Date().toISOString().slice(0,10);
+                    const selectedMonth = $('#month').val() || "{{ $selectedMonth->format('Y-m') }}";
+                    const fileName = `Monthly_Summary_Report_${selectedMonth}_${currentDate}.xlsx`;
+
+                    XLSX.writeFile(wb, fileName);
+                } catch (error) {
+                    console.error('Excel export error:', error);
+                    alert('Error exporting to Excel. Please try again.');
+                }
+            }
 
             const originalAction = "{{ route('summary.report') }}";
 
@@ -209,11 +223,6 @@
             // Print button functionality
             $('#printBtn').on('click', function() {
                 printReport();
-            });
-
-            // Excel download button functionality
-            $('#excelBtn').on('click', function() {
-                downloadExcel();
             });
 
             // Function to load report data via AJAX
@@ -244,21 +253,37 @@
                 const prevMonth = new Date(selectedMonth);
                 prevMonth.setMonth(prevMonth.getMonth() - 1);
 
-                const formatDate = (date) => date.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' });
+                // Get first day of previous month
+                const firstDayPrevMonth = new Date(prevMonth.getFullYear(), prevMonth.getMonth(), 1);
+
+                // Get first day of current month
+                const firstDayCurrentMonth = new Date(selectedMonth.getFullYear(), selectedMonth.getMonth(), 1);
+
+                // Get last day of current month
+                const lastDayCurrentMonth = new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() + 1, 0);
+
+                const formatDate = (date) => {
+                    const day = String(date.getDate()).padStart(2, '0');
+                    const month = String(date.getMonth() + 1).padStart(2, '0');
+                    const year = date.getFullYear();
+                    return `${day}.${month}.${year}`;
+                };
+
                 const formatMonth = (date) => date.toLocaleDateString('en-GB', { month: 'short' });
                 const formatCurrency = (amount) => parseFloat(amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
                 // Update header
                 $('.invoice-info strong:first').html(`CASH RECEIVED AND PAYMENT STATEMENT FOR THE MONTH ${formatMonth(selectedMonth)}-${selectedMonth.getFullYear()}`);
 
-                // Update table data
-                $('.invoice-table tbody tr:eq(1) td:eq(1)').html(`TOTAL OPENING BALANCE ${formatMonth(prevMonth)} ${formatDate(prevMonth)}`);
+                // Update table data with corrected dates
+                $('.invoice-table tbody tr:eq(1) td:eq(1)').html(`TOTAL OPENING BALANCE ${formatMonth(prevMonth)} ${formatDate(firstDayPrevMonth)}`);
                 $('.invoice-table tbody tr:eq(1) td:eq(2)').html(formatCurrency(data.previousMonthClosing)).toggleClass('negative', data.previousMonthClosing < 0);
 
                 $('.invoice-table tbody tr:eq(2) td:eq(2)').html(formatCurrency(data.dhakaBankReceived));
                 $('.invoice-table tbody tr:eq(3) td:eq(2)').html(formatCurrency(data.cashReceived));
 
-                $('.invoice-table tbody tr:eq(4) td:eq(1)').html(`OFFICE BALANCE ON ${formatDate(selectedMonth)} TO ${formatDate(new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() + 1, 0))}`);
+                // Update office balance row with first day to last day
+                $('.invoice-table tbody tr:eq(4) td:eq(1)').html(`OFFICE BALANCE ON ${formatDate(firstDayCurrentMonth)} TO ${formatDate(lastDayCurrentMonth)}`);
                 $('.invoice-table tbody tr:eq(4) td:eq(3)').html(formatCurrency(data.officeBalance)).toggleClass('negative', data.officeBalance < 0);
 
                 $('.invoice-table tbody tr:eq(6) td:eq(1)').html(`EXPORT DOCUMENTS MFL ${data.exportData.qty} PCS ( As per Sheet)`);
@@ -269,7 +294,8 @@
 
                 $('.invoice-table tbody tr:eq(8) td:eq(3)').html(formatCurrency(data.officeExpenses));
 
-                $('.invoice-table tfoot tr th:eq(0)').html(`TOTAL BALANCE ${formatMonth(selectedMonth)} CLOSING ${formatDate(new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() + 1, 0))}:`);
+                // Update footer with last day of month
+                $('.invoice-table tfoot tr th:eq(0)').html(`TOTAL BALANCE ${formatMonth(selectedMonth)} CLOSING ${formatDate(lastDayCurrentMonth)}:`);
                 $('.invoice-table tfoot tr th:eq(1)').html(formatCurrency(data.closingBalance)).toggleClass('negative', data.closingBalance < 0);
 
                 // Update print date
@@ -278,7 +304,6 @@
 
             // Print function
             function printReport() {
-                const originalContent = $('body').html();
                 const reportContent = $('#reportContent').html();
 
                 // Create print window
@@ -326,12 +351,6 @@
                 `);
                 printWindow.document.close();
             }
-
-
-
-
-
-
         });
     </script>
 @endsection
