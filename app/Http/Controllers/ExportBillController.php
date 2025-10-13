@@ -436,36 +436,78 @@ class ExportBillController extends Controller
     {
         DB::beginTransaction();
         try {
-            $bill = ExportBill::with('expenses')->find($id);
-            if(!$bill){
-                return response()->json(['success'=>false,'message'=>'Bill not found'],404);
+            $bill = ExportBill::with(['expenses'])->find($id);
+
+            if (!$bill) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Bill not found',
+                ], 404);
             }
 
-            // reverse balance if Bank Vat exists
-            $bankVatAmount = $bill->expenses
-                    ->where('expense_type', 'Bank C & F Vat & Others (As Per Receipt)')
-                    ->first()->amount ?? 0;
+            // Step 1: Fetch related BankBook entries
+            $bankBooks = BankBook::where('export_bill_id', $bill->id)->get();
 
-            if($bankVatAmount > 0 && $bill->from_account_id){
-                $acc = Account::lockForUpdate()->find($bill->from_account_id);
-                if($acc){
-                    $acc->balance += $bankVatAmount;
-                    $acc->save();
-                    Cache::forget("account_balance_{$acc->id}");
-                    Cache::put("account_balance_{$acc->id}", $acc->balance, 3600);
+            foreach ($bankBooks as $bk) {
+                if ($bk->account) {
+                    //  Restore deducted amount back to the account balance
+                    $account = Account::lockForUpdate()->find($bk->account->id);
+                    if ($account) {
+                        //$account->balance += $bk->amount;
+                        $account->save();
+
+                        Cache::forget("account_balance_{$account->id}");
+                        Cache::put("account_balance_{$account->id}", $account->balance, 3600);
+                    }
+                }
+
+                // Delete each bank book entry
+                $bk->delete();
+            }
+
+            // Step 2: Delete related ExportBillExpense entries
+            ExportBillExpense::where('export_bill_id', $bill->id)->delete();
+
+            // Step 3: Adjust both from_account and account balances if needed
+            if ($bill->from_account_id) {
+                $fromAcc = Account::lockForUpdate()->find($bill->from_account_id);
+                if ($fromAcc) {
+                    Cache::forget("account_balance_{$fromAcc->id}");
+                    Cache::put("account_balance_{$fromAcc->id}", $fromAcc->balance, 3600);
                 }
             }
 
+            if ($bill->account_id) {
+                $mainAcc = Account::lockForUpdate()->find($bill->account_id);
+                if ($mainAcc) {
+                    Cache::forget("account_balance_{$mainAcc->id}");
+                    Cache::put("account_balance_{$mainAcc->id}", $mainAcc->balance, 3600);
+                }
+            }
+
+            // Step 4: Delete the export bill itself
             $bill->delete();
+
             DB::commit();
 
-            return response()->json(['success'=>true,'message'=>'Export Bill deleted successfully']);
+            return response()->json([
+                'success' => true,
+                'message' => 'Export Bill, related bank books, and expenses deleted successfully & balances adjusted',
+            ]);
+
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error('Export Bill Delete Failed', ['error'=>$e->getMessage()]);
-            return response()->json(['success'=>false,'message'=>'Something went wrong'],500);
+            Log::error('Export Bill Delete Failed', [
+                'error' => $e->getMessage(),
+                'bill_id' => $id,
+            ]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Something went wrong during deletion: ' . $e->getMessage(),
+            ], 500);
         }
     }
+
 
     public function print($id)
     {
