@@ -35,6 +35,7 @@ class YearlyReportController extends Controller
             ->select(DB::raw('COALESCE(SUM(bank_books.amount), 0) as total_receive'))
             ->whereIn('accounts.name', ['Cash', 'Dhaka Bank'])
             ->where('bank_books.type', 'Receive')
+            ->where('bank_books.deleted_at', '!=', null)
             ->whereYear('bank_books.created_at', Carbon::now()->year)
             ->first();
 
@@ -46,6 +47,7 @@ class YearlyReportController extends Controller
 
         $result = DB::table('bank_books')
             ->select(DB::raw('SUM(amount) as total_expense'))
+            ->where('bank_books.deleted_at', '!=', null)
             ->whereIn('type', ['Export Bill','Import Bill','Expense','Pay Order'])
             ->whereYear('bank_books.created_at', Carbon::now()->year)
             ->first();
@@ -62,6 +64,7 @@ class YearlyReportController extends Controller
             ->select(DB::raw('COALESCE(SUM(bank_books.amount), 0) as total_receive'))
             ->whereIn('accounts.name', ['Cash', 'Dhaka Bank'])
             ->where('bank_books.type', 'Receive')
+            ->where('bank_books.deleted_at', '!=', null)
             ->whereYear('bank_books.created_at', Carbon::now()->year)
             ->whereMonth('bank_books.created_at', Carbon::now()->month)
             ->first();
@@ -121,6 +124,7 @@ class YearlyReportController extends Controller
             ->select(DB::raw('COALESCE(SUM(bank_books.amount), 0) as total_receive'))
             ->where('accounts.name', 'Sonali Bank')
             ->where('bank_books.type', 'Receive')
+            ->where('bank_books.deleted_at', '!=', null)
             ->whereYear('bank_books.created_at', Carbon::now()->year)
             ->whereMonth('bank_books.created_at', Carbon::now()->month)
             ->first();
@@ -135,6 +139,7 @@ class YearlyReportController extends Controller
             ->select(DB::raw('COALESCE(SUM(bank_books.amount), 0) as total_receive'))
             ->where('accounts.name', 'Janata Bank')
             ->where('bank_books.type', 'Receive')
+            ->where('bank_books.deleted_at', '!=', null)
             ->whereYear('bank_books.created_at', Carbon::now()->year)
             ->whereMonth('bank_books.created_at', Carbon::now()->month)
             ->first();
