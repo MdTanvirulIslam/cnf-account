@@ -33,7 +33,14 @@
                                 @endforeach
                             </select>
                         </div>
-
+                        <div class="col-md-12 form-group">
+                            <label for="created_at">Creation Date</label>
+                            <input type="date"
+                                   name="created_at"
+                                   id="created_at"
+                                   class="form-control"
+                                   value="{{ old('created_at') }}">
+                        </div>
                         <div class="col-md-12 form-group">
                             <label for="type">Type</label>
                             <select name="type" id="type" class="form-control form-control-sm">

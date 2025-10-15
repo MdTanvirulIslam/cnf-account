@@ -8,6 +8,7 @@ use Yajra\DataTables\Facades\DataTables;
 use App\Models\Account;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
 
 class BankBookController extends Controller
 {
@@ -118,6 +119,7 @@ class BankBookController extends Controller
             'amount'         => 'required|numeric|min:1',
             'note'           => 'nullable|string',
             'from_account_id'=> 'nullable|exists:accounts,id',
+            'created_at'     => 'nullable|date',
         ]);
 
         try {
@@ -125,6 +127,18 @@ class BankBookController extends Controller
                 $type = $request->type;
                 $amount = $request->amount;
                 $note = $request->note;
+
+                // Prepare common data with created_at handling
+                $commonData = [
+                    'type' => $type,
+                    'amount' => $amount,
+                    'note' => $note,
+                ];
+
+                // Handle created_at - use custom date if provided, otherwise auto
+                if ($request->filled('created_at')) {
+                    $commonData['created_at'] = Carbon::parse($request->created_at)->format('Y-m-d H:i:s');
+                }
 
                 if ($type === 'Bank Transfer') {
                     // extra validation: ensure from_account provided and different
@@ -138,26 +152,29 @@ class BankBookController extends Controller
                     $uuid = (string) Str::uuid();
 
                     // Create Receive for destination account
-                    $receive = BankBook::create([
+                    $receiveData = array_merge($commonData, [
                         'account_id'   => $request->account_id,
                         'type'         => 'Receive',
-                        'amount'       => $amount,
-                        'note'         => $note,
                         'transfer_uuid' => $uuid,
                     ]);
 
                     // Create Transfer (deduct) for source account
-                    $transfer = BankBook::create([
+                    $transferData = array_merge($commonData, [
                         'account_id'   => $request->from_account_id,
                         'type'         => 'Bank Transfer',
-                        'amount'       => $amount,
-                        'note'         => $note,
                         'transfer_uuid' => $uuid,
                     ]);
 
+                    $receive = BankBook::create($receiveData);
+                    $transfer = BankBook::create($transferData);
+
                     $responseData = [$receive, $transfer];
                 } else {
-                    $bankBook = BankBook::create($request->only(['account_id','type','amount','note']));
+                    $bankBookData = array_merge($commonData, [
+                        'account_id' => $request->account_id,
+                    ]);
+
+                    $bankBook = BankBook::create($bankBookData);
                     $responseData = $bankBook;
                 }
             });
