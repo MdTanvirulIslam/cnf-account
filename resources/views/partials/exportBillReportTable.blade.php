@@ -67,22 +67,47 @@
         }
         .invoice-table th {
             background-color: #f4f4f4;
-            text-align: left;
         }
         .right {
             text-align: right;
         }
         .center {
-            text-align: center;
+            text-align: center !important;
+        }
+        .left {
+            text-align: left !important;
         }
         .total-row td {
             font-weight: bold;
             background: #f9f9f9;
         }
 
-        .footer-note {
+        .grand-total {
             margin-top: 20px;
-            font-size: 13px;
+            font-size: 14px;
+            font-weight: bold;
+            text-align: center;
+            border-top: 1px solid #000;
+            padding-top: 10px;
+        }
+
+        /* Web view specific alignment */
+        .invoice-table th:nth-child(1),
+        .invoice-table td:nth-child(1) {
+            text-align: center;
+            width: 5%;
+        }
+        .invoice-table th:nth-child(2),
+        .invoice-table td:nth-child(2) {
+            text-align: left;
+            width: 65%;
+        }
+        .invoice-table th:nth-child(3),
+        .invoice-table td:nth-child(3),
+        .invoice-table th:nth-child(4),
+        .invoice-table td:nth-child(4) {
+            text-align: center;
+            width: 15%;
         }
     </style>
 
@@ -130,33 +155,38 @@
         <thead>
         <tr>
             <th class="center" style="width:5%">SL NO</th>
-            <th style="width:65%">DESCRIPTION</th>
-            <th style="width:15%">AMOUNT</th>
-            <th style="width:15%">REMARK</th>
+            <th class="left" style="width:65%">DESCRIPTION</th>
+            <th class="center" style="width:15%">AMOUNT</th>
+            <th class="center" style="width:15%">REMARK</th>
         </tr>
         </thead>
         <tbody>
         @forelse($bill->expenses as $index => $exp)
             <tr>
                 <td class="center">{{ $index+1 }}</td>
-                <td>{{ $exp->expense_type }}</td>
-                <td class="right">{{ number_format($exp->amount, 2) }}</td>
-                <td></td>
+                <td class="left">{{ $exp->expense_type }}</td>
+                <td class="center">{{ number_format($exp->amount, 2) }}</td>
+                <td class="center"></td>
             </tr>
         @empty
-            <tr><td colspan="4" class="text-center">No Expenses Found</td></tr>
+            <tr>
+                <td colspan="4" class="center">No Expenses Found</td>
+            </tr>
         @endforelse
-        <tr class="total-row">
-            <td colspan="2" class="right">TOTAL AMOUNT</td>
-            <td class="right">{{ number_format($billTotal, 2) }}</td>
-            <td></td>
-        </tr>
         </tbody>
+        <tfoot>
+        <tr class="total-row">
+            <td colspan="2" class="center"><strong>TOTAL AMOUNT</strong></td>
+            <td class="center"><strong>{{ number_format($billTotal, 2) }}</strong></td>
+            <td class="center"></td>
+        </tr>
+        </tfoot>
     </table>
+    <br>
 @endforeach
 
-@if(count($exportBills))
-    <div class="footer-note">
-        <p><strong>GRAND TOTAL:</strong> {{ number_format($grandTotal, 2) }} TAKA ONLY</p>
+@if(count($exportBills) > 0)
+    <div class="grand-total">
+        <p><strong>GRAND TOTAL: {{ number_format($grandTotal, 2) }} TAKA ONLY</strong></p>
     </div>
 @endif

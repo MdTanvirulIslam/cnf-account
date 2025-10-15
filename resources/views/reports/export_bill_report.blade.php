@@ -84,7 +84,6 @@
             const originalBillNo = "{{ $lastBill->bill_no ?? 'all' }}";
             const originalBillDate = "{{ \Carbon\Carbon::parse($lastBill?->bill_date ?? now())->format('Y-m-d') }}";
 
-
             // Store all options for reset
             const allBeNos = @json($allBeNos);
             const allBillNos = @json($allBillNos);
@@ -97,17 +96,14 @@
 
             // Reset button - restore to last bill's values
             $('#resetBtn').on('click', function() {
-                // Reset form values to last bill's values
                 $('#buyer').val(originalBuyerId);
                 $('#beNo').val(originalBeNo);
                 $('#billNo').val(originalBillNo);
                 $('#billDate').val(originalBillDate);
 
-                // Reset dropdown options to show ALL options
                 populateDropdown('#beNo', allBeNos, originalBeNo);
                 populateDropdown('#billNo', allBillNos, originalBillNo);
 
-                // Reload report with last bill's values
                 loadReportData({
                     buyer: originalBuyerId,
                     be_no: originalBeNo,
@@ -146,7 +142,6 @@
                         bill_no: billNo
                     },
                     success: function(res){
-                        // Only update dropdowns that are set to "all"
                         if ($('#beNo').val() === 'all') {
                             populateDropdown('#beNo', res.beNos, 'all');
                         }
@@ -168,7 +163,6 @@
                     dropdown.append('<option value="' + value + '">' + value + '</option>');
                 });
 
-                // Set selected value
                 if (options.includes(selectedValue) && selectedValue !== 'all') {
                     dropdown.val(selectedValue);
                 } else {
@@ -202,6 +196,15 @@
                 const currentBillNo = $('#billNo option:selected').text();
                 const currentBillDate = $('#billDate').val();
 
+                // Get the report content
+                const reportContent = document.getElementById('reportTable').innerHTML;
+
+                // Fix the footer colspan in the content
+                let fixedContent = reportContent.replace(
+                    /<td colspan="2" class="right">TOTAL AMOUNT<\/td>/g,
+                    '<td colspan="2" class="center" style="text-align: center;">TOTAL AMOUNT</td>'
+                );
+
                 // Create print-friendly HTML
                 const printWindow = window.open('', '_blank');
                 printWindow.document.write(`
@@ -218,17 +221,53 @@
                             .print-container {
                                 max-width: 100%;
                             }
-                            .print-header {
-                                margin-bottom: 20px;
-                                border-bottom: 2px solid #333;
-                                padding-bottom: 10px;
+                            .company-header {
+                                text-align: center;
+                                margin-bottom: 15px;
                             }
-                            .print-header h2 {
-                                margin: 0 0 10px 0;
-                                color: #333;
+                            .company-header h1 {
+                                margin: 0;
+                                font-size: 22px;
+                                font-weight: bold;
                             }
-                            .print-header p {
-                                margin: 5px 0;
+                            .company-header p {
+                                margin: 2px 0;
+                                font-size: 13px;
+                                color:#333;
+                            }
+                            .invoice-info {
+                                display: flex;
+                                justify-content: space-between;
+                                margin-top: 10px;
+                                font-size: 14px;
+                                margin-bottom: 10px;
+                            }
+                            .invoice-info div {
+                                width: 48%;
+                            }
+                            h3 {
+                                margin-top: 20px;
+                                font-size: 15px;
+                                text-transform: uppercase;
+                                margin-bottom: 15px;
+                            }
+                            .info-table {
+                                width: 100%;
+                                border-collapse: collapse;
+                                margin: 10px 0 20px;
+                                font-size: 13px;
+                            }
+                            .info-table td {
+                                border: 1px solid #222;
+                                padding: 6px;
+                                vertical-align: top;
+                            }
+                            .info-key {
+                                font-weight: bold;
+                                width: 10%;
+                            }
+                            .info-value {
+                                width: 40%;
                             }
                             table {
                                 width: 100%;
@@ -237,23 +276,29 @@
                                 font-size: 12px;
                             }
                             th, td {
-                                border: 1px solid #ddd;
+                                border: 1px solid #000;
                                 padding: 8px;
-                                text-align: left;
                             }
                             th {
                                 background-color: #f5f5f5;
                                 font-weight: bold;
                             }
-                            .text-right {
+                            .right {
                                 text-align: right;
                             }
-                            .text-center {
-                                text-align: center;
+                            .center {
+                                text-align: center !important;
+                            }
+                            .left {
+                                text-align: left !important;
                             }
                             .total-row {
                                 font-weight: bold;
                                 background-color: #e9ecef;
+                            }
+                            .total-row td {
+                                font-weight: bold;
+                                background-color: #f9f9f9 !important;
                             }
                             .print-footer {
                                 margin-top: 30px;
@@ -261,20 +306,97 @@
                                 border-top: 1px solid #333;
                                 font-size: 11px;
                                 color: #666;
+                                text-align: center;
+                            }
+                            .grand-total {
+                                margin-top: 20px;
+                                font-size: 14px;
+                                font-weight: bold;
+                                text-align: center;
+                                border-top: 1px solid #000;
+                                padding-top: 10px;
                             }
                             .no-print { display: none; }
+
+                            /* Specific table alignment for print */
+                            .invoice-table {
+                                width: 100%;
+                                border-collapse: collapse;
+                            }
+                            .invoice-table th:nth-child(1),
+                            .invoice-table td:nth-child(1) {
+                                text-align: center;
+                                width: 5%;
+                            }
+                            .invoice-table th:nth-child(2),
+                            .invoice-table td:nth-child(2) {
+                                text-align: left;
+                                width: 65%;
+                            }
+                            .invoice-table th:nth-child(3),
+                            .invoice-table td:nth-child(3),
+                            .invoice-table th:nth-child(4),
+                            .invoice-table td:nth-child(4) {
+                                text-align: center;
+                                width: 15%;
+                            }
+
+                            /* Fix total row alignment */
+                            .invoice-table .total-row td:first-child {
+                                text-align: center !important;
+                            }
+                            .invoice-table .total-row td:nth-child(2) {
+                                text-align: center !important;
+                            }
+
                             @media print {
-                                body { margin: 0; }
-                                .print-header { border-bottom-color: #000; }
-                                th { background-color: #f0f0f0 !important; }
-                                .table-responsive { overflow: visible !important; }
+                                body {
+                                    margin: 15px;
+                                    font-size: 12px;
+                                }
+                                .company-header h1 {
+                                    font-size: 20px;
+                                }
+                                .invoice-table {
+                                    page-break-inside: avoid;
+                                }
+                                th {
+                                    background-color: #f0f0f0 !important;
+                                }
+                                .table-responsive {
+                                    overflow: visible !important;
+                                }
+
+                                /* Ensure description column is left-aligned in print */
+                                .invoice-table th:nth-child(2),
+                                .invoice-table td:nth-child(2) {
+                                    text-align: left !important;
+                                }
+                                .invoice-table th:nth-child(1),
+                                .invoice-table td:nth-child(1),
+                                .invoice-table th:nth-child(3),
+                                .invoice-table td:nth-child(3),
+                                .invoice-table th:nth-child(4),
+                                .invoice-table td:nth-child(4) {
+                                    text-align: center !important;
+                                }
+
+                                /* Fix total row in print */
+                                .total-row td {
+                                    background-color: #e9ecef !important;
+                                }
+                                .invoice-table .total-row td[colspan] {
+                                    text-align: center !important;
+                                }
+                                .invoice-table .total-row td.right {
+                                    text-align: center !important;
+                                }
                             }
                         </style>
                     </head>
                     <body>
                         <div class="print-container">
-
-                            ${document.getElementById('reportTable').innerHTML}
+                            ${fixedContent}
                             <div class="print-footer">
                                 <p>Generated by Export Bill Management System</p>
                             </div>
@@ -302,16 +424,10 @@
                 }
 
                 try {
-                    // Clone table to avoid modifying original
                     const tableClone = table.cloneNode(true);
-
-                    // Clean up table for Excel (remove action buttons if any)
                     $(tableClone).find('.btn, .no-export, .actions').remove();
 
-                    // Convert table to worksheet
                     const ws = XLSX.utils.table_to_sheet(tableClone);
-
-                    // Set column widths (adjust based on your table structure)
                     const colWidths = [
                         { wch: 15 }, // Buyer
                         { wch: 15 }, // B/E No
@@ -325,15 +441,12 @@
                     ];
                     ws['!cols'] = colWidths;
 
-                    // Create workbook and append worksheet
                     const wb = XLSX.utils.book_new();
                     XLSX.utils.book_append_sheet(wb, ws, 'Export Bill Report');
 
-                    // Generate filename with current filters
                     const currentBuyer = $('#buyer').val() !== 'all' ? $('#buyer option:selected').text().substring(0, 20) : 'all';
                     const fileName = `Export_Bill_Report_${currentBuyer}_${new Date().toISOString().slice(0,10)}.xlsx`;
 
-                    // Export to Excel
                     XLSX.writeFile(wb, fileName);
 
                 } catch (error) {
