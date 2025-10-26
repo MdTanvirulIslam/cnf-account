@@ -29,19 +29,19 @@
                         <th>Bill No</th>
                         <th>Bill Date</th>
                         <th>USD</th>
-                        <th>Total Qty</th>
-                        <th>CTN No</th>
+                        <th>Total CTN</th>
                         <th>BE No</th>
                         <th>BE Date</th>
                         <th>Qty PCS</th>
                         <th>Total Amount</th>
                         <th>VAT</th>
+                        <th>Note</th>
                         <th class="text-center">Action</th>
                     </tr>
                     </thead>
                     <tfoot>
                     <tr>
-                        <th colspan="12" style="text-align:right">Total Amount:</th>
+                        <th colspan="11" style="text-align:right">Total Amount:</th>
                         <th></th> <!-- Amount Total -->
                         <th></th> <!-- Bank Vat Total -->
                         <th></th> <!-- Action column empty -->
@@ -84,12 +84,12 @@
                     { data: 'bill_date', name: 'bill_date' },
                     { data: 'usd', name: 'usd' },
                     { data: 'total_qty', name: 'total_qty' },
-                    { data: 'ctn_no', name: 'ctn_no' },
                     { data: 'be_no', name: 'be_no' },
                     { data: 'be_date', name: 'be_date' },
                     { data: 'qty_pcs', name: 'qty_pcs' },
                     { data: 'amount', name: 'amount', className: "text-right" },
                     { data: 'bank_vat_amount', name: 'bank_vat_amount', className: "text-right" },
+                    { data: 'note', name: 'note' },
                     { data: 'action', name: 'action', orderable:false, searchable:false, className:'text-center' }
                 ],
                  // you can adjust the default order if needed
@@ -114,18 +114,18 @@
                     };
 
                     // ====== Amount Total (column index 13) ======
-                    var totalAmount = api.column(12, { page: 'current' }).data()
+                    var totalAmount = api.column(11, { page: 'current' }).data()
                         .reduce((a, b) => intVal(a) + intVal(b), 0);
 
                     // ====== Bank VAT Total (column index 14) ======
-                    var totalBankVat = api.column(13, { page: 'current' }).data()
+                    var totalBankVat = api.column(12, { page: 'current' }).data()
                         .reduce((a, b) => intVal(a) + intVal(b), 0);
 
                     // Update footer cells
-                    $(api.column(12).footer()).html(
+                    $(api.column(11).footer()).html(
                         totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
                     );
-                    $(api.column(13).footer()).html(
+                    $(api.column(12).footer()).html(
                         totalBankVat.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
                     );
                 }

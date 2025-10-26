@@ -15,6 +15,9 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Redis;
+use Illuminate\Validation\Rule;
+
+
 
 class ExportBillController extends Controller
 {
@@ -25,7 +28,7 @@ class ExportBillController extends Controller
         "Shorting Bill @ Tk 3.00 Per Ctns",
         "Miscellaneous Expenses for documentation",
         "Automation Document Entry Fee (Refficard) Data Entry",
-        "Amendment Purpose Expenses Eid Boxsis",
+        "Amendment Purpose Expenses",
         "Extra Miscellaneous Exp For (Scale Charge)",
         "Carton damage & Others",
         "Kallan Fund",
@@ -35,9 +38,10 @@ class ExportBillController extends Controller
         "Special permission DSV AIR & SEA LTD",
         "Short Ship Certificate",
         "Weight Permission. Invoice P/list Dc Print",
+        "Eid Boxsis",
         "Other Expense",
-
     ];
+
     /**
      * Display a listing of the resource.
      */
@@ -49,31 +53,30 @@ class ExportBillController extends Controller
     public function data(Request $request)
     {
         if ($request->ajax()) {
-            $query = ExportBill::with('buyer') // relation: export_bills.buyer_id → buyers.id
-            ->withSum('expenses', 'amount') // total expenses
-            ->withSum(['expenses as bank_vat_sum_amount' => function ($q) {
-                $q->where('expense_type', 'Bank C & F Vat & Others (As Per Receipt)');
-            }], 'amount')
+            $query = ExportBill::with('buyer')
+                ->withSum('expenses', 'amount')
+                ->withSum(['expenses as bank_vat_sum_amount' => function ($q) {
+                    $q->where('expense_type', 'Bank C & F Vat & Others (As Per Receipt)');
+                }], 'amount')
                 ->latest();
 
             return datatables()->of($query)
                 ->addIndexColumn()
                 ->editColumn('invoice_date', function ($row) {
                     return $row->invoice_date
-                        ? \Carbon\Carbon::parse($row->invoice_date)->format('Y-m-d')
+                        ? \Carbon\Carbon::parse($row->invoice_date)->format('d-m-Y')
                         : '';
                 })
                 ->editColumn('bill_date', function ($row) {
                     return $row->bill_date
-                        ? \Carbon\Carbon::parse($row->bill_date)->format('Y-m-d')
+                        ? \Carbon\Carbon::parse($row->bill_date)->format('d-m-Y')
                         : '';
                 })
                 ->editColumn('be_date', function ($row) {
                     return $row->be_date
-                        ? \Carbon\Carbon::parse($row->be_date)->format('Y-m-d')
+                        ? \Carbon\Carbon::parse($row->be_date)->format('d-m-Y')
                         : '';
                 })
-
                 ->addColumn('buyer_name', function ($row) {
                     return $row->buyer ? $row->buyer->name : '';
                 })
@@ -146,7 +149,6 @@ class ExportBillController extends Controller
         return view('export_bills.index');
     }
 
-
     /**
      * Show the form for creating a new resource.
      */
@@ -155,7 +157,6 @@ class ExportBillController extends Controller
         $accounts  = Account::select('id','name','balance')->get();
         $buyers    = Buyer::select('id','name')->get();
 
-        // generate a unique token for the form to prevent processing duplicates
         $formToken = (string) Str::uuid();
 
         return view('export_bills.create', [
@@ -169,7 +170,6 @@ class ExportBillController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-
     public function store(Request $request)
     {
         $request->validate([
@@ -181,9 +181,10 @@ class ExportBillController extends Controller
             'usd'             => 'required|numeric',
             'total_qty'       => 'required|integer',
             'ctn_no'          => 'nullable|string|max:255',
-            'be_no'           => 'nullable|string|max:255',
+            'be_no'           => 'required|string|max:255|unique:export_bills',
             'be_date'         => 'nullable|date',
             'qty_pcs'         => 'required|integer',
+            'note'            => 'nullable|string|max:1000',
             'from_account_id' => 'required|exists:accounts,id',
             'account_id'      => 'required|exists:accounts,id',
             'expenses'        => 'nullable|array',
@@ -211,7 +212,7 @@ class ExportBillController extends Controller
             // 1️⃣ Create Export Bill
             $bill = ExportBill::create($request->only([
                 'buyer_id','invoice_no','invoice_date','bill_no','bill_date',
-                'usd','total_qty','ctn_no','be_no','be_date','qty_pcs','from_account_id','account_id'
+                'usd','total_qty','ctn_no','be_no','be_date','qty_pcs','note','from_account_id','account_id'
             ]));
 
             $vatType = 'Bank C & F Vat & Others (As Per Receipt)';
@@ -269,8 +270,6 @@ class ExportBillController extends Controller
         return response()->json(['success' => true, 'message' => 'Export Bill created successfully']);
     }
 
-
-
     /**
      * Display the specified resource.
      */
@@ -299,13 +298,28 @@ class ExportBillController extends Controller
         ]);
     }
 
-
     /**
      * Update the specified resource in storage.
      */
     public function update(Request $request, $id)
     {
-        $request->validate([
+        // First, find the bill to ensure it exists
+        $bill = ExportBill::find($id);
+
+        if (!$bill) {
+            return response()->json(['success' => false, 'message' => 'Export Bill not found'], 404);
+        }
+
+        \Log::info('=== EXPORT BILL UPDATE START ===', [
+            'bill_id' => $id,
+            'current_be_no' => $bill->be_no,
+            'request_be_no' => $request->be_no,
+            'are_they_equal' => $bill->be_no === $request->be_no,
+            'trimmed_equal' => trim($bill->be_no) === trim($request->be_no)
+        ]);
+
+        // Manual validation with case-insensitive check
+        $validator = \Validator::make($request->all(), [
             'buyer_id'        => 'required|exists:buyers,id',
             'invoice_no'      => 'required|string|max:255',
             'invoice_date'    => 'nullable|date',
@@ -314,46 +328,122 @@ class ExportBillController extends Controller
             'usd'             => 'required|numeric',
             'total_qty'       => 'required|integer',
             'ctn_no'          => 'nullable|string|max:255',
-            'be_no'           => 'nullable|string|max:255',
+            'be_no'           => 'required|string|max:255',
             'be_date'         => 'nullable|date',
             'qty_pcs'         => 'required|integer',
+            'note'            => 'nullable|string|max:1000',
             'from_account_id' => 'required|exists:accounts,id',
             'account_id'      => 'required|exists:accounts,id',
             'expenses'        => 'nullable|array',
             'expenses.*'      => 'nullable|numeric|min:0',
         ]);
 
+        if ($validator->fails()) {
+            \Log::error('Validation failed:', $validator->errors()->toArray());
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        // MANUAL UNIQUE VALIDATION FOR BE_NO
+        $trimmedBeNo = trim($request->be_no);
+        $currentTrimmedBeNo = trim($bill->be_no);
+
+        // If BE No is being changed, check for duplicates
+        if (strcasecmp($trimmedBeNo, $currentTrimmedBeNo) !== 0) {
+            \Log::info('BE No is being changed, checking for duplicates...', [
+                'from' => $currentTrimmedBeNo,
+                'to' => $trimmedBeNo
+            ]);
+
+            // Case-insensitive check for existing BE No
+            $existingBill = ExportBill::where('id', '!=', $bill->id)
+                ->where(function($query) use ($trimmedBeNo) {
+                    $query->where('be_no', '=', $trimmedBeNo)
+                        ->orWhere('be_no', '=', strtoupper($trimmedBeNo))
+                        ->orWhere('be_no', '=', strtolower($trimmedBeNo))
+                        ->orWhere(DB::raw('LOWER(be_no)'), '=', strtolower($trimmedBeNo))
+                        ->orWhere(DB::raw('UPPER(be_no)'), '=', strtoupper($trimmedBeNo))
+                        ->orWhere(DB::raw('TRIM(be_no)'), '=', $trimmedBeNo);
+                })
+                ->first();
+
+            if ($existingBill) {
+                \Log::error('BE No duplicate found:', [
+                    'requested_be_no' => $trimmedBeNo,
+                    'existing_bill_id' => $existingBill->id,
+                    'existing_be_no' => $existingBill->be_no
+                ]);
+
+                return response()->json([
+                    'success' => false,
+                    'message' => 'The B/E No has already been taken by another export bill.',
+                    'existing_bill' => [
+                        'id' => $existingBill->id,
+                        'be_no' => $existingBill->be_no,
+                        'invoice_no' => $existingBill->invoice_no
+                    ]
+                ], 422);
+            }
+
+            \Log::info('BE No check passed - no duplicates found');
+        } else {
+            \Log::info('BE No unchanged, skipping duplicate check');
+        }
+
         try {
             DB::beginTransaction();
 
-            // Find the existing bill with expenses
-            $bill = ExportBill::with('expenses')->findOrFail($id);
+            // Refresh the bill to ensure we have latest data
+            $bill->refresh();
+
+            // Prepare update data with trimmed values
+            $updateData = [
+                'buyer_id' => $request->buyer_id,
+                'invoice_no' => trim($request->invoice_no),
+                'invoice_date' => $request->invoice_date,
+                'bill_no' => trim($request->bill_no),
+                'bill_date' => $request->bill_date,
+                'usd' => $request->usd,
+                'total_qty' => $request->total_qty,
+                'ctn_no' => $request->ctn_no ? trim($request->ctn_no) : null,
+                'be_no' => $trimmedBeNo, // Use the trimmed version
+                'be_date' => $request->be_date,
+                'qty_pcs' => $request->qty_pcs,
+                'note' => $request->note,
+                'from_account_id' => $request->from_account_id,
+                'account_id' => $request->account_id,
+            ];
+
+            \Log::info('Updating bill with data:', $updateData);
 
             // Update the bill
-            $bill->update($request->only([
-                'buyer_id','invoice_no','invoice_date','bill_no','bill_date',
-                'usd','total_qty','ctn_no','be_no','be_date','qty_pcs','from_account_id','account_id'
-            ]));
+            $isUpdated = $bill->update($updateData);
+
+            \Log::info('Bill update result:', ['success' => $isUpdated]);
 
             $vatType = 'Bank C & F Vat & Others (As Per Receipt)';
             $vatAmount = (float) ($request->input('expenses')[$vatType] ?? 0);
             $totalExpenses = array_sum(array_map('floatval', $request->input('expenses', [])));
             $otherAmount = max($totalExpenses - $vatAmount, 0);
 
-            // Delete all existing expenses and create new ones (consistent with store method)
+            // Delete all existing expenses and create new ones
             $bill->expenses()->delete();
 
             foreach ($request->input('expenses', []) as $type => $amount) {
-                if ($amount > 0) {
+                $cleanAmount = (float) $amount;
+                if ($cleanAmount > 0) {
                     ExportBillExpense::create([
                         'export_bill_id' => $bill->id,
                         'expense_type'   => $type,
-                        'amount'         => (float) $amount,
+                        'amount'         => $cleanAmount,
                     ]);
                 }
             }
 
-            // Find existing BankBook entries
+            // BankBook entries logic (same as before)
             $vatBankBook = BankBook::where('note', 'like', "%Export Bill #{$bill->id}%")
                 ->where('type', 'Pay Order')
                 ->where('note', 'like', "%{$vatType}%")
@@ -367,14 +457,12 @@ class ExportBillController extends Controller
             // Handle VAT BankBook entry
             if ($vatAmount > 0) {
                 if ($vatBankBook) {
-                    // Update existing entry - BankBook model events will handle balance adjustment
                     $vatBankBook->update([
                         'account_id' => $bill->from_account_id,
                         'amount'     => $vatAmount,
                         'note'       => "{$vatType} for Export Bill #{$bill->id}",
                     ]);
                 } else {
-                    // Create new entry - BankBook model events will handle balance adjustment
                     BankBook::create([
                         'account_id' => $bill->from_account_id,
                         'type'       => 'Pay Order',
@@ -383,14 +471,12 @@ class ExportBillController extends Controller
                     ]);
                 }
             } elseif ($vatBankBook) {
-                // Delete if amount is 0 but entry exists - BankBook model events will handle balance adjustment
                 $vatBankBook->delete();
             }
 
             // Handle Other Amount BankBook entry
             if ($otherAmount > 0) {
                 if ($otherBankBook) {
-                    // Update existing entry - BankBook model events will handle balance adjustment
                     $otherBankBook->update([
                         'account_id' => $bill->account_id,
                         'type'       => 'Export Bill',
@@ -398,7 +484,6 @@ class ExportBillController extends Controller
                         'note'       => "{$otherAmount} Amount deduct for export bill #{$bill->id}",
                     ]);
                 } else {
-                    // Create new entry - BankBook model events will handle balance adjustment
                     BankBook::create([
                         'account_id' => $bill->account_id,
                         'type'       => 'Export Bill',
@@ -407,28 +492,28 @@ class ExportBillController extends Controller
                     ]);
                 }
             } elseif ($otherBankBook) {
-                // Delete if amount is 0 but entry exists - BankBook model events will handle balance adjustment
                 $otherBankBook->delete();
             }
 
             DB::commit();
 
+            \Log::info('=== EXPORT BILL UPDATE SUCCESS ===', ['bill_id' => $bill->id]);
+
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error("Export bill update failed: " . $e->getMessage(), [
+            \Log::error("Export bill update failed: " . $e->getMessage(), [
                 'request' => $request->all(),
-                'bill_id' => $id
+                'bill_id' => $id,
+                'trace' => $e->getTraceAsString()
             ]);
-            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+            return response()->json(['success' => false, 'message' => 'Update failed: ' . $e->getMessage()], 500);
         }
 
-        return response()->json(['success' => true, 'message' => 'Export Bill updated successfully']);
+        return response()->json([
+            'success' => true,
+            'message' => 'Export Bill updated successfully'
+        ]);
     }
-
-
-
-
-
 
     /**
      * Remove the specified resource from storage.
@@ -451,18 +536,13 @@ class ExportBillController extends Controller
 
             foreach ($bankBooks as $bk) {
                 if ($bk->account) {
-                    //  Restore deducted amount back to the account balance
                     $account = Account::lockForUpdate()->find($bk->account->id);
                     if ($account) {
-                        //$account->balance += $bk->amount;
                         $account->save();
-
                         Cache::forget("account_balance_{$account->id}");
                         Cache::put("account_balance_{$account->id}", $account->balance, 3600);
                     }
                 }
-
-                // Delete each bank book entry
                 $bk->delete();
             }
 
@@ -509,15 +589,11 @@ class ExportBillController extends Controller
         }
     }
 
-
     public function print($id)
     {
         $bill = ExportBill::with(['buyer', 'expenses'])->findOrFail($id);
 
-        // Map expenses into array for easier access
         $expenses = $bill->expenses->pluck('amount', 'expense_type')->toArray();
-
-        // Calculate total
         $total = array_sum($expenses);
 
         return view('export_bills.print', [
@@ -527,5 +603,4 @@ class ExportBillController extends Controller
             'total'        => $total,
         ]);
     }
-
 }

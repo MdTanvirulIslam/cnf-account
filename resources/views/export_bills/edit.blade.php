@@ -186,16 +186,16 @@
                                 </div>
 
                                 <div class="col-md-3 mb-3">
-                                    <label>Total Qty</label>
+                                    <label class="required-field">Total CTN</label>
                                     <input type="number" name="total_qty" class="form-control form-control-sm input-highlight"
                                            value="{{ $bill->total_qty }}">
                                 </div>
 
-                                <div class="col-md-3 mb-3">
+                               {{-- <div class="col-md-3 mb-3">
                                     <label>CTN No</label>
                                     <input type="text" name="ctn_no" class="form-control form-control-sm input-highlight"
                                            value="{{ $bill->ctn_no }}">
-                                </div>
+                                </div>--}}
 
                                 <div class="col-md-3 mb-3">
                                     <label>B/E No</label>
@@ -213,6 +213,13 @@
                                     <label>Quantity PCS</label>
                                     <input type="number" name="qty_pcs" class="form-control form-control-sm input-highlight"
                                            value="{{ $bill->qty_pcs }}">
+                                </div>
+                                {{-- Add this after Quantity PCS field --}}
+                                <div class="col-md-6 mb-3">
+                                    <label>Note</label>
+                                    <textarea name="note" class="form-control form-control-sm input-highlight" rows="1"
+                                              placeholder="Enter any additional notes or comments...">{{ $bill->note }}</textarea>
+
                                 </div>
                             </div>
                         </div>
