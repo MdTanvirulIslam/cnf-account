@@ -17,10 +17,13 @@ class BankBookController extends Controller
         $accounts = Account::all();
 
         if ($request->ajax()) {
-            $data = BankBook::with('account')->latest()->get();
+            $data = BankBook::with('account')->orderBy('id', 'desc')->get();
 
             return DataTables::of($data)
                 ->addIndexColumn()
+                ->addColumn('date', function ($row) {
+                    return $row->created_at->format('d/m/Y');
+                })
                 ->editColumn('bank_name', function ($row) {
                     return $row->account
                         ? $row->account->name . ' (Balance: ' . number_format($row->account->balance, 2) . ')'
@@ -37,7 +40,7 @@ class BankBookController extends Controller
                         return '<span class="badge badge-light-success">Import Bill</span>';
                     } elseif ($row->type === 'Export Bill') {
                         return '<span class="badge badge-light-success">Export Bill</span>';
-                    }else {
+                    } else {
                         return '<span class="badge badge-light-warning">Pay Order</span>';
                     }
                 })
@@ -63,47 +66,47 @@ class BankBookController extends Controller
 
                     $editBtn = $disableActions
                         ? '<a href="javascript:void(0);" class="edit-btn bs-tooltip disabled" title="Edit Disabled">
-                          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"
-                               viewBox="0 0 30 30" fill="none" stroke="currentColor"
-                               stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                               class="feather feather-edit-2 p-1 br-8 mb-1 text-secondary">
-                              <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
-                          </svg>
-                        </a>'
+                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"
+                           viewBox="0 0 30 30" fill="none" stroke="currentColor"
+                           stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                           class="feather feather-edit-2 p-1 br-8 mb-1 text-secondary">
+                          <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
+                      </svg>
+                    </a>'
                         : '<a href="javascript:void(0);" class="edit-btn bs-tooltip" data-id="'.$row->id.'" title="Edit">
-                          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"
-                               viewBox="0 0 30 30" fill="none" stroke="currentColor"
-                               stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                               class="feather feather-edit-2 p-1 br-8 mb-1">
-                              <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
-                          </svg>
-                        </a>';
+                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"
+                           viewBox="0 0 30 30" fill="none" stroke="currentColor"
+                           stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                           class="feather feather-edit-2 p-1 br-8 mb-1">
+                          <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
+                      </svg>
+                    </a>';
 
                     $deleteBtn = $disableActions
                         ? '<a href="javascript:void(0);" class="delete-btn bs-tooltip text-secondary disabled" title="Delete Disabled">
-                          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"
-                               viewBox="0 0 30 30" fill="none" stroke="currentColor"
-                               stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                               class="feather feather-trash p-1 br-8 mb-1">
-                              <polyline points="3 6 5 6 21 6"></polyline>
-                              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4
-                                       a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                          </svg>
-                        </a>'
+                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"
+                           viewBox="0 0 30 30" fill="none" stroke="currentColor"
+                           stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                           class="feather feather-trash p-1 br-8 mb-1">
+                          <polyline points="3 6 5 6 21 6"></polyline>
+                          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4
+                                   a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                      </svg>
+                    </a>'
                         : '<a href="javascript:void(0);" class="delete-btn bs-tooltip text-danger" data-id="'.$row->id.'" title="Delete">
-                          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"
-                               viewBox="0 0 30 30" fill="none" stroke="currentColor"
-                               stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                               class="feather feather-trash p-1 br-8 mb-1">
-                              <polyline points="3 6 5 6 21 6"></polyline>
-                              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4
-                                       a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                          </svg>
-                        </a>';
+                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"
+                           viewBox="0 0 30 30" fill="none" stroke="currentColor"
+                           stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                           class="feather feather-trash p-1 br-8 mb-1">
+                          <polyline points="3 6 5 6 21 6"></polyline>
+                          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4
+                                   a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                      </svg>
+                    </a>';
 
                     return '<ul class="table-controls text-center"><li>'.$editBtn.'</li><li>'.$deleteBtn.'</li></ul>';
                 })
-                ->rawColumns(['bank_name','type','action'])
+                ->rawColumns(['date', 'bank_name','type','action'])
                 ->make(true);
         }
 
@@ -222,6 +225,7 @@ class BankBookController extends Controller
             'from_account_id'=> $fromAccountId,
             'type'           => ($bankBook->transfer_uuid ? 'Bank Transfer' : $bankBook->type),
             'amount'         => $bankBook->amount,
+            'created_at'     => $bankBook->created_at,
             'note'           => $bankBook->note,
             'transfer_uuid'  => $bankBook->transfer_uuid
         ]);
@@ -235,6 +239,7 @@ class BankBookController extends Controller
             'amount'         => 'required|numeric|min:1',
             'note'           => 'nullable|string',
             'from_account_id'=> 'nullable|exists:accounts,id',
+            'created_at'     => 'nullable|date',
         ]);
 
         try {

@@ -95,7 +95,8 @@
                         <th class="checkbox-column text-center">SL</th>
                         <th class="text-center">Bank Name</th>
                         <th class="text-center">Type</th>
-                        <th>Money</th>
+                        <th>Amount</th>
+                        <th>Date</th>
                         <th>Note</th>
                         <th class="text-center dt-no-sorting">Action</th>
                     </tr>
@@ -157,6 +158,7 @@
                     { data: 'bank_name',   name: 'bank_name', className:'text-center' }, // comes from account relation
                     { data: 'type',        name: 'type',      orderable:false, searchable:false, className:'text-center' },
                     { data: 'amount',      name: 'amount' },
+                    { data: 'date',      name: 'date' },
                     { data: 'note',        name: 'note' },
                     { data: 'action',      name: 'action', orderable:false, searchable:false, className:'text-center' }
                 ],
@@ -220,6 +222,7 @@
                     });
             });
 
+
             // Edit click → fetch row by id and fill the form
             $(document).on('click', '.edit-btn', function () {
                 const id = $(this).data('id');
@@ -229,6 +232,16 @@
                         $('#account_id').val(data.account_id);
                         $('#type').val(data.type);
                         $('#amount').val(data.amount);
+
+                        // Fix: Format created_at date for HTML input
+                        if (data.created_at) {
+                            const createdDate = new Date(data.created_at);
+                            const formattedDate = createdDate.toISOString().split('T')[0];
+                            $('#created_at').val(formattedDate);
+                        } else {
+                            $('#created_at').val('');
+                        }
+
                         $('#note').val(data.note || '');
 
                         // Set from_account if transfer
