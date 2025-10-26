@@ -204,7 +204,7 @@
                                         <option value="">-- Select Main Account --</option>
                                         @foreach($accounts as $account)
                                             <option value="{{ $account->id }}"
-                                                {{ str_contains(strtolower($account->name), 'dhaka') ? 'selected' : '' }}>
+                                                {{ str_contains(strtolower($account->name), 'cash book') ? 'selected' : '' }}>
                                                 {{ $account->name }}
                                                 <span class="account-balance">(Balance: {{ number_format($account->balance,2) }})</span>
                                             </option>

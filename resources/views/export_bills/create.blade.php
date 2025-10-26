@@ -146,7 +146,7 @@
                                 </div>
                                 <div class="col-md-3 mb-3">
                                     <label class="required-field">Bill Date</label>
-                                    <input type="date" name="bill_date" class="form-control form-control-sm input-highlight" required>
+                                    <input type="date" name="bill_date" class="form-control form-control-sm input-highlight"  required>
                                 </div>
                                 <div class="col-md-3 mb-3">
                                     <label class="required-field">Invoice No</label>
@@ -209,7 +209,7 @@
                                     <select name="account_id" class="form-control form-control-sm readonly-field" readonly>
                                         @foreach($accounts as $account)
                                             <option value="{{ $account->id }}"
-                                                {{ str_contains(strtolower($account->name), 'dhaka') ? 'selected' : '' }}>
+                                                {{ str_contains(strtolower($account->name), 'cash book') ? 'selected' : '' }}>
                                                 {{ $account->name }}
                                                 <span class="account-balance">(Balance: {{ number_format($account->balance,2) }})</span>
                                             </option>
