@@ -225,7 +225,7 @@ class BankBookController extends Controller
             'from_account_id'=> $fromAccountId,
             'type'           => ($bankBook->transfer_uuid ? 'Bank Transfer' : $bankBook->type),
             'amount'         => $bankBook->amount,
-            'created_at'     => $bankBook->created_at,
+            'created_at'     => $bankBook->created_at->format('Y-m-d'), // Format for HTML date input
             'note'           => $bankBook->note,
             'transfer_uuid'  => $bankBook->transfer_uuid
         ]);
@@ -248,6 +248,12 @@ class BankBookController extends Controller
                 $type = $request->type;
                 $amount = $request->amount;
                 $note = $request->note;
+
+                // Handle created_at - use custom date if provided
+                $updateData = [];
+                if ($request->filled('created_at')) {
+                    $updateData['created_at'] = Carbon::parse($request->created_at)->format('Y-m-d H:i:s');
+                }
 
                 // Target: Bank Transfer
                 if ($type === 'Bank Transfer') {
@@ -273,13 +279,13 @@ class BankBookController extends Controller
                                 $receive = $bankBook;
                             } else {
                                 // create the missing receive
-                                $receive = BankBook::create([
+                                $receive = BankBook::create(array_merge([
                                     'account_id'   => $request->account_id,
                                     'type'         => 'Receive',
                                     'amount'       => $amount,
                                     'note'         => $note,
                                     'transfer_uuid'=> $bankBook->transfer_uuid,
-                                ]);
+                                ], $updateData));
                             }
                         }
 
@@ -287,52 +293,52 @@ class BankBookController extends Controller
                             if ($bankBook->type == 'Bank Transfer') {
                                 $transfer = $bankBook;
                             } else {
-                                $transfer = BankBook::create([
+                                $transfer = BankBook::create(array_merge([
                                     'account_id'   => $request->from_account_id,
                                     'type'         => 'Bank Transfer',
                                     'amount'       => $amount,
                                     'note'         => $note,
                                     'transfer_uuid'=> $bankBook->transfer_uuid,
-                                ]);
+                                ], $updateData));
                             }
                         }
 
-                        // Update both records (model updating() will handle balances)
-                        $receive->update([
+                        // Update both records with created_at
+                        $receive->update(array_merge([
                             'account_id' => $request->account_id,
                             'type'       => 'Receive',
                             'amount'     => $amount,
                             'note'       => $note
-                        ]);
+                        ], $updateData));
 
-                        $transfer->update([
+                        $transfer->update(array_merge([
                             'account_id' => $request->from_account_id,
                             'type'       => 'Bank Transfer',
                             'amount'     => $amount,
                             'note'       => $note
-                        ]);
+                        ], $updateData));
 
                     } else {
                         // previously single record -> convert into transfer pair
                         $uuid = (string) Str::uuid();
 
                         // Update current as Receive and attach uuid
-                        $bankBook->update([
+                        $bankBook->update(array_merge([
                             'account_id'   => $request->account_id,
                             'type'         => 'Receive',
                             'amount'       => $amount,
                             'note'         => $note,
                             'transfer_uuid'=> $uuid
-                        ]);
+                        ], $updateData));
 
                         // Create the transfer side
-                        BankBook::create([
+                        BankBook::create(array_merge([
                             'account_id'    => $request->from_account_id,
                             'type'          => 'Bank Transfer',
                             'amount'        => $amount,
                             'note'          => $note,
                             'transfer_uuid' => $uuid
-                        ]);
+                        ], $updateData));
                     }
 
                 } else {
@@ -349,17 +355,17 @@ class BankBookController extends Controller
                             $pair->delete();
                         }
 
-                        // Update this row to requested non-transfer type (updating hook will reconcile balances)
-                        $bankBook->update([
+                        // Update this row to requested non-transfer type with created_at
+                        $bankBook->update(array_merge([
                             'account_id'   => $request->account_id,
                             'type'         => $request->type,
                             'amount'       => $amount,
                             'note'         => $note,
                             'transfer_uuid'=> null
-                        ]);
+                        ], $updateData));
                     } else {
-                        // simple update
-                        $bankBook->update($request->only(['account_id','type','amount','note']));
+                        // simple update with created_at
+                        $bankBook->update(array_merge($request->only(['account_id','type','amount','note']), $updateData));
                     }
                 }
 

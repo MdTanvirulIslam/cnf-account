@@ -39,7 +39,7 @@
                                    name="created_at"
                                    id="created_at"
                                    class="form-control"
-                                   value="{{ old('created_at') }}">
+                                   value="{{ date('Y-m-d') }}">
                         </div>
                         <div class="col-md-12 form-group">
                             <label for="type">Type</label>
