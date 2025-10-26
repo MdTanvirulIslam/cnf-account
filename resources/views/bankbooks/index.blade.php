@@ -8,8 +8,6 @@
 @endsection
 
 @section('content')
-
-
     <div class="row layout-spacing ">
 
         {{-- Left: Form --}}
@@ -20,7 +18,7 @@
 
                     <form id="bankbookForm" class="row g-3 BankBook">
                         @csrf
-                        <input type="hidden" id="bankbook_id" name="id"> {{-- set when editing --}}
+                        <input type="hidden" id="bankbook_id" name="id">
 
                         <div class="col-md-12 form-group">
                             <label>To Account *</label>
@@ -46,7 +44,6 @@
                             <select name="type" id="type" class="form-control form-control-sm">
                                 <option value="" selected>Select Type</option>
                                 <option value="Receive">Receive</option>
-                                {{--<option value="Withdraw">Withdraw</option>--}}
                                 <option value="Pay Order">Pay Order</option>
                                 <option value="Bank Transfer">Bank Transfer</option>
                             </select>
@@ -63,8 +60,6 @@
                                 @endforeach
                             </select>
                         </div>
-
-
 
                         <div class="col-md-12 form-group">
                             <label for="amount">Money</label>
@@ -110,8 +105,6 @@
 @endsection
 
 @section('scripts')
-    {{-- Load vendor scripts FIRST --}}
-
     <script src="{{ asset("assets/src/plugins/src/sweetalerts2/sweetalerts2.min.js") }}"></script>
     <script src="{{ asset("assets/src/plugins/src/table/datatable/datatables.js") }}"></script>
 
@@ -138,7 +131,7 @@
                 toggleFromAccount($(this).val());
             });
 
-            // DataTable init
+            // DataTable init - Changed to client-side processing
             const bankbookTable = $('#bankbookTable').DataTable({
                 "dom": "<'dt--top-section'<'row'<'col-12 col-sm-6 d-flex justify-content-sm-start justify-content-center'l><'col-12 col-sm-6 d-flex justify-content-sm-end justify-content-center mt-sm-0 mt-3'f>>>" +
                     "<'table-responsive'tr>" +
@@ -151,14 +144,14 @@
                     "sLengthMenu": "Results :  _MENU_",
                 },
                 processing: true,
-                serverSide: true,
+                serverSide: false, // Changed to client-side to fix the error
                 ajax: "{{ route('bankbooks.index') }}",
                 columns: [
                     { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable:false, searchable:false, className:'text-center' },
-                    { data: 'bank_name',   name: 'bank_name', className:'text-center' }, // comes from account relation
+                    { data: 'bank_name',   name: 'bank_name', className:'text-center' },
                     { data: 'type',        name: 'type',      orderable:false, searchable:false, className:'text-center' },
                     { data: 'amount',      name: 'amount' },
-                    { data: 'date',      name: 'date' },
+                    { data: 'date',        name: 'date' },
                     { data: 'note',        name: 'note' },
                     { data: 'action',      name: 'action', orderable:false, searchable:false, className:'text-center' }
                 ],
@@ -166,7 +159,6 @@
                     // Re-init Bootstrap tooltips after each draw
                     if (window.bootstrap) {
                         document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => {
-                            // Prevent duplicate instances
                             if (!el._tooltip) {
                                 el._tooltip = new bootstrap.Tooltip(el);
                             }
@@ -182,6 +174,7 @@
                 editId = null;
                 $('#formSubmitBtn').text('Create');
                 $('#formCancelBtn').addClass('d-none');
+                $('#created_at').val('{{ date('Y-m-d') }}'); // Reset to current date
                 toggleFromAccount('');
             }
 
@@ -222,24 +215,23 @@
                     });
             });
 
-
             // Edit click → fetch row by id and fill the form
             $(document).on('click', '.edit-btn', function () {
                 const id = $(this).data('id');
                 $.get("/bankbooks/" + id + "/edit")
                     .done(function (data) {
+                        console.log('Edit data received:', data); // For debugging
+
                         $('#bankbook_id').val(data.id);
                         $('#account_id').val(data.account_id);
                         $('#type').val(data.type);
                         $('#amount').val(data.amount);
 
-                        // Fix: Format created_at date for HTML input
+                        // Simple and reliable date handling
                         if (data.created_at) {
-                            const createdDate = new Date(data.created_at);
-                            const formattedDate = createdDate.toISOString().split('T')[0];
-                            $('#created_at').val(formattedDate);
+                            $('#created_at').val(data.created_at);
                         } else {
-                            $('#created_at').val('');
+                            $('#created_at').val('{{ date('Y-m-d') }}');
                         }
 
                         $('#note').val(data.note || '');
@@ -260,7 +252,8 @@
                         // scroll to form
                         $('html, body').animate({ scrollTop: $('.BankBook').offset().top - 80 }, 300);
                     })
-                    .fail(function () {
+                    .fail(function (xhr) {
+                        console.error('Edit error:', xhr.responseText);
                         Swal.fire('Error!', 'Failed to load record for editing.', 'error');
                     });
             });
@@ -270,7 +263,7 @@
                 resetFormToCreate();
             });
 
-            // Delete with SweetAlert (unchanged)
+            // Delete with SweetAlert
             $(document).on('click', '.delete-btn', function () {
                 const id = $(this).data('id');
 

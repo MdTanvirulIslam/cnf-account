@@ -113,7 +113,6 @@ class BankBookController extends Controller
         return view('bankbooks.index', compact('accounts'));
     }
 
-
     public function store(Request $request)
     {
         $request->validate([
@@ -122,7 +121,7 @@ class BankBookController extends Controller
             'amount'         => 'required|numeric|min:1',
             'note'           => 'nullable|string',
             'from_account_id'=> 'nullable|exists:accounts,id',
-            'created_at'     => 'nullable|date',
+            'created_at'     => 'required|date',
         ]);
 
         try {
@@ -136,12 +135,8 @@ class BankBookController extends Controller
                     'type' => $type,
                     'amount' => $amount,
                     'note' => $note,
+                    'created_at' => Carbon::parse($request->created_at)->format('Y-m-d H:i:s'),
                 ];
-
-                // Handle created_at - use custom date if provided, otherwise auto
-                if ($request->filled('created_at')) {
-                    $commonData['created_at'] = Carbon::parse($request->created_at)->format('Y-m-d H:i:s');
-                }
 
                 if ($type === 'Bank Transfer') {
                     // extra validation: ensure from_account provided and different
@@ -225,7 +220,7 @@ class BankBookController extends Controller
             'from_account_id'=> $fromAccountId,
             'type'           => ($bankBook->transfer_uuid ? 'Bank Transfer' : $bankBook->type),
             'amount'         => $bankBook->amount,
-            'created_at'     => $bankBook->created_at->format('Y-m-d'), // Format for HTML date input
+            'created_at'     => $bankBook->created_at->format('Y-m-d'), // Force format for HTML date input
             'note'           => $bankBook->note,
             'transfer_uuid'  => $bankBook->transfer_uuid
         ]);
@@ -239,7 +234,7 @@ class BankBookController extends Controller
             'amount'         => 'required|numeric|min:1',
             'note'           => 'nullable|string',
             'from_account_id'=> 'nullable|exists:accounts,id',
-            'created_at'     => 'nullable|date',
+            'created_at'     => 'required|date',
         ]);
 
         try {
@@ -249,11 +244,10 @@ class BankBookController extends Controller
                 $amount = $request->amount;
                 $note = $request->note;
 
-                // Handle created_at - use custom date if provided
-                $updateData = [];
-                if ($request->filled('created_at')) {
-                    $updateData['created_at'] = Carbon::parse($request->created_at)->format('Y-m-d H:i:s');
-                }
+                // Handle created_at
+                $updateData = [
+                    'created_at' => Carbon::parse($request->created_at)->format('Y-m-d H:i:s'),
+                ];
 
                 // Target: Bank Transfer
                 if ($type === 'Bank Transfer') {
