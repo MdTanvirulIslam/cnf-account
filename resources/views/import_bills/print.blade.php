@@ -91,13 +91,16 @@
             font-size: 13px;
         }
 
-        /* Print button styles */
-        .print-button-container {
+        /* Print and Export button styles */
+        .button-container {
             text-align: right;
             margin-bottom: 20px;
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
         }
 
-        .btn-print {
+        .btn-print, .btn-excel {
             background-color: #007bff;
             color: white;
             border: none;
@@ -108,13 +111,21 @@
             transition: background-color 0.3s;
         }
 
+        .btn-excel {
+            background-color: #28a745;
+        }
+
         .btn-print:hover {
             background-color: #0056b3;
         }
 
+        .btn-excel:hover {
+            background-color: #218838;
+        }
+
         /* Print styles */
         @media print {
-            .print-button-container {
+            .button-container {
                 display: none;
             }
 
@@ -180,9 +191,13 @@
 @section('content')
     <div class="row layout-spacing ">
         <div class="col-xl-12 layout-top-spacing">
-            <div class="print-button-container">
+            <div class="button-container">
+
                 <button class="btn-print" id="printButton">
                     🖨️ Print Bill
+                </button>
+                <button class="btn-excel" id="excelButton">
+                    📊 Export to Excel
                 </button>
             </div>
 
@@ -387,6 +402,151 @@
             printWindow.document.close();
         }
 
+        function exportToExcel() {
+            console.log('Export to Excel clicked');
+
+            try {
+                // Create HTML table with inline styling for Excel
+                const tableHTML = `
+<html>
+<head>
+    <meta charset="UTF-8">
+</head>
+<body>
+    <table style="border-collapse: collapse; width: 100%; font-family: Arial; font-size: 11px;">
+        <!-- Empty row -->
+        <tr>
+            <td colspan="4" style="border: none; padding: 5px;"></td>
+        </tr>
+
+        <!-- Company Header Section -->
+        <tr>
+            <td colspan="4" style="border: 1px solid #000000; padding: 10px; text-align: center; font-weight: bold; font-size: 16px;">
+                MULTI FABS LTD <br/>
+                (SELF C&F AGENTS)<br/>
+                314, SK. MUJIB ROAD, CHOWDHURY BHABAN (4TH FLOOR) AGRABAD, CHITTAGONG
+            </td>
+        </tr>
+
+        <!-- Empty row -->
+        <tr>
+            <td colspan="4" style="border: none; padding: 5px;"></td>
+        </tr>
+
+        <!-- Bill No and Date -->
+        <tr>
+            <td colspan="2" style="border: 1px solid #000000; padding: 5px; text-align: left; font-weight: bold;">BILL NO: {{ $bill->bill_no }}</td>
+            <td colspan="2" style="border: 1px solid #000000; padding: 5px; text-align: right; font-weight: bold;">DATE: {{ \Carbon\Carbon::parse($bill->bill_date)->format('d/m/Y') }}</td>
+        </tr>
+
+        <!-- Empty row -->
+        <tr>
+            <td colspan="4" style="border: none; padding: 5px;"></td>
+        </tr>
+
+        <!-- Sub Title -->
+        <tr>
+            <td colspan="4" style="border: 1px solid #000000; padding: 8px; text-align: left; font-weight: bold; font-size: 12px;">SUB: CLEARING BILL FOR {{ strtoupper($bill->item ?? '') }}</td>
+        </tr>
+
+        <!-- Empty row -->
+        <tr>
+            <td colspan="4" style="border: none; padding: 5px;"></td>
+        </tr>
+
+        <!-- LC and Item Information -->
+        <tr>
+            <td style="border: 1px solid #000000; padding: 5px; text-align: left; font-weight: bold;">L/C NO</td>
+            <td style="border: 1px solid #000000; padding: 5px; text-align: left;">{{ $bill->lc_no }}</td>
+            <td style="border: 1px solid #000000; padding: 5px; text-align: left; font-weight: bold;">Date</td>
+            <td style="border: 1px solid #000000; padding: 5px; text-align: left;">{{ $bill->lc_date ? \Carbon\Carbon::parse($bill->lc_date)->format('d/m/Y') : '' }}</td>
+        </tr>
+        <tr>
+            <td style="border: 1px solid #000000; padding: 5px; text-align: left; font-weight: bold;">ITEM</td>
+            <td style="border: 1px solid #000000; padding: 5px; text-align: left;">{{ $bill->item }}</td>
+            <td style="border: 1px solid #000000; padding: 5px; text-align: left; font-weight: bold;">VALUE</td>
+            <td style="border: 1px solid #000000; padding: 5px; text-align: left;">{{ number_format($bill->value,2) }}</td>
+        </tr>
+        <tr>
+            <td style="border: 1px solid #000000; padding: 5px; text-align: left; font-weight: bold;">QTY</td>
+            <td style="border: 1px solid #000000; padding: 5px; text-align: left;">{{ $bill->qty }}</td>
+            <td style="border: 1px solid #000000; padding: 5px; text-align: left; font-weight: bold;">WEIGHT</td>
+            <td style="border: 1px solid #000000; padding: 5px; text-align: left;">{{ $bill->weight }}</td>
+        </tr>
+        <tr>
+            <td style="border: 1px solid #000000; padding: 5px; text-align: left; font-weight: bold;">B/E NO</td>
+            <td style="border: 1px solid #000000; padding: 5px; text-align: left;">{{ $bill->be_no }}</td>
+            <td style="border: 1px solid #000000; padding: 5px; text-align: left; font-weight: bold;">Date</td>
+            <td style="border: 1px solid #000000; padding: 5px; text-align: left;">{{ $bill->be_date ? \Carbon\Carbon::parse($bill->be_date)->format('d/m/Y') : '' }}</td>
+        </tr>
+
+        <!-- Empty row -->
+        <tr>
+            <td colspan="4" style="border: none; padding: 5px;"></td>
+        </tr>
+
+        <!-- Expense Table Header -->
+        <tr>
+            <td style="border: 1px solid #000000; padding: 8px; text-align: center; font-weight: bold; width: 8%;">SL NO</td>
+            <td style="border: 1px solid #000000; padding: 8px; text-align: center; font-weight: bold; width: 60%;">DESCRIPTION</td>
+            <td style="border: 1px solid #000000; padding: 8px; text-align: center; font-weight: bold; width: 16%;">AMOUNT</td>
+            <td style="border: 1px solid #000000; padding: 8px; text-align: center; font-weight: bold; width: 16%;">REMARK</td>
+        </tr>
+
+        <!-- Expense Rows -->
+        @foreach($bill->expenses as $i => $expense)
+                <tr>
+                    <td style="border: 1px solid #000000; padding: 5px; text-align: center;">{{ $i+1 }}</td>
+            <td style="border: 1px solid #000000; padding: 5px; text-align: left;">{{ strtoupper($expense->expense_type) }}</td>
+            <td style="border: 1px solid #000000; padding: 5px; text-align: center;">{{ $expense->amount > 0 ? number_format($expense->amount,2) : '' }}</td>
+            <td style="border: 1px solid #000000; padding: 5px; text-align: center;"></td>
+        </tr>
+        @endforeach
+
+                <!-- Total Row -->
+                <tr>
+                    <td style="border: 1px solid #000000; padding: 5px;"></td>
+                    <td style="border: 1px solid #000000; padding: 5px; text-align: center; font-weight: bold;">TOTAL AMOUNT</td>
+                    <td style="border: 1px solid #000000; padding: 5px; text-align: center; font-weight: bold;">{{ number_format($total,2) }}</td>
+            <td style="border: 1px solid #000000; padding: 5px;"></td>
+        </tr>
+
+        <!-- Empty row -->
+        <tr>
+            <td colspan="4" style="border: none; padding: 5px;"></td>
+        </tr>
+
+        <!-- Inward Row -->
+        <tr>
+            <td colspan="4" style="border: 1px solid #000000; padding: 8px; text-align: left; font-weight: bold;">INWARD: {{ strtoupper(convertToTakaWords($total)) }}</td>
+        </tr>
+    </table>
+</body>
+</html>
+                `;
+
+                // Create a Blob and download
+                const blob = new Blob([tableHTML], {
+                    type: 'application/vnd.ms-excel'
+                });
+
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `Import_Bill_{{ $bill->bill_no }}.xls`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+
+                console.log('Excel file generated successfully');
+
+            } catch (error) {
+                console.error('Error generating Excel file:', error);
+                alert('Error generating Excel file: ' + error.message);
+            }
+        }
+
         // Alternative method if popup is blocked
         function alternativePrint() {
             const printContent = document.getElementById('invoiceCard').innerHTML;
@@ -398,25 +558,38 @@
             window.location.reload();
         }
 
-        // Keyboard shortcut
+        // Keyboard shortcuts
         document.addEventListener('keydown', function(e) {
             if (e.ctrlKey && e.key === 'p') {
                 e.preventDefault();
                 printInvoice();
             }
+            if (e.ctrlKey && e.key === 'e') {
+                e.preventDefault();
+                exportToExcel();
+            }
         });
 
-        // Attach event listener to print button
+        // Attach event listeners to buttons
         document.addEventListener('DOMContentLoaded', function() {
             const printButton = document.getElementById('printButton');
+            const excelButton = document.getElementById('excelButton');
+
             if (printButton) {
                 printButton.addEventListener('click', function() {
                     printInvoice();
+                });
+            }
+
+            if (excelButton) {
+                excelButton.addEventListener('click', function() {
+                    exportToExcel();
                 });
             }
         });
 
         // Fallback if first method fails
         window.printInvoice = printInvoice;
+        window.exportToExcel = exportToExcel;
     </script>
 @endsection
