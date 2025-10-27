@@ -8,7 +8,7 @@
                 <div class="card-body">
                     <h4 class="mb-3">Bank Book Report</h4>
 
-                    <!-- FILTER FORM: keep your visual classes if you already have different design -->
+                    <!-- FILTER FORM -->
                     <form id="filterForm" class="mb-4 row g-3 BankBook">
                         <div class="row g-2 align-items-end">
                             <div class="col-md-2">
@@ -52,7 +52,7 @@
 
                     <!-- REPORT TABLE (this is replaced dynamically by AJAX) -->
                     <div id="reportTable">
-                        @include('partials.bankbookReportTable', ['data' => $data])
+                        @include('partials.bankbookReportTable', ['data' => $data, 'month' => $month ?? '', 'bank' => $bank ?? ''])
                     </div>
                 </div>
             </div>
@@ -61,9 +61,6 @@
 @endsection
 
 @section('scripts')
-    <!-- Include SheetJS library for Excel export -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-
     <script>
         $(document).ready(function () {
             // Store original values for reset
@@ -90,15 +87,6 @@
 
             // Trigger AJAX when any filter changes
             $('#bank, #month, #type').on('change', function () {
-                loadReport({
-                    bank: $('#bank').val(),
-                    month: $('#month').val(),
-                    type: $('#type').val()
-                });
-            });
-
-            // Reload button
-            $('#reloadBtn').on('click', function () {
                 loadReport({
                     bank: $('#bank').val(),
                     month: $('#month').val(),
@@ -226,69 +214,236 @@
                     printWindow.focus();
                     setTimeout(function() {
                         printWindow.print();
-                        // printWindow.close(); // Uncomment to automatically close after printing
                     }, 250);
                 };
             }
 
-            // Function to export to Excel
+            // Function to export to Excel with inline CSS
             function exportToExcel() {
                 try {
-                    // Get the table from inside the reportTable div
-                    const table = document.querySelector('#reportTable table');
+                    // Get filter values
+                    const monthValue = $('#month').val();
+                    const bankValue = $('#bank').val();
+                    const typeValue = $('#type').val();
 
+                    const formattedMonth = monthValue ? new Date(monthValue + '-01').toLocaleDateString('en-US', { year: 'numeric', month: 'long' }) : 'All Time';
+                    const formattedBank = bankValue === 'all' ? 'All Banks' : bankValue;
+                    const currentDate = new Date().toLocaleDateString('en-GB');
+
+                    // Get the table data from the current view
+                    const table = document.querySelector('#reportTable table');
                     if (!table) {
-                        alert('No table data found to export. Please try loading the report first.');
+                        alert('No data found to export.');
                         return;
                     }
 
-                    // Create a new workbook
-                    const wb = XLSX.utils.book_new();
+                    // Create HTML table with inline styling for Excel
+                    const tableHTML = `
+<html>
+<head>
+    <meta charset="UTF-8">
+</head>
+<body>
+    <table style="border-collapse: collapse; width: 100%; font-family: Arial; font-size: 11px;">
+        <!-- Company Header Section -->
+        <tr>
+            <td colspan="6" style="border: 1px solid #000000; padding: 10px; text-align: center; font-weight: bold; font-size: 16px;">
+                MULTI FABS LTD <br/>
+                (SELF C&F AGENTS)<br/>
+                314, SK. MUJIB ROAD, CHOWDHURY BHABAN (4TH FLOOR) AGRABAD, CHITTAGONG
+            </td>
+        </tr>
 
-                    // Convert table to worksheet
-                    const ws = XLSX.utils.table_to_sheet(table);
+        <!-- Empty row -->
+        <tr>
+            <td colspan="6" style="border: none; padding: 5px;"></td>
+        </tr>
 
-                    // Apply number formatting for currency columns
-                    const range = XLSX.utils.decode_range(ws['!ref']);
-                    for (let R = range.s.r + 1; R <= range.e.r; ++R) {
-                        // Format amount and balance columns (assuming they are the last two columns)
-                        for (let C = range.e.c - 1; C <= range.e.c; ++C) {
-                            const cellAddress = XLSX.utils.encode_cell({r: R, c: C});
-                            if (ws[cellAddress] && ws[cellAddress].v) {
-                                // Format as number
-                                ws[cellAddress].t = 'n';
-                                // Add currency format
-                                ws[cellAddress].z = '$#,##0.00';
-                            }
-                        }
-                    }
+        <!-- Report Info -->
+        <tr>
+            <td colspan="3" style="border: 1px solid #000000; padding: 5px; text-align: left; font-weight: bold;">
+                Bank Book For the Month of ${formattedMonth} and Bank is ${formattedBank}
+            </td>
+            <td colspan="3" style="border: 1px solid #000000; padding: 5px; text-align: right; font-weight: bold;">
+                Date: ${currentDate}
+            </td>
+        </tr>
 
-                    // Auto-size columns for better Excel display
-                    if (!ws['!cols']) ws['!cols'] = [];
-                    for (let i = 0; i <= range.e.c; i++) {
-                        ws['!cols'][i] = { width: 15 };
-                    }
+        <!-- Empty row -->
+        <tr>
+            <td colspan="6" style="border: none; padding: 5px;"></td>
+        </tr>
 
-                    // Add worksheet to workbook
-                    XLSX.utils.book_append_sheet(wb, ws, "Bank Book Report");
+        <!-- Table Header -->
+        <tr>
+            <td style="border: 1px solid #000000; padding: 8px; text-align: center; font-weight: bold; width: 15%;">Date</td>
+            <td style="border: 1px solid #000000; padding: 8px; text-align: center; font-weight: bold; width: 15%;">Type</td>
+            <td style="border: 1px solid #000000; padding: 8px; text-align: center; font-weight: bold; width: 30%;">Note</td>
+            <td style="border: 1px solid #000000; padding: 8px; text-align: center; font-weight: bold; width: 15%;">Received Amount</td>
+            <td style="border: 1px solid #000000; padding: 8px; text-align: center; font-weight: bold; width: 15%;">Withdrawal Amount</td>
+            <td style="border: 1px solid #000000; padding: 8px; text-align: center; font-weight: bold; width: 15%;">Final Amount</td>
+        </tr>
 
-                    // Generate Excel file and trigger download
-                    const month = $('#month').val();
-                    const bank = $('#bank').val();
-                    const type = $('#type').val();
+        <!-- Table Rows -->
+        ${getTableRowsHTML()}
 
-                    const monthFormatted = month ? new Date(month + '-01').toLocaleDateString('en-US', { year: 'numeric', month: 'long' }) : 'All_Time';
-                    const bankFormatted = bank === 'all' ? 'All_Banks' : bank.replace(/\s+/g, '_');
-                    const typeFormatted = type === 'all' ? 'All_Types' : type.replace(/\s+/g, '_');
+        <!-- Total Row -->
+        ${getTotalRowHTML()}
+    </table>
+</body>
+</html>
+                    `;
 
-                    const fileName = `Bank_Book_Report_${monthFormatted.replace(/\s+/g, '_')}_${bankFormatted}_${typeFormatted}.xlsx`;
+                    // Create a Blob and download
+                    const blob = new Blob([tableHTML], {
+                        type: 'application/vnd.ms-excel'
+                    });
 
-                    XLSX.writeFile(wb, fileName);
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+
+                    const fileName = `Bank_Book_${formattedMonth.replace(/\s+/g, '_')}_${formattedBank.replace(/\s+/g, '_')}.xls`;
+                    a.download = fileName;
+
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+
+                    console.log('Excel file generated successfully');
 
                 } catch (error) {
-                    console.error("Error exporting to Excel:", error);
-                    alert("Error exporting to Excel. Please try again.");
+                    console.error('Error generating Excel file:', error);
+                    alert('Error generating Excel file: ' + error.message);
                 }
+            }
+
+            // Helper function to get table rows HTML
+            function getTableRowsHTML() {
+                const rows = document.querySelectorAll('#reportTable table tbody tr');
+                let rowsHTML = '';
+
+                // Check if there are any data rows
+                if (rows.length === 0) {
+                    return `
+        <tr>
+            <td colspan="6" style="border: 1px solid #000000; padding: 5px; text-align: center;">No records found.</td>
+        </tr>
+                    `;
+                }
+
+                rows.forEach(row => {
+                    const cells = row.querySelectorAll('td');
+                    if (cells.length === 6) {
+                        const date = cells[0].textContent.trim();
+                        const type = cells[1].textContent.trim();
+                        const note = cells[2].textContent.trim();
+                        const received = cells[3].textContent.trim();
+                        const withdrawal = cells[4].textContent.trim();
+                        const final = cells[5].textContent.trim();
+
+                        rowsHTML += `
+        <tr>
+            <td style="border: 1px solid #000000; padding: 5px; text-align: center;">${date}</td>
+            <td style="border: 1px solid #000000; padding: 5px; text-align: left;">${type}</td>
+            <td style="border: 1px solid #000000; padding: 5px; text-align: left;">${note}</td>
+            <td style="border: 1px solid #000000; padding: 5px; text-align: center;">${received === '-' ? '' : received}</td>
+            <td style="border: 1px solid #000000; padding: 5px; text-align: center;">${withdrawal === '-' ? '' : withdrawal}</td>
+            <td style="border: 1px solid #000000; padding: 5px; text-align: center;">${final}</td>
+        </tr>
+                        `;
+                    }
+                });
+
+                return rowsHTML;
+            }
+
+            // Helper function to get total row HTML - COMPLETELY REWRITTEN
+            function getTotalRowHTML() {
+                console.log('Getting total row HTML...');
+
+                // Method 1: Try to get from tfoot with detailed logging
+                const tfoot = document.querySelector('#reportTable table tfoot');
+                console.log('TFoot found:', tfoot);
+
+                if (tfoot) {
+                    const tfootRows = tfoot.querySelectorAll('tr');
+                    console.log('TFoot rows:', tfootRows.length);
+
+                    for (let row of tfootRows) {
+                        const cells = row.querySelectorAll('th, td');
+                        console.log('TFoot cells:', cells.length);
+
+                        if (cells.length >= 6) {
+                            const receiveTotal = cells[3]?.textContent?.trim() || '0.00';
+                            const withdrawTotal = cells[4]?.textContent?.trim() || '0.00';
+                            const finalTotal = cells[5]?.textContent?.trim() || '0.00';
+
+                            console.log('TFoot totals:', { receiveTotal, withdrawTotal, finalTotal });
+
+                            return `
+        <tr>
+            <td colspan="3" style="border: 1px solid #000000; padding: 5px; text-align: right; font-weight: bold;">Total</td>
+            <td style="border: 1px solid #000000; padding: 5px; text-align: center; font-weight: bold;">${receiveTotal}</td>
+            <td style="border: 1px solid #000000; padding: 5px; text-align: center; font-weight: bold;">${withdrawTotal}</td>
+            <td style="border: 1px solid #000000; padding: 5px; text-align: center; font-weight: bold;">${finalTotal}</td>
+        </tr>
+                            `;
+                        }
+                    }
+                }
+
+                // Method 2: Try to calculate totals from data rows
+                console.log('Calculating totals from data rows...');
+                let calculatedReceiveTotal = 0;
+                let calculatedWithdrawTotal = 0;
+
+                const dataRows = document.querySelectorAll('#reportTable table tbody tr');
+                dataRows.forEach(row => {
+                    const cells = row.querySelectorAll('td');
+                    if (cells.length === 6) {
+                        const receivedText = cells[3].textContent.trim();
+                        const withdrawalText = cells[4].textContent.trim();
+
+                        if (receivedText !== '-' && receivedText !== '') {
+                            calculatedReceiveTotal += parseFloat(receivedText.replace(/,/g, '')) || 0;
+                        }
+                        if (withdrawalText !== '-' && withdrawalText !== '') {
+                            calculatedWithdrawTotal += parseFloat(withdrawalText.replace(/,/g, '')) || 0;
+                        }
+                    }
+                });
+
+                const calculatedFinalTotal = calculatedReceiveTotal - calculatedWithdrawTotal;
+
+                console.log('Calculated totals:', {
+                    receive: calculatedReceiveTotal,
+                    withdraw: calculatedWithdrawTotal,
+                    final: calculatedFinalTotal
+                });
+
+                if (calculatedReceiveTotal !== 0 || calculatedWithdrawTotal !== 0) {
+                    return `
+        <tr>
+            <td colspan="3" style="border: 1px solid #000000; padding: 5px; text-align: right; font-weight: bold;">Total</td>
+            <td style="border: 1px solid #000000; padding: 5px; text-align: center; font-weight: bold;">${calculatedReceiveTotal.toFixed(2)}</td>
+            <td style="border: 1px solid #000000; padding: 5px; text-align: center; font-weight: bold;">${calculatedWithdrawTotal.toFixed(2)}</td>
+            <td style="border: 1px solid #000000; padding: 5px; text-align: center; font-weight: bold;">${calculatedFinalTotal.toFixed(2)}</td>
+        </tr>
+                    `;
+                }
+
+                // Method 3: Default fallback
+                console.log('Using default totals');
+                return `
+        <tr>
+            <td colspan="3" style="border: 1px solid #000000; padding: 5px; text-align: right; font-weight: bold;">Total</td>
+            <td style="border: 1px solid #000000; padding: 5px; text-align: center; font-weight: bold;">0.00</td>
+            <td style="border: 1px solid #000000; padding: 5px; text-align: center; font-weight: bold;">0.00</td>
+            <td style="border: 1px solid #000000; padding: 5px; text-align: center; font-weight: bold;">0.00</td>
+        </tr>
+                `;
             }
         });
     </script>

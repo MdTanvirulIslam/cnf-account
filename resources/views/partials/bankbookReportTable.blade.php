@@ -1,11 +1,21 @@
 @php
     use Carbon\Carbon;
 
-    $receiveTotal = $data->filter(fn($r) => strtolower((string) $r->type) === 'receive')->sum('amount');
-    $withdrawTotal = $data->filter(fn($r) => strtolower((string) $r->type) !== 'receive')->sum('amount');
-    $finalTotal = $receiveTotal - $withdrawTotal;
+    // Calculate totals
+    $receiveTotal = 0;
+    $withdrawTotal = 0;
 
+    foreach ($data as $row) {
+        if (strtolower((string) $row->type) === 'receive') {
+            $receiveTotal += $row->amount;
+        } else {
+            $withdrawTotal += $row->amount;
+        }
+    }
+
+    $finalTotal = $receiveTotal - $withdrawTotal;
 @endphp
+
 <style>
     .company-header {
         text-align: center;
@@ -32,34 +42,6 @@
 
     .invoice-info div {
         width: 48%;
-    }
-
-    h3 {
-        margin-top: 20px;
-        font-size: 15px;
-        text-transform: uppercase;
-    }
-
-    .info-table {
-        width: 100%;
-        border-collapse: collapse;
-        margin: 10px 0 20px;
-        font-size: 13px;
-    }
-
-    .info-table td {
-        border: 1px solid #222;
-        padding: 6px;
-        vertical-align: top;
-    }
-
-    .info-key {
-        font-weight: bold;
-        width: 10%;
-    }
-
-    .info-value {
-        width: 40%;
     }
 
     .invoice-table {
@@ -91,22 +73,19 @@
         font-weight: bold;
         background: #f9f9f9;
     }
-
-    .footer-note {
-        margin-top: 20px;
-        font-size: 13px;
-    }
 </style>
+
 <div class="company-header">
     <h1>MULTI FABS LTD</h1>
     <p>(SELF C&F AGENTS)</p>
     <p>314, SK. MUJIB ROAD, CHOWDHURY BHABAN (4TH FLOOR) AGRABAD, CHITTAGONG.</p>
 </div>
 <hr style="border: none; border-top: 1px solid #222; margin: 10px 0 18px 0;"/>
+
 <div class="invoice-info">
     <div>
         <strong>Bank Book</strong>
-        For the Month of {{ \Carbon\Carbon::createFromFormat('Y-m', $month)->format('F, Y') }}
+        For the Month of {{ $month ? \Carbon\Carbon::createFromFormat('Y-m', $month)->format('F, Y') : 'All Time' }}
         and Bank is {{ (string) $bank === 'all' ? 'All Banks' : $bank }}
     </div>
     <div class="right">
@@ -166,7 +145,7 @@
 
     @if($data->count() > 0)
         <tfoot>
-        <tr>
+        <tr class="total-row">
             <th colspan="3" class="text-end">Total</th>
             <th class="text-end">{{ number_format($receiveTotal, 2) }}</th>
             <th class="text-end">{{ number_format($withdrawTotal, 2) }}</th>
@@ -175,3 +154,15 @@
         </tfoot>
     @endif
 </table>
+
+<!-- Debug element to check if totals are calculated correctly -->
+<script>
+    console.log('Bank Book Totals:', {
+        receiveTotal: {{ $receiveTotal }},
+        withdrawTotal: {{ $withdrawTotal }},
+        finalTotal: {{ $finalTotal }},
+        formattedReceive: '{{ number_format($receiveTotal, 2) }}',
+        formattedWithdraw: '{{ number_format($withdrawTotal, 2) }}',
+        formattedFinal: '{{ number_format($finalTotal, 2) }}'
+    });
+</script>
