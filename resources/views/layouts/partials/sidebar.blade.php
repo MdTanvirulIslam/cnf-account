@@ -13,15 +13,25 @@
                     </div>
                 </a>
             </li>
-
-
             <li class="menu">
-                <a  href="{{ route("bankbooks.index") }}" aria-expanded="false" class="dropdown-toggle">
+                <a href="#BankBook" data-bs-toggle="collapse" aria-expanded="false" class="dropdown-toggle">
                     <div class="">
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><!--!Font Awesome Free v7.0.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2025 Fonticons, Inc.--><path fill="#383838" d="M335.9 84.2C326.1 78.6 314 78.6 304.1 84.2L80.1 212.2C67.5 219.4 61.3 234.2 65 248.2C68.7 262.2 81.5 272 96 272L128 272L128 480L128 480L76.8 518.4C68.7 524.4 64 533.9 64 544C64 561.7 78.3 576 96 576L544 576C561.7 576 576 561.7 576 544C576 533.9 571.3 524.4 563.2 518.4L512 480L512 272L544 272C558.5 272 571.2 262.2 574.9 248.2C578.6 234.2 572.4 219.4 559.8 212.2L335.8 84.2zM464 272L464 480L400 480L400 272L464 272zM352 272L352 480L288 480L288 272L352 272zM240 272L240 480L176 480L176 272L240 272zM320 160C337.7 160 352 174.3 352 192C352 209.7 337.7 224 320 224C302.3 224 288 209.7 288 192C288 174.3 302.3 160 320 160z"/></svg>
                         <span>Bank Book</span>
                     </div>
+                    <div>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-chevron-right"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                    </div>
                 </a>
+                <ul class="collapse submenu list-unstyled" id="BankBook" data-bs-parent="#accordionExample">
+                    <li>
+                        <a href="{{ route('bankbooks.index') }}"> Bank Book </a>
+                    </li>
+                    <li>
+                        <a href="{{ route('bankbook.report') }}"> Bank Book Report </a>
+                    </li>
+
+                </ul>
             </li>
 
             <li class="menu">
@@ -84,6 +94,9 @@
                     <li>
                         <a href="{{ route("categories.index") }}"> Expense Category </a>
                     </li>
+                    <li>
+                        <a href="{{ route('expense.report') }}"> Expense Report </a>
+                    </li>
 
                 </ul>
             </li>
@@ -115,6 +128,12 @@
                     <li>
                         <a href="{{ route("transactions.export") }}"> Export Cash</a>
                     </li>
+                    <li>
+                        <a href="{{ route('employee.cash.report') }}"> Employee Cash Report </a>
+                    </li>
+                    <li>
+                        <a href="{{ route('employee-daily-cash-report.index') }}"> Employee Daily Cash Report </a>
+                    </li>
 
                 </ul>
             </li>
@@ -134,12 +153,8 @@
                     <li>
                         <a href="{{ route('summary.report') }}">Summary Report </a>
                     </li>
-                    <li>
-                        <a href="{{ route('bankbook.report') }}"> Bank Book Report </a>
-                    </li>
-                    <li>
-                        <a href="{{ route('expense.report') }}"> Expense Report </a>
-                    </li>
+
+
                     <li>
                         <a href="{{ route('import.bill.report') }}"> Import Bill Report </a>
                     </li>
@@ -152,12 +167,7 @@
                     <li>
                         <a href="{{ route('export.bill.summary.report') }}"> Export Bill Statement </a>
                     </li>
-                    <li>
-                        <a href="{{ route('employee.cash.report') }}"> Employee Cash Report </a>
-                    </li>
-                    <li>
-                        <a href="{{ route('employee-daily-cash-report.index') }}"> Employee Daily Cash Report </a>
-                    </li>
+
 
                 </ul>
             </li>
@@ -181,7 +191,7 @@
                         <a href="{{ route('buyers.index') }}"> Buyers </a>
                     </li>
                     <li>
-                        <a href="#"> Profile Settings </a>
+                        <a href="{{ route('profile.edit') }}"> Profile Settings </a>
                     </li>
 
                 </ul>

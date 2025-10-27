@@ -26,6 +26,17 @@ class SetPageTitle
             'export-bills.edit'  => 'Update Export Bill',
             'buyers.index'  => 'Buyers',
             'accounts.index'  => 'Accounts',
+            'bankbook.report'  => 'Bank Book Report',
+            'expense.report'  => 'Expense Report',
+            'employee.cash.report'  => 'Employee Cash Report',
+            'employee-daily-cash-report.index'  => 'Employee Daily Cash Report',
+            'summary.report'  => 'Summary Report',
+            'import.bill.report'  => 'Import Bill Report',
+            'import.bill.summary.report'  => 'Import Bill Summary Report',
+            'export.bill.report'  => 'Export Bill Report',
+            'export.bill.summary.report'  => 'Export Bill Summary Report',
+            'profile.edit'  => 'Profile',
+
 
         ];
 
