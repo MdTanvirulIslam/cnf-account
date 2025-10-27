@@ -3,6 +3,12 @@
     $totalAmount = $data->sum('amount');
 @endphp
 
+<!-- Hidden element to store totals for Excel export -->
+<div id="expenseTotals"
+     data-total-amount="{{ number_format($totalAmount, 2) }}"
+     style="display: none;">
+</div>
+
 <div class="company-header">
     <h1>MULTI FABS LTD</h1>
     <p>(SELF C&F AGENTS)</p>
@@ -11,7 +17,7 @@
 <hr style="border: none; border-top: 1px solid #222; margin: 10px 0 18px 0;" />
 <div class="invoice-info">
     <div>
-        <strong>Expense of </strong> {{ \Carbon\Carbon::createFromFormat('Y-m', $month)->format('F, Y') }} ||
+        <strong>Expense of </strong> {{ $month ? \Carbon\Carbon::createFromFormat('Y-m', $month)->format('F, Y') : 'All Time' }} ||
         Category: {{ $category === 'all' ? 'All' : ($categories[$category] ?? '-') }}  ||
         Sub-Category: {{ $subCategory === 'all' ? 'All' : ($subCategories[$subCategory] ?? '-') }}
     </div>
@@ -61,3 +67,12 @@
         </tfoot>
     @endif
 </table>
+
+<!-- Debug element to check if totals are calculated correctly -->
+<script>
+    console.log('Expense Report Totals:', {
+        totalAmount: {{ $totalAmount }},
+        formattedTotal: '{{ number_format($totalAmount, 2) }}',
+        rowCount: {{ $data->count() }}
+    });
+</script>

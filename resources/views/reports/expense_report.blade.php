@@ -69,6 +69,18 @@
                 display: table-cell !important;
             }
         }
+
+        /* Button styles */
+        .button-container {
+            margin-bottom: 20px;
+        }
+        .btn-excel {
+            background-color: #28a745;
+            color: white;
+        }
+        .btn-excel:hover {
+            background-color: #218838;
+        }
     </style>
 @endsection
 
@@ -136,7 +148,6 @@
 @endsection
 
 @section('scripts')
-    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script>
         $(document).ready(function () {
             const originalMonth = $('#month').val();
@@ -356,44 +367,229 @@
                 return tableClone.outerHTML;
             }
 
-            // Excel export functionality
+            // Excel export functionality with inline CSS
             function exportToExcel() {
-                const table = document.querySelector('#report-table table');
-                if (!table) {
-                    alert('No data available to export.');
-                    return;
-                }
-
                 try {
-                    const tableClone = table.cloneNode(true);
+                    // Get filter values
+                    const monthValue = $('#month').val();
+                    const categoryValue = $('#category').val();
+                    const subCategoryValue = $('#sub_category').val();
 
-                    // Remove sub-category and note columns for Excel
-                    $(tableClone).find('th:nth-child(4), td:nth-child(4)').remove();
-                    $(tableClone).find('th:nth-child(5), td:nth-child(5)').remove();
+                    const formattedMonth = monthValue ? new Date(monthValue + '-01').toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : 'All Time';
+                    const currentCategory = $('#category option:selected').text();
+                    const currentSubCategory = $('#sub_category option:selected').text();
+                    const currentDate = new Date().toLocaleDateString('en-GB');
 
-                    // Remove action buttons
-                    $(tableClone).find('.btn, .no-export').remove();
+                    // Get the table data from the current view
+                    const table = document.querySelector('#report-table table');
+                    if (!table) {
+                        alert('No data found to export.');
+                        return;
+                    }
 
-                    const ws = XLSX.utils.table_to_sheet(tableClone);
-                    const colWidths = [
-                        { wch: 8 },  // SL
-                        { wch: 15 }, // Date
-                        { wch: 20 }, // Category
-                        { wch: 15 }  // Amount
-                    ];
-                    ws['!cols'] = colWidths;
+                    // Create HTML table with inline styling for Excel
+                    const tableHTML = `
+<html>
+<head>
+    <meta charset="UTF-8">
+</head>
+<body>
+    <table style="border-collapse: collapse; width: 100%; font-family: Arial; font-size: 11px;">
+        <!-- Company Header Section -->
+        <tr>
+            <td colspan="6" style="border: 1px solid #000000; padding: 10px; text-align: center; font-weight: bold; font-size: 16px;">
+                MULTI FABS LTD <br/>
+                (SELF C&F AGENTS)<br/>
+                314, SK. MUJIB ROAD, CHOWDHURY BHABAN (4TH FLOOR) AGRABAD, CHITTAGONG
+            </td>
+        </tr>
 
-                    const wb = XLSX.utils.book_new();
-                    XLSX.utils.book_append_sheet(wb, ws, 'Expense Report');
+        <!-- Empty row -->
+        <tr>
+            <td colspan="6" style="border: none; padding: 5px;"></td>
+        </tr>
 
-                    const currentMonth = $('#month').val();
-                    const fileName = `Expense_Report_${currentMonth || 'all_time'}.xlsx`;
-                    XLSX.writeFile(wb, fileName);
+        <!-- Report Info -->
+        <tr>
+            <td colspan="4" style="border: 1px solid #000000; padding: 5px; text-align: left; font-weight: bold;">
+                Expense of ${formattedMonth} ||
+                Category: ${currentCategory === 'all' ? 'All' : currentCategory} ||
+                Sub-Category: ${currentSubCategory === 'all' ? 'All' : currentSubCategory}
+            </td>
+            <td colspan="2" style="border: 1px solid #000000; padding: 5px; text-align: right; font-weight: bold;">
+                Date: ${currentDate}
+            </td>
+        </tr>
+
+        <!-- Empty row -->
+        <tr>
+            <td colspan="6" style="border: none; padding: 5px;"></td>
+        </tr>
+
+        <!-- Table Header -->
+        <tr>
+            <td style="border: 1px solid #000000; padding: 8px; text-align: center; font-weight: bold; width: 8%;">SL</td>
+            <td style="border: 1px solid #000000; padding: 8px; text-align: center; font-weight: bold; width: 15%;">Date</td>
+            <td style="border: 1px solid #000000; padding: 8px; text-align: center; font-weight: bold; width: 25%;">Category</td>
+            <td style="border: 1px solid #000000; padding: 8px; text-align: center; font-weight: bold; width: 25%;">Sub-Category</td>
+            <td style="border: 1px solid #000000; padding: 8px; text-align: center; font-weight: bold; width: 17%;">Note</td>
+            <td style="border: 1px solid #000000; padding: 8px; text-align: center; font-weight: bold; width: 15%;">Amount</td>
+        </tr>
+
+        <!-- Table Rows -->
+        ${getTableRowsHTML()}
+
+        <!-- Total Row -->
+        ${getTotalRowHTML()}
+    </table>
+</body>
+</html>
+                    `;
+
+                    // Create a Blob and download
+                    const blob = new Blob([tableHTML], {
+                        type: 'application/vnd.ms-excel'
+                    });
+
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+
+                    const fileName = `Expense_Report_${formattedMonth.replace(/\s+/g, '_')}.xls`;
+                    a.download = fileName;
+
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+
+                    console.log('Excel file generated successfully');
 
                 } catch (error) {
-                    console.error('Excel export error:', error);
-                    alert('Error exporting to Excel. Please try again.');
+                    console.error('Error generating Excel file:', error);
+                    alert('Error generating Excel file: ' + error.message);
                 }
+            }
+
+            // Helper function to get table rows HTML
+            function getTableRowsHTML() {
+                const rows = document.querySelectorAll('#report-table table tbody tr');
+                let rowsHTML = '';
+
+                // Check if there are any data rows
+                if (rows.length === 0) {
+                    return `
+        <tr>
+            <td colspan="6" style="border: 1px solid #000000; padding: 5px; text-align: center;">No records found.</td>
+        </tr>
+                    `;
+                }
+
+                rows.forEach(row => {
+                    const cells = row.querySelectorAll('td');
+                    if (cells.length === 6) {
+                        const sl = cells[0].textContent.trim();
+                        const date = cells[1].textContent.trim();
+                        const category = cells[2].textContent.trim();
+                        const subCategory = cells[3].textContent.trim();
+                        const note = cells[4].textContent.trim();
+                        const amount = cells[5].textContent.trim();
+
+                        rowsHTML += `
+                    <tr>
+                        <td style="border: 1px solid #000000; padding: 5px; text-align: center;">${sl}</td>
+                        <td style="border: 1px solid #000000; padding: 5px; text-align: center;">${date}</td>
+                        <td style="border: 1px solid #000000; padding: 5px; text-align: center;">${category}</td>
+                        <td style="border: 1px solid #000000; padding: 5px; text-align: center;">${subCategory}</td>
+                        <td style="border: 1px solid #000000; padding: 5px; text-align: center;">${note}</td>
+                        <td style="border: 1px solid #000000; padding: 5px; text-align: center;">${amount}</td>
+                    </tr>
+                        `;
+                    }
+                });
+
+                return rowsHTML;
+            }
+
+            // Helper function to get total row HTML
+            function getTotalRowHTML() {
+                console.log('Getting total row HTML for Expense Report...');
+
+                // Method 1: Try to get from tfoot
+                const tfoot = document.querySelector('#report-table table tfoot');
+                console.log('TFoot found:', tfoot);
+
+                if (tfoot) {
+                    const tfootRows = tfoot.querySelectorAll('tr');
+                    console.log('TFoot rows:', tfootRows.length);
+
+                    for (let row of tfootRows) {
+                        const cells = row.querySelectorAll('th, td');
+                        console.log('TFoot cells:', cells.length);
+
+                        if (cells.length >= 6) {
+                            // Find the amount cell (last cell)
+                            const amountCell = cells[cells.length - 1];
+                            const totalAmount = amountCell?.textContent?.trim() || '0.00';
+
+                            console.log('TFoot total amount:', totalAmount);
+
+                            return `
+        <tr>
+            <td colspan="5" style="border: 1px solid #000000; padding: 5px; text-align: center; font-weight: bold;">Total</td>
+            <td style="border: 1px solid #000000; padding: 5px; text-align: center; font-weight: bold;">${totalAmount}</td>
+        </tr>
+                            `;
+                        }
+                    }
+                }
+
+                // Method 2: Try to calculate total from data rows
+                console.log('Calculating total from data rows...');
+                let calculatedTotal = 0;
+
+                const dataRows = document.querySelectorAll('#report-table table tbody tr');
+                dataRows.forEach(row => {
+                    const cells = row.querySelectorAll('td');
+                    if (cells.length === 6) {
+                        const amountText = cells[5].textContent.trim();
+                        if (amountText && amountText !== '') {
+                            calculatedTotal += parseFloat(amountText.replace(/,/g, '')) || 0;
+                        }
+                    }
+                });
+
+                console.log('Calculated total:', calculatedTotal);
+
+                if (calculatedTotal !== 0) {
+                    return `
+        <tr>
+            <td colspan="5" style="border: 1px solid #000000; padding: 5px; text-align: right; font-weight: bold;">Total</td>
+            <td style="border: 1px solid #000000; padding: 5px; text-align: center; font-weight: bold;">${calculatedTotal.toFixed(2)}</td>
+        </tr>
+                    `;
+                }
+
+                // Method 3: Try to get from hidden data element
+                const totalsElement = document.getElementById('expenseTotals');
+                if (totalsElement) {
+                    const totalAmount = totalsElement.getAttribute('data-total-amount') || '0.00';
+                    return `
+        <tr>
+            <td colspan="5" style="border: 1px solid #000000; padding: 5px; text-align: right; font-weight: bold;">Total</td>
+            <td style="border: 1px solid #000000; padding: 5px; text-align: center; font-weight: bold;">${totalAmount}</td>
+        </tr>
+                    `;
+                }
+
+                // Method 4: Default fallback
+                console.log('Using default total');
+                return `
+        <tr>
+            <td colspan="5" style="border: 1px solid #000000; padding: 5px; text-align: right; font-weight: bold;">Total</td>
+            <td style="border: 1px solid #000000; padding: 5px; text-align: center; font-weight: bold;">0.00</td>
+        </tr>
+                `;
             }
 
             // Dynamic sub-category loading
