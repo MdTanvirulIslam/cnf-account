@@ -1,10 +1,3 @@
-<div class="company-header">
-    <h1>MULTI FABS LTD</h1>
-    <p>(SELF C&F AGENTS)</p>
-    <p>314, SK. MUJIB ROAD, CHOWDHURY BHABAN (4TH FLOOR) AGRABAD, CHITTAGONG.</p>
-</div>
-<hr style="border: none; border-top: 1px solid #222; margin: 10px 0 18px 0;" />
-
 @php
     $currentFilters = request()->all();
     $hasFilters = !empty(array_filter($currentFilters, function($value) {
@@ -15,7 +8,31 @@
     $totalReturn = 0;
     $totalFinal = 0;
     $totalTransactions = 0;
+    $sl = 1;
+
+    foreach($dailyTransactions as $row) {
+        $finalAmount = $row->receive_amount - $row->return_amount;
+        $totalReceive += $row->receive_amount;
+        $totalReturn += $row->return_amount;
+        $totalFinal += $finalAmount;
+        $totalTransactions += $row->transaction_count;
+    }
 @endphp
+
+<!-- Hidden element to store totals for Excel export -->
+<div id="employeeDailyCashTotals"
+     data-total-receive="{{ number_format($totalReceive, 2) }}"
+     data-total-return="{{ number_format($totalReturn, 2) }}"
+     data-total-final="{{ number_format($totalFinal, 2) }}"
+     style="display: none;">
+</div>
+
+<div class="company-header">
+    <h1>MULTI FABS LTD</h1>
+    <p>(SELF C&F AGENTS)</p>
+    <p>314, SK. MUJIB ROAD, CHOWDHURY BHABAN (4TH FLOOR) AGRABAD, CHITTAGONG.</p>
+</div>
+<hr style="border: none; border-top: 1px solid #222; margin: 10px 0 18px 0;" />
 
 <div class="invoice-info">
     <div>
@@ -48,17 +65,9 @@
     </tr>
     </thead>
     <tbody>
-    @php
-        $sl = 1;
-    @endphp
-
     @forelse($dailyTransactions as $row)
         @php
             $finalAmount = $row->receive_amount - $row->return_amount;
-            $totalReceive += $row->receive_amount;
-            $totalReturn += $row->return_amount;
-            $totalFinal += $finalAmount;
-            $totalTransactions += $row->transaction_count;
         @endphp
 
         <tr style="page-break-inside: avoid; break-inside: avoid;">
@@ -99,3 +108,16 @@
         </p>
     </div>
 @endif
+
+<!-- Debug information -->
+<script>
+    console.log('Employee Daily Cash Report Totals:', {
+        totalReceive: {{ $totalReceive }},
+        totalReturn: {{ $totalReturn }},
+        totalFinal: {{ $totalFinal }},
+        formattedReceive: '{{ number_format($totalReceive, 2) }}',
+        formattedReturn: '{{ number_format($totalReturn, 2) }}',
+        formattedFinal: '{{ number_format($totalFinal, 2) }}',
+        rowCount: {{ $dailyTransactions->count() }}
+    });
+</script>
