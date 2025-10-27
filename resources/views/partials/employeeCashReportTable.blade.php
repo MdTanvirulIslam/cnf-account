@@ -1,16 +1,40 @@
+@php
+    $currentFilters = request()->all();
+    $hasFilters = !empty(array_filter($currentFilters, function($value) {
+        return $value !== null && $value !== '';
+    }));
+
+    $totalReceive = 0;
+    $totalReturn = 0;
+    $totalTransactions = 0;
+    $sl = 1;
+
+    foreach($groupedTransactions as $row) {
+        if(isset($row->type) && strtolower($row->type) == 'receive') {
+            $totalReceive += $row->total_amount;
+        } elseif(isset($row->type) && strtolower($row->type) == 'return') {
+            $totalReturn += $row->total_amount;
+        }
+        $totalTransactions += $row->transaction_count;
+    }
+
+    $netAmount = $totalReceive - $totalReturn;
+@endphp
+
+<!-- Hidden element to store totals for Excel export -->
+<div id="employeeCashTotals"
+     data-total-receive="{{ number_format($totalReceive, 2) }}"
+     data-total-return="{{ number_format($totalReturn, 2) }}"
+     data-net-amount="{{ number_format($netAmount, 2) }}"
+     style="display: none;">
+</div>
+
 <div class="company-header">
     <h1>MULTI FABS LTD</h1>
     <p>(SELF C&F AGENTS)</p>
     <p>314, SK. MUJIB ROAD, CHOWDHURY BHABAN (4TH FLOOR) AGRABAD, CHITTAGONG.</p>
 </div>
 <hr style="border: none; border-top: 1px solid #222; margin: 10px 0 18px 0;" />
-
-@php
-    $currentFilters = request()->all();
-    $hasFilters = !empty(array_filter($currentFilters, function($value) {
-        return $value !== null && $value !== '';
-    }));
-@endphp
 
 <div class="invoice-info">
     <div>
@@ -42,22 +66,7 @@
     </tr>
     </thead>
     <tbody>
-    @php
-        $totalReceive = 0;
-        $totalReturn = 0;
-        $totalTransactions = 0;
-        $sl = 1;
-    @endphp
-
     @forelse($groupedTransactions as $row)
-        @php
-            if(isset($row->type) && strtolower($row->type) == 'receive') {
-                $totalReceive += $row->total_amount;
-            } elseif(isset($row->type) && strtolower($row->type) == 'return') {
-                $totalReturn += $row->total_amount;
-            }
-            $totalTransactions += $row->transaction_count;
-        @endphp
         <tr>
             <td>{{ $sl++ }}</td>
             <td>{{ $row->employee_name ?? 'N/A' }}</td>
@@ -67,14 +76,13 @@
         </tr>
     @empty
         <tr>
-            <td colspan="6" class="center">No Data Found</td>
+            <td colspan="5" class="center">No Data Found</td>
         </tr>
     @endforelse
     </tbody>
 
     @if($groupedTransactions->count() > 0)
         <tfoot>
-
         <tr class="total-row">
             <td colspan="3" class="right"><strong>Total Receive:</strong></td>
             <td></td>
@@ -88,7 +96,7 @@
         <tr class="total-row">
             <td colspan="3" class="right"><strong>Net Amount:</strong></td>
             <td></td>
-            <td class="right"><strong>{{ number_format($totalReceive - $totalReturn, 2) }}</strong></td>
+            <td class="right"><strong>{{ number_format($netAmount, 2) }}</strong></td>
         </tr>
         </tfoot>
     @endif
@@ -101,13 +109,20 @@
             Total Transactions: {{ $totalTransactions }} |
             Receive: {{ number_format($totalReceive, 2) }} |
             Return: {{ number_format($totalReturn, 2) }} |
-            Net: {{ number_format($totalReceive - $totalReturn, 2) }}
+            Net: {{ number_format($netAmount, 2) }}
         </p>
     </div>
 @endif
 
-<!-- Debug information (remove in production) -->
-<div style="display: none;">
-    <h4>Debug Information:</h4>
-    <p>Total Groups: {{ $groupedTransactions->count() }}</p>
-</div>
+<!-- Debug information -->
+<script>
+    console.log('Employee Cash Report Totals:', {
+        totalReceive: {{ $totalReceive }},
+        totalReturn: {{ $totalReturn }},
+        netAmount: {{ $netAmount }},
+        formattedReceive: '{{ number_format($totalReceive, 2) }}',
+        formattedReturn: '{{ number_format($totalReturn, 2) }}',
+        formattedNet: '{{ number_format($netAmount, 2) }}',
+        rowCount: {{ $groupedTransactions->count() }}
+    });
+</script>
