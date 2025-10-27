@@ -375,174 +375,146 @@
         }
 
         function exportToExcel() {
-            console.log('Export to Excel clicked'); // Debug log
+            console.log('Export to Excel clicked');
 
             try {
-                // Create workbook
-                const workbook = XLSX.utils.book_new();
+                // Create HTML table with inline styling
+                const tableHTML = `
+<html>
+<head>
+    <meta charset="UTF-8">
+</head>
+<body>
+    <table style="border-collapse: collapse; width: 100%; font-family: Arial; font-size: 11px;">
+        <!-- Empty row -->
+        <tr>
+            <td colspan="4" style="border: none; padding: 5px;"></td>
+        </tr>
 
-                // Prepare data array with exact structure
-                const excelData = [
-                    // Company Header
-                    ["MULTI FABS LTD"],
-                    ["(SELF C&F AGENTS)"],
-                    ["314, SK. MUJIB ROAD, CHOWDHURY BHABAN (4TH FLOOR) AGRABAD, CHITTAGONG."],
-                    [""],
-                    ["", "", "", "", "BILL NO: {{ $bill->bill_no }}", "DATE: {{ $bill->bill_date ? \Carbon\Carbon::parse($bill->bill_date)->format('d/m/Y') : '' }}"],
-                    [""],
-                    ["SUB: FORWARDING BILL (AS PER INVOICE)"],
-                    [""],
+        <!-- Company Header Section -->
+        <tr>
+            <td style="border: none; padding: 5px; width: 10%;"></td>
+            <td colspan="3" style="border: 1px solid #000000; padding: 10px; text-align: center; font-weight: bold; font-size: 16px; width: 90%;">
+                MULTI FABS LTD <br/>
+                (SELF C&F AGENTS)<br/>
+                314, SK. MUJIB ROAD, CHOWDHURY BHABAN (4TH FLOOR) AGRABAD, CHITTAGONG
+            </td>
+        </tr>
 
-                    // Buyer Information Table
-                    ["Buyer Name", "{{ $bill->buyer->name ?? '' }}", "", "", "USD", "{{ number_format($bill->usd, 2) }}"],
-                    ["Invoice No", "{{ $bill->invoice_no }}", "", "", "Date", "{{ $bill->invoice_date ? \Carbon\Carbon::parse($bill->invoice_date)->format('d/m/Y') : '' }}"],
-                    ["B/E No", "{{ $bill->be_no }}", "", "", "Date", "{{ $bill->be_date ? \Carbon\Carbon::parse($bill->be_date)->format('d/m/Y') : '' }}"],
-                    ["Total CTN", "{{ $bill->total_qty }}", "", "", "Qty Pcs", "{{ $bill->qty_pcs }}"],
-                    [""],
+        <!-- Empty row -->
+        <tr>
+            <td colspan="4" style="border: none; padding: 5px;"></td>
+        </tr>
 
-                    // Expense Table Header
-                    ["SL NO", "DESCRIPTION", "AMOUNT", "REMARK"],
-                ];
+        <!-- Bill No and Date -->
+        <tr>
+            <td style="border: none; padding: 5px;"></td>
+            <td style="border: 1px solid #000000; padding: 5px; text-align: left; font-weight: bold; width: 30%;">BILL NO: {{ $bill->bill_no }}</td>
+            <td colspan="2" style="border: 1px solid #000000; padding: 5px; text-align: right; font-weight: bold; width: 60%;">DATE: {{ $bill->bill_date ? \Carbon\Carbon::parse($bill->bill_date)->format('d/m/Y') : '' }}</td>
+        </tr>
 
-                // Add expense rows
-                @foreach($expenseTypes as $index => $type)
-                excelData.push([
-                    "{{ str_pad($index + 1, 2, '0', STR_PAD_LEFT) }}",
-                    "{{ strtoupper($type) }}",
-                    {{ $expenses[$type] ?? 0 }},
-                    ""
-                ]);
-                @endforeach
+        <!-- Empty row -->
+        <tr>
+            <td colspan="4" style="border: none; padding: 5px;"></td>
+        </tr>
 
-                // Add total row
-                excelData.push(["", "TOTAL AMOUNT", {{ $total }}, ""]);
-                excelData.push([""]);
-                excelData.push(["INWARD: {{ strtoupper(convertToTakaWords($total)) }}"]);
+        <!-- Sub Title -->
+        <tr>
+            <td style="border: none; padding: 5px;"></td>
+            <td colspan="3" style="border: 1px solid #000000; padding: 8px; text-align: left; font-weight: bold; font-size: 12px;">SUB: FORWARDING BILL (AS PER INVOICE)</td>
+        </tr>
 
-                // Create worksheet
-                const worksheet = XLSX.utils.aoa_to_sheet(excelData);
+        <!-- Empty row -->
+        <tr>
+            <td colspan="4" style="border: none; padding: 5px;"></td>
+        </tr>
 
-                // Apply basic styling
-                const range = XLSX.utils.decode_range(worksheet['!ref']);
+        <!-- Buyer Information Table -->
+        <tr>
+            <td style="border: none; padding: 5px;"></td>
+            <td style="border: 1px solid #000000; padding: 5px; text-align: left;">Buyer Name : {{ $bill->buyer->name ?? '' }}</td>
+            <td style="border: 1px solid #000000; padding: 5px; text-align: center; font-weight: bold;">USD</td>
+            <td style="border: 1px solid #000000; padding: 5px; text-align: center;">{{ number_format($bill->usd, 2) }}</td>
+        </tr>
+        <tr>
+            <td style="border: none; padding: 5px;"></td>
+            <td style="border: 1px solid #000000; padding: 5px; text-align: left;">Invoice No : {{ $bill->invoice_no }}</td>
+            <td style="border: 1px solid #000000; padding: 5px; text-align: center; font-weight: bold;">Date</td>
+            <td style="border: 1px solid #000000; padding: 5px; text-align: center;">{{ $bill->invoice_date ? \Carbon\Carbon::parse($bill->invoice_date)->format('d/m/Y') : '' }}</td>
+        </tr>
+        <tr>
+            <td style="border: none; padding: 5px;"></td>
+            <td style="border: 1px solid #000000; padding: 5px; text-align: left;">B/E No : {{ $bill->be_no }}</td>
+            <td style="border: 1px solid #000000; padding: 5px; text-align: center; font-weight: bold;">Date</td>
+            <td style="border: 1px solid #000000; padding: 5px; text-align: center;">{{ $bill->be_date ? \Carbon\Carbon::parse($bill->be_date)->format('d/m/Y') : '' }}</td>
+        </tr>
+        <tr>
+            <td style="border: none; padding: 5px;"></td>
+            <td style="border: 1px solid #000000; padding: 5px; text-align: left;">Total CTN : {{ $bill->total_qty }}</td>
+            <td style="border: 1px solid #000000; padding: 5px; text-align: center; font-weight: bold;">Qty Pcs</td>
+            <td style="border: 1px solid #000000; padding: 5px; text-align: center;">{{ $bill->qty_pcs }}</td>
+        </tr>
 
-                for(let R = range.s.r; R <= range.e.r; ++R) {
-                    for(let C = range.s.c; C <= range.e.c; ++C) {
-                        const cell_address = {c:C, r:R};
-                        const cell_ref = XLSX.utils.encode_cell(cell_address);
+        <!-- Empty row -->
+        <tr>
+            <td colspan="4" style="border: none; padding: 5px;"></td>
+        </tr>
 
-                        if(!worksheet[cell_ref]) continue;
+        <!-- Expense Table Header -->
+        <tr>
+            <td style="border: 1px solid #000000; padding: 8px; text-align: center; font-weight: bold; width: 8%;">SL NO</td>
+            <td style="border: 1px solid #000000; padding: 8px; text-align: center; font-weight: bold; width: 50%;">DESCRIPTION</td>
+            <td style="border: 1px solid #000000; padding: 8px; text-align: center; font-weight: bold; width: 15%;">AMOUNT</td>
+            <td style="border: 1px solid #000000; padding: 8px; text-align: center; font-weight: bold; width: 15%;">REMARK</td>
+        </tr>
 
-                        // Company header styling
-                        if(R === 0) {
-                            worksheet[cell_ref].s = {
-                                font: { bold: true, sz: 16 },
-                                alignment: { horizontal: "center" }
-                            };
-                        }
-                        else if(R === 1 || R === 2) {
-                            worksheet[cell_ref].s = {
-                                font: { sz: 11 },
-                                alignment: { horizontal: "center" }
-                            };
-                        }
-                        // Bill info
-                        else if(R === 4 && (C === 4 || C === 5)) {
-                            worksheet[cell_ref].s = {
-                                font: { bold: true }
-                            };
-                        }
-                        // SUB title
-                        else if(R === 6) {
-                            worksheet[cell_ref].s = {
-                                font: { bold: true, sz: 12 },
-                                alignment: { horizontal: "center" }
-                            };
-                        }
-                        // Table headers
-                        else if(R === 12) {
-                            worksheet[cell_ref].s = {
-                                font: { bold: true },
-                                alignment: { horizontal: "center" },
-                                border: {
-                                    top: { style: "thin" },
-                                    left: { style: "thin" },
-                                    bottom: { style: "thin" },
-                                    right: { style: "thin" }
-                                }
-                            };
-                        }
-                        // Expense rows
-                        else if(R >= 13 && R < 13 + {{ count($expenseTypes) }}) {
-                            if(C === 0) { // SL NO
-                                worksheet[cell_ref].s = {
-                                    alignment: { horizontal: "center" },
-                                    border: {
-                                        left: { style: "thin" },
-                                        bottom: { style: "thin" },
-                                        right: { style: "thin" }
-                                    }
-                                };
-                            }
-                            else if(C === 2) { // AMOUNT
-                                worksheet[cell_ref].s = {
-                                    alignment: { horizontal: "right" },
-                                    border: {
-                                        bottom: { style: "thin" },
-                                        right: { style: "thin" }
-                                    }
-                                };
-                            }
-                            else { // DESCRIPTION and REMARK
-                                worksheet[cell_ref].s = {
-                                    border: {
-                                        bottom: { style: "thin" },
-                                        right: { style: "thin" }
-                                    }
-                                };
-                            }
-                        }
-                        // Total row
-                        else if(R === 13 + {{ count($expenseTypes) }}) {
-                            if(C === 1 || C === 2) {
-                                worksheet[cell_ref].s = {
-                                    font: { bold: true },
-                                    border: {
-                                        top: { style: "thin" },
-                                        left: { style: "thin" },
-                                        bottom: { style: "thin" },
-                                        right: { style: "thin" }
-                                    }
-                                };
-                            }
-                            if(C === 2) {
-                                worksheet[cell_ref].s.alignment = { horizontal: "right" };
-                            }
-                        }
-                        // INWARD row
-                        else if(R === 15 + {{ count($expenseTypes) }}) {
-                            worksheet[cell_ref].s = {
-                                font: { bold: true }
-                            };
-                        }
-                    }
-                }
+        <!-- Expense Rows -->
+        @foreach($expenseTypes as $index => $type)
+                <tr>
+                    <td style="border: 1px solid #000000; padding: 5px; text-align: center;">{{ str_pad($index + 1, 2, '0', STR_PAD_LEFT) }}</td>
+            <td style="border: 1px solid #000000; padding: 5px; text-align: left;">{{ strtoupper($type) }}</td>
+            <td style="border: 1px solid #000000; padding: 5px; text-align: center;">{{ $expenses[$type] ?? 0 }}</td>
+            <td style="border: 1px solid #000000; padding: 5px; text-align: center;"></td>
+        </tr>
+        @endforeach
 
-                // Set column widths
-                worksheet['!cols'] = [
-                    { wch: 8 },   // SL NO
-                    { wch: 50 },  // DESCRIPTION
-                    { wch: 15 },  // AMOUNT
-                    { wch: 15 }   // REMARK
-                ];
+                <!-- Total Row -->
+                <tr>
+                    <td style="border: 1px solid #000000; padding: 5px;"></td>
+                    <td style="border: 1px solid #000000; padding: 5px; text-align: center; font-weight: bold;">TOTAL AMOUNT</td>
+                    <td style="border: 1px solid #000000; padding: 5px; text-align: center; font-weight: bold;">{{ $total }}</td>
+            <td style="border: 1px solid #000000; padding: 5px;"></td>
+        </tr>
 
-                // Add worksheet to workbook
-                XLSX.utils.book_append_sheet(workbook, worksheet, "Export Bill");
+        <!-- Empty row -->
+        <tr>
+            <td colspan="4" style="border: none; padding: 5px;"></td>
+        </tr>
 
-                // Generate and download Excel file
-                const fileName = `Export_Bill_{{ $bill->bill_no }}.xlsx`;
-                XLSX.writeFile(workbook, fileName);
+        <!-- Inward Row -->
+        <tr>
+            <td colspan="4" style="border: 1px solid #000000; padding: 8px; text-align: left; font-weight: bold;">INWARD: {{ strtoupper(convertToTakaWords($total)) }}</td>
+        </tr>
+    </table>
+</body>
+</html>
+        `;
 
-                console.log('Excel file generated successfully'); // Debug log
+                // Create a Blob and download
+                const blob = new Blob([tableHTML], {
+                    type: 'application/vnd.ms-excel'
+                });
+
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `Export_Bill_{{ $bill->bill_no }}.xls`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+
+                console.log('Excel file generated successfully');
 
             } catch (error) {
                 console.error('Error generating Excel file:', error);
