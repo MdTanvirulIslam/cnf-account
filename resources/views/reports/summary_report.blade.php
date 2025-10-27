@@ -55,7 +55,19 @@
         </div>
 
         <div class="col-xl-12 layout-top-spacing dc-report-table" id="reportContent">
-
+            <!-- Hidden element to store totals for Excel export -->
+            <div id="summaryReportTotals"
+                 data-previous-month-closing="{{ number_format($previousMonthClosing, 2) }}"
+                 data-dhaka-bank-received="{{ number_format($dhakaBankReceived, 2) }}"
+                 data-cash-received="{{ number_format($cashReceived, 2) }}"
+                 data-office-balance="{{ number_format($officeBalance, 2) }}"
+                 data-export-total="{{ number_format($exportData['total'], 2) }}"
+                 data-import-total="{{ number_format($importData['total'], 2) }}"
+                 data-office-expenses="{{ number_format($officeExpenses, 2) }}"
+                 data-closing-balance="{{ number_format($closingBalance, 2) }}"
+                 data-month-text="{{ $selectedMonth->format('M-Y') }}"
+                 style="display: none;">
+            </div>
 
             <div class="loading-overlay" id="loadingOverlay">
                 <div class="spinner-border text-primary" role="status">
@@ -73,10 +85,10 @@
 
             <div class="invoice-info">
                 <div>
-                    <strong>CASH RECEIVED AND PAYMENT STATEMENT FOR THE MONTH {{ $selectedMonth->format('M-Y') }}</strong>
+                    <strong id="reportTitle">CASH RECEIVED AND PAYMENT STATEMENT FOR THE MONTH {{ $selectedMonth->format('M-Y') }}</strong>
                 </div>
                 <div class="right">
-                    <strong>Date: {{ now()->timezone('Asia/Dhaka')->format('d/m/Y') }}</strong>
+                    <strong id="reportDate">Date: {{ now()->timezone('Asia/Dhaka')->format('d/m/Y') }}</strong>
                 </div>
             </div>
 
@@ -97,30 +109,30 @@
 
                 <tr>
                     <td>1</td>
-                    <td>TOTAL OPENING BALANCE {{ $selectedMonth->copy()->subMonth()->format('M') }} {{ $selectedMonth->copy()->subMonth()->startOfMonth()->format('d.m.Y') }}</td>
-                    <td class="right {{ $previousMonthClosing < 0 ? 'negative' : '' }}">{{ number_format($previousMonthClosing, 2) }}</td>
+                    <td id="openingBalanceDesc">TOTAL OPENING BALANCE {{ $selectedMonth->copy()->subMonth()->format('M') }} {{ $selectedMonth->copy()->subMonth()->startOfMonth()->format('d.m.Y') }}</td>
+                    <td class="right {{ $previousMonthClosing < 0 ? 'negative' : '' }}" id="openingBalanceAmount">{{ number_format($previousMonthClosing, 2) }}</td>
                     <td></td>
                 </tr>
 
                 <tr>
                     <td>2</td>
                     <td>CASH RECEIVED IN DHAKA BANK</td>
-                    <td class="right">{{ number_format($dhakaBankReceived, 2) }}</td>
+                    <td class="right" id="dhakaBankAmount">{{ number_format($dhakaBankReceived, 2) }}</td>
                     <td></td>
                 </tr>
 
                 <tr>
                     <td>3</td>
                     <td>CASH RECEIVED</td>
-                    <td class="right">{{ number_format($cashReceived, 2) }}</td>
+                    <td class="right" id="cashReceivedAmount">{{ number_format($cashReceived, 2) }}</td>
                     <td></td>
                 </tr>
 
                 <tr class="total-row">
                     <td></td>
-                    <td>OFFICE BALANCE ON {{ $selectedMonth->startOfMonth()->format('d.m.Y') }} TO {{ $selectedMonth->endOfMonth()->format('d.m.Y') }}</td>
+                    <td id="officeBalanceDesc">OFFICE BALANCE ON {{ $selectedMonth->startOfMonth()->format('d.m.Y') }} TO {{ $selectedMonth->endOfMonth()->format('d.m.Y') }}</td>
                     <td></td>
-                    <td class="left {{ $officeBalance < 0 ? 'negative' : '' }}">{{ number_format($officeBalance, 2) }}</td>
+                    <td class="left {{ $officeBalance < 0 ? 'negative' : '' }}" id="officeBalanceAmount">{{ number_format($officeBalance, 2) }}</td>
                 </tr>
 
                 <tr class="section-header">
@@ -129,30 +141,30 @@
 
                 <tr>
                     <td>1</td>
-                    <td>EXPORT DOCUMENTS MFL {{ $exportData['qty'] }} PCS ( As per Sheet)</td>
+                    <td id="exportDesc">EXPORT DOCUMENTS MFL {{ $exportData['qty'] }} PCS ( As per Sheet)</td>
                     <td></td>
-                    <td class="left">{{ number_format($exportData['total'], 2) }}</td>
+                    <td class="left" id="exportAmount">{{ number_format($exportData['total'], 2) }}</td>
                 </tr>
 
                 <tr>
                     <td>2</td>
-                    <td>IMPORT DOCUMENTS MFL {{ $importData['qty'] }} PCS ( As per Sheet)</td>
+                    <td id="importDesc">IMPORT DOCUMENTS MFL {{ $importData['qty'] }} PCS ( As per Sheet)</td>
                     <td></td>
-                    <td class="left">{{ number_format($importData['total'], 2) }}</td>
+                    <td class="left" id="importAmount">{{ number_format($importData['total'], 2) }}</td>
                 </tr>
 
                 <tr>
                     <td>3</td>
                     <td>Office Maintenance Expenses (As Per Statement)</td>
                     <td></td>
-                    <td class="left">{{ number_format($officeExpenses, 2) }}</td>
+                    <td class="left" id="officeExpensesAmount">{{ number_format($officeExpenses, 2) }}</td>
                 </tr>
                 </tbody>
 
                 <tfoot>
                 <tr class="total-row">
-                    <th colspan="3" class="right">TOTAL BALANCE {{ $selectedMonth->format('M') }} CLOSING {{ $selectedMonth->endOfMonth()->format('d.m.Y') }}:</th>
-                    <th class="right {{ $closingBalance < 0 ? 'negative' : '' }}">{{ number_format($closingBalance, 2) }}</th>
+                    <th colspan="3" class="right" id="closingBalanceLabel">TOTAL BALANCE {{ $selectedMonth->format('M') }} CLOSING {{ $selectedMonth->endOfMonth()->format('d.m.Y') }}:</th>
+                    <th class="right {{ $closingBalance < 0 ? 'negative' : '' }}" id="closingBalanceAmount">{{ number_format($closingBalance, 2) }}</th>
                 </tr>
                 </tfoot>
             </table>
@@ -161,50 +173,216 @@
 @endsection
 
 @section('scripts')
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script>
         $(document).ready(function() {
             $('#excelBtn').on('click', function() {
-                if ($('#month').val() !== "{{ $selectedMonth->format('Y-m') }}") {
-                    downloadExcelFromCurrentPage();
-                } else {
-                    downloadExcel();
-                }
+                exportToExcel();
             });
 
-            function downloadExcelFromCurrentPage() {
-                downloadExcel();
-            }
-
-            function downloadExcel() {
+            // Excel export functionality with inline CSS
+            function exportToExcel() {
                 try {
-                    const table = document.querySelector('.invoice-table');
+                    // Get filter values
+                    const monthValue = $('#month').val();
+                    const formattedMonth = monthValue ? new Date(monthValue + '-01').toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : 'All Time';
+                    const currentDate = new Date().toLocaleDateString('en-GB');
+
+                    // Get the table data from the current view
+                    const table = document.querySelector('#reportContent table');
                     if (!table) {
-                        alert('No data available to export.');
+                        alert('No data found to export.');
                         return;
                     }
 
-                    const ws = XLSX.utils.table_to_sheet(table);
-                    const colWidths = [
-                        { wch: 5 },   // SL
-                        { wch: 50 },  // DESCRIPTION
-                        { wch: 15 },  // TOTAL TAKA
-                        { wch: 15 }   // G.TOTAL TAKA
-                    ];
-                    ws['!cols'] = colWidths;
+                    // Create HTML table with inline styling for Excel
+                    const tableHTML = `
+<html>
+<head>
+    <meta charset="UTF-8">
+</head>
+<body>
+    <table style="border-collapse: collapse; width: 100%; font-family: Arial; font-size: 11px;">
+        <!-- Company Header Section -->
+        <tr>
+            <td colspan="4" style="border: 1px solid #000000; padding: 10px; text-align: center; font-weight: bold; font-size: 16px;">
+                MULTI FABS LTD <br/>
+                (SELF C&F AGENTS)<br/>
+                314, SK. MUJIB ROAD, CHOWDHURY BHABAN (4TH FLOOR) AGRABAD, CHITTAGONG
+            </td>
+        </tr>
 
-                    const wb = XLSX.utils.book_new();
-                    XLSX.utils.book_append_sheet(wb, ws, 'Monthly Summary Report');
+        <!-- Empty row -->
+        <tr>
+            <td colspan="4" style="border: none; padding: 5px;"></td>
+        </tr>
 
-                    const currentDate = new Date().toISOString().slice(0,10);
-                    const selectedMonth = $('#month').val() || "{{ $selectedMonth->format('Y-m') }}";
-                    const fileName = `Monthly_Summary_Report_${selectedMonth}_${currentDate}.xlsx`;
+        <!-- Report Info -->
+        <tr>
+            <td colspan="3" style="border: 1px solid #000000; padding: 5px; text-align: left; font-weight: bold;">
+                CASH RECEIVED AND PAYMENT STATEMENT FOR THE MONTH ${formattedMonth}
+            </td>
+            <td style="border: 1px solid #000000; padding: 5px; text-align: right; font-weight: bold;">
+                Date: ${currentDate}
+            </td>
+        </tr>
 
-                    XLSX.writeFile(wb, fileName);
+        <!-- Empty row -->
+        <tr>
+            <td colspan="4" style="border: none; padding: 5px;"></td>
+        </tr>
+
+        <!-- Table Header -->
+        <tr>
+            <td style="border: 1px solid #000000; padding: 8px; text-align: center; font-weight: bold; width: 8%;">SL</td>
+            <td style="border: 1px solid #000000; padding: 8px; text-align: center; font-weight: bold; width: 60%;">DESCRIPTION</td>
+            <td style="border: 1px solid #000000; padding: 8px; text-align: center; font-weight: bold; width: 16%;">TOTAL TAKA</td>
+            <td style="border: 1px solid #000000; padding: 8px; text-align: center; font-weight: bold; width: 16%;">G.TOTAL TAKA.</td>
+        </tr>
+
+        <!-- Table Rows -->
+        ${getTableRowsHTML()}
+
+        <!-- Total Row -->
+        ${getTotalRowHTML()}
+    </table>
+</body>
+</html>
+                    `;
+
+                    // Create a Blob and download
+                    const blob = new Blob([tableHTML], {
+                        type: 'application/vnd.ms-excel'
+                    });
+
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+
+                    const fileName = `Monthly_Summary_Report_${formattedMonth.replace(/\s+/g, '_')}.xls`;
+                    a.download = fileName;
+
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+
+                    console.log('Excel file generated successfully');
+
                 } catch (error) {
-                    console.error('Excel export error:', error);
-                    alert('Error exporting to Excel. Please try again.');
+                    console.error('Error generating Excel file:', error);
+                    alert('Error generating Excel file: ' + error.message);
                 }
+            }
+
+            // Helper function to get table rows HTML
+            function getTableRowsHTML() {
+                const rows = document.querySelectorAll('#reportContent table tbody tr');
+                let rowsHTML = '';
+
+                rows.forEach(row => {
+                    const cells = row.querySelectorAll('td');
+                    if (cells.length === 4) {
+                        const sl = cells[0].textContent.trim();
+                        const description = cells[1].textContent.trim();
+                        const totalTaka = cells[2].textContent.trim();
+                        const gTotalTaka = cells[3].textContent.trim();
+
+                        // Check if it's a section header
+                        if (row.classList.contains('section-header')) {
+                            rowsHTML += `
+        <tr>
+            <td colspan="4" style="border: 1px solid #000000; padding: 5px; text-align: left; font-weight: bold; background-color: #e9ecef;">${description}</td>
+        </tr>
+                            `;
+                        } else {
+                            rowsHTML += `
+        <tr>
+            <td style="border: 1px solid #000000; padding: 5px; text-align: center;">${sl}</td>
+            <td style="border: 1px solid #000000; padding: 5px; text-align: left;">${description}</td>
+            <td style="border: 1px solid #000000; padding: 5px; text-align: right;">${totalTaka}</td>
+            <td style="border: 1px solid #000000; padding: 5px; text-align: right;">${gTotalTaka}</td>
+        </tr>
+                            `;
+                        }
+                    }
+                });
+
+                return rowsHTML;
+            }
+
+            // Helper function to get total row HTML
+            function getTotalRowHTML() {
+                console.log('Getting total row HTML for Monthly Summary Report...');
+
+                // Method 1: Try to get from tfoot
+                const tfoot = document.querySelector('#reportContent table tfoot');
+                console.log('TFoot found:', tfoot);
+
+                if (tfoot) {
+                    const tfootRows = tfoot.querySelectorAll('tr');
+                    console.log('TFoot rows:', tfootRows.length);
+
+                    for (let row of tfootRows) {
+                        const cells = row.querySelectorAll('th, td');
+                        console.log('TFoot cells:', cells.length);
+
+                        if (cells.length >= 4) {
+                            const label = cells[0]?.textContent?.trim() || '';
+                            const amount = cells[3]?.textContent?.trim() || '0.00';
+
+                            console.log('TFoot totals:', { label, amount });
+
+                            return `
+        <tr>
+            <td colspan="3" style="border: 1px solid #000000; padding: 5px; text-align: right; font-weight: bold;">${label}</td>
+            <td style="border: 1px solid #000000; padding: 5px; text-align: right; font-weight: bold;">${amount}</td>
+        </tr>
+                            `;
+                        }
+                    }
+                }
+
+                // Method 2: Try to get from hidden data element
+                const totalsElement = document.getElementById('summaryReportTotals');
+                if (totalsElement) {
+                    const closingBalance = totalsElement.getAttribute('data-closing-balance') || '0.00';
+                    const monthText = totalsElement.getAttribute('data-month-text') || 'Current Month';
+
+                    return `
+        <tr>
+            <td colspan="3" style="border: 1px solid #000000; padding: 5px; text-align: right; font-weight: bold;">TOTAL BALANCE ${monthText} CLOSING:</td>
+            <td style="border: 1px solid #000000; padding: 5px; text-align: right; font-weight: bold;">${closingBalance}</td>
+        </tr>
+                    `;
+                }
+
+                // Method 3: Try to get from elements with IDs
+                const closingBalanceElement = document.getElementById('closingBalanceAmount');
+                const closingBalanceLabel = document.getElementById('closingBalanceLabel');
+
+                if (closingBalanceElement && closingBalanceLabel) {
+                    const amount = closingBalanceElement.textContent.trim();
+                    const label = closingBalanceLabel.textContent.trim();
+
+                    return `
+        <tr>
+            <td colspan="3" style="border: 1px solid #000000; padding: 5px; text-align: right; font-weight: bold;">${label}</td>
+            <td style="border: 1px solid #000000; padding: 5px; text-align: right; font-weight: bold;">${amount}</td>
+        </tr>
+                    `;
+                }
+
+                // Method 4: Default fallback
+                console.log('Using default closing balance');
+                const reportTitle = document.getElementById('reportTitle');
+                const monthFromTitle = reportTitle ? reportTitle.textContent.match(/MONTH\s+([A-Za-z0-9-]+)/)?.[1] : 'Current Month';
+
+                return `
+        <tr>
+            <td colspan="3" style="border: 1px solid #000000; padding: 5px; text-align: right; font-weight: bold;">TOTAL BALANCE ${monthFromTitle} CLOSING:</td>
+            <td style="border: 1px solid #000000; padding: 5px; text-align: right; font-weight: bold;">0.00</td>
+        </tr>
+                `;
             }
 
             const originalAction = "{{ route('summary.report') }}";
@@ -273,33 +451,46 @@
                 const formatCurrency = (amount) => parseFloat(amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
                 // Update header
-                $('.invoice-info strong:first').html(`CASH RECEIVED AND PAYMENT STATEMENT FOR THE MONTH ${formatMonth(selectedMonth)}-${selectedMonth.getFullYear()}`);
+                $('#reportTitle').html(`CASH RECEIVED AND PAYMENT STATEMENT FOR THE MONTH ${formatMonth(selectedMonth)}-${selectedMonth.getFullYear()}`);
 
                 // Update table data with corrected dates
-                $('.invoice-table tbody tr:eq(1) td:eq(1)').html(`TOTAL OPENING BALANCE ${formatMonth(prevMonth)} ${formatDate(firstDayPrevMonth)}`);
-                $('.invoice-table tbody tr:eq(1) td:eq(2)').html(formatCurrency(data.previousMonthClosing)).toggleClass('negative', data.previousMonthClosing < 0);
+                $('#openingBalanceDesc').html(`TOTAL OPENING BALANCE ${formatMonth(prevMonth)} ${formatDate(firstDayPrevMonth)}`);
+                $('#openingBalanceAmount').html(formatCurrency(data.previousMonthClosing)).toggleClass('negative', data.previousMonthClosing < 0);
 
-                $('.invoice-table tbody tr:eq(2) td:eq(2)').html(formatCurrency(data.dhakaBankReceived));
-                $('.invoice-table tbody tr:eq(3) td:eq(2)').html(formatCurrency(data.cashReceived));
+                $('#dhakaBankAmount').html(formatCurrency(data.dhakaBankReceived));
+                $('#cashReceivedAmount').html(formatCurrency(data.cashReceived));
 
                 // Update office balance row with first day to last day
-                $('.invoice-table tbody tr:eq(4) td:eq(1)').html(`OFFICE BALANCE ON ${formatDate(firstDayCurrentMonth)} TO ${formatDate(lastDayCurrentMonth)}`);
-                $('.invoice-table tbody tr:eq(4) td:eq(3)').html(formatCurrency(data.officeBalance)).toggleClass('negative', data.officeBalance < 0);
+                $('#officeBalanceDesc').html(`OFFICE BALANCE ON ${formatDate(firstDayCurrentMonth)} TO ${formatDate(lastDayCurrentMonth)}`);
+                $('#officeBalanceAmount').html(formatCurrency(data.officeBalance)).toggleClass('negative', data.officeBalance < 0);
 
-                $('.invoice-table tbody tr:eq(6) td:eq(1)').html(`EXPORT DOCUMENTS MFL ${data.exportData.qty} PCS ( As per Sheet)`);
-                $('.invoice-table tbody tr:eq(6) td:eq(3)').html(formatCurrency(data.exportData.total));
+                $('#exportDesc').html(`EXPORT DOCUMENTS MFL ${data.exportData.qty} PCS ( As per Sheet)`);
+                $('#exportAmount').html(formatCurrency(data.exportData.total));
 
-                $('.invoice-table tbody tr:eq(7) td:eq(1)').html(`IMPORT DOCUMENTS MFL ${data.importData.qty} PCS ( As per Sheet)`);
-                $('.invoice-table tbody tr:eq(7) td:eq(3)').html(formatCurrency(data.importData.total));
+                $('#importDesc').html(`IMPORT DOCUMENTS MFL ${data.importData.qty} PCS ( As per Sheet)`);
+                $('#importAmount').html(formatCurrency(data.importData.total));
 
-                $('.invoice-table tbody tr:eq(8) td:eq(3)').html(formatCurrency(data.officeExpenses));
+                $('#officeExpensesAmount').html(formatCurrency(data.officeExpenses));
 
                 // Update footer with last day of month
-                $('.invoice-table tfoot tr th:eq(0)').html(`TOTAL BALANCE ${formatMonth(selectedMonth)} CLOSING ${formatDate(lastDayCurrentMonth)}:`);
-                $('.invoice-table tfoot tr th:eq(1)').html(formatCurrency(data.closingBalance)).toggleClass('negative', data.closingBalance < 0);
+                $('#closingBalanceLabel').html(`TOTAL BALANCE ${formatMonth(selectedMonth)} CLOSING ${formatDate(lastDayCurrentMonth)}:`);
+                $('#closingBalanceAmount').html(formatCurrency(data.closingBalance)).toggleClass('negative', data.closingBalance < 0);
 
                 // Update print date
-                $('.invoice-info .right strong').html(`Date: ${new Date().toLocaleDateString('en-GB')}`);
+                $('#reportDate').html(`Date: ${new Date().toLocaleDateString('en-GB')}`);
+
+                // Update hidden data element for Excel export
+                $('#summaryReportTotals').attr({
+                    'data-previous-month-closing': formatCurrency(data.previousMonthClosing),
+                    'data-dhaka-bank-received': formatCurrency(data.dhakaBankReceived),
+                    'data-cash-received': formatCurrency(data.cashReceived),
+                    'data-office-balance': formatCurrency(data.officeBalance),
+                    'data-export-total': formatCurrency(data.exportData.total),
+                    'data-import-total': formatCurrency(data.importData.total),
+                    'data-office-expenses': formatCurrency(data.officeExpenses),
+                    'data-closing-balance': formatCurrency(data.closingBalance),
+                    'data-month-text': `${formatMonth(selectedMonth)}-${selectedMonth.getFullYear()}`
+                });
             }
 
             // Print function
