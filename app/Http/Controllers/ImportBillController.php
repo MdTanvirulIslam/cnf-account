@@ -209,12 +209,28 @@ class ImportBillController extends Controller
                 throw new \Exception("Main account not found");
             }
 
-            // 1️⃣ Create ImportBill
-            $bill = ImportBill::create($request->only([
-                'lc_no','lc_date','bill_no','bill_date',
-                'item','value','qty','weight','be_no','be_date',
-                'scan_fee','doc_fee','account_id','ait_account_id','port_account_id'
-            ]));
+            // Add prefixes to the fields
+            $bill_no = $this->addBillNoPrefix(trim($request->bill_no));
+            $be_no = $this->addBeNoPrefix(trim($request->be_no ?? ''));
+
+            // 1️⃣ Create ImportBill with prefixed values
+            $bill = ImportBill::create([
+                'lc_no'           => trim($request->lc_no),
+                'lc_date'         => $request->lc_date,
+                'bill_no'         => $bill_no,
+                'bill_date'       => $request->bill_date,
+                'item'            => $request->item,
+                'value'           => $request->value,
+                'qty'             => $request->qty,
+                'weight'          => $request->weight,
+                'be_no'           => $be_no,
+                'be_date'         => $request->be_date,
+                'scan_fee'        => $request->scan_fee,
+                'doc_fee'         => $request->doc_fee,
+                'account_id'      => $request->account_id,
+                'ait_account_id'  => $request->ait_account_id,
+                'port_account_id' => $request->port_account_id,
+            ]);
 
             $expenses = (array)$request->input('expenses', []);
 
@@ -234,7 +250,6 @@ class ImportBillController extends Controller
                     $otherAmount += floatval($amount);
                 }
             }
-
 
             // Create ImportBillExpenses
             foreach ($this->expenseTypes as $type) {
@@ -307,6 +322,26 @@ class ImportBillController extends Controller
         ], 201);
     }
 
+// Helper methods for adding prefixes
+    private function addBillNoPrefix($billNo)
+    {
+        $prefix = 'MFL/IMP/';
+        // Remove prefix if already exists to avoid duplication
+        $billNo = str_replace($prefix, '', $billNo);
+        return $prefix . trim($billNo);
+    }
+
+    private function addBeNoPrefix($beNo)
+    {
+        if (empty($beNo)) {
+            return null;
+        }
+        $prefix = 'C-';
+        // Remove prefix if already exists to avoid duplication
+        $beNo = str_replace($prefix, '', $beNo);
+        return $prefix . trim($beNo);
+    }
+
 
 
 
@@ -341,12 +376,28 @@ class ImportBillController extends Controller
 
             $bill = ImportBill::with('expenses')->findOrFail($id);
 
-            // Update basic fields
-            $bill->update($request->only([
-                'lc_no','lc_date','bill_no','bill_date',
-                'item','value','qty','weight','be_no','be_date',
-                'scan_fee','doc_fee','account_id','ait_account_id','port_account_id'
-            ]));
+            // Add prefixes to the fields
+            $bill_no = $this->addBillNoPrefix(trim($request->bill_no));
+            $be_no = $this->addBeNoPrefix(trim($request->be_no ?? ''));
+
+            // Update basic fields with prefixed values
+            $bill->update([
+                'lc_no'           => trim($request->lc_no),
+                'lc_date'         => $request->lc_date,
+                'bill_no'         => $bill_no,
+                'bill_date'       => $request->bill_date,
+                'item'            => $request->item,
+                'value'           => $request->value,
+                'qty'             => $request->qty,
+                'weight'          => $request->weight,
+                'be_no'           => $be_no,
+                'be_date'         => $request->be_date,
+                'scan_fee'        => $request->scan_fee,
+                'doc_fee'         => $request->doc_fee,
+                'account_id'      => $request->account_id,
+                'ait_account_id'  => $request->ait_account_id,
+                'port_account_id' => $request->port_account_id,
+            ]);
 
             $expenses = (array)$request->input('expenses', []);
 
@@ -366,10 +417,6 @@ class ImportBillController extends Controller
                     $otherAmount += floatval($amount);
                 }
             }
-
-            // Add doc_fee and scan_fee
-            //$otherAmount += floatval($request->doc_fee ?? 0);
-            //$otherAmount += floatval($request->scan_fee ?? 0);
 
             // Delete and recreate expenses (consistent approach)
             $bill->expenses()->delete();

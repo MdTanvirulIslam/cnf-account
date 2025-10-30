@@ -110,6 +110,11 @@
             font-size: 0.8em;
             font-weight: 600;
         }
+        .prefix-hint {
+            font-size: 0.75em;
+            color: #6c757d;
+            margin-top: 2px;
+        }
     </style>
 @endsection
 
@@ -154,7 +159,8 @@
 
                                 <div class="col-md-3 mb-3">
                                     <label class="required-field">Bill No</label>
-                                    <input class="form-control form-control-sm input-highlight" type="text" name="bill_no" value="{{ $bill->bill_no }}" required>
+                                    <input class="form-control form-control-sm input-highlight bill-no-field" type="text" name="bill_no" value="{{ $bill->bill_no }}" required>
+                                    <div class="prefix-hint">Prefix: MFL/IMP/</div>
                                 </div>
 
                                 <div class="col-md-3 mb-3">
@@ -185,7 +191,8 @@
 
                                 <div class="col-md-3 mb-3">
                                     <label>B/E No</label>
-                                    <input class="form-control form-control-sm input-highlight" type="text" name="be_no" value="{{ $bill->be_no }}">
+                                    <input class="form-control form-control-sm input-highlight be-no-field" type="text" name="be_no" value="{{ $bill->be_no }}">
+                                    <div class="prefix-hint">Prefix: C-</div>
                                 </div>
 
                                 <div class="col-md-3 mb-3">
@@ -328,7 +335,6 @@
                                     <div class="col-md-4">
                                         @php
                                             $totalExpenses = $bill->expenses->whereNotIn('expense_type', ['AIT (As Per Receipt)', 'Port Bill (As Per Receipt)'])->sum('amount');
-                                            //$otherTotal = $otherExpenses + $bill->doc_fee + $bill->scan_fee;
                                         @endphp
                                         <strong>Other Amount:</strong>
                                         <span id="otherTotal">{{ number_format($totalExpenses, 2) }}</span>
@@ -376,6 +382,65 @@
 
     <script>
         $(function () {
+            // Prefix configuration
+            const prefixes = {
+                bill_no: 'MFL/IMP/',
+                be_no: 'C-'
+            };
+
+            // Function to add prefix to input value
+            function addPrefix(fieldName, value) {
+                const prefix = prefixes[fieldName];
+                // Remove prefix if already exists to avoid duplication
+                let cleanValue = value.replace(prefix, '');
+                return prefix + cleanValue;
+            }
+
+            // Function to remove prefix for display (if needed)
+            function removePrefix(fieldName, value) {
+                const prefix = prefixes[fieldName];
+                return value.replace(prefix, '');
+            }
+
+            // Initialize prefixes on page load for edit form
+            function initializePrefixes() {
+                Object.keys(prefixes).forEach(fieldName => {
+                    const $input = $(`[name="${fieldName}"]`);
+                    const currentValue = $input.val();
+
+                    // For edit form, we want to show the value without prefix for easier editing
+                    if (currentValue && currentValue.startsWith(prefixes[fieldName])) {
+                        $input.data('original-value', currentValue);
+                        $input.val(removePrefix(fieldName, currentValue));
+                    }
+                });
+            }
+
+            // Handle input events to maintain prefixes
+            Object.keys(prefixes).forEach(fieldName => {
+                const $input = $(`[name="${fieldName}"]`);
+                const prefix = prefixes[fieldName];
+
+                $input.on('focus', function() {
+                    let value = $(this).val();
+                    // Store the value without prefix for easier editing
+                    if (value && !value.startsWith(prefix)) {
+                        $(this).data('original-value', value);
+                    }
+                });
+
+                $input.on('blur', function() {
+                    let value = $(this).val();
+                    // Add prefix when focus is lost if value exists
+                    if (value && !value.startsWith(prefix)) {
+                        $(this).val(addPrefix(fieldName, value));
+                    }
+                });
+            });
+
+            // Initialize prefixes when page loads
+            initializePrefixes();
+
             // Prevent Enter key submission
             $('#importBillForm').on('keydown', 'input, select, textarea', function(e) {
                 if (e.key === 'Enter' || e.keyCode === 13) {
@@ -389,8 +454,6 @@
                 let aitTotal = 0;
                 let portTotal = 0;
                 let otherTotal = 0;
-                //let docFee = parseFloat($('#docFee').val()) || 0;
-                //let scanFee = parseFloat($('#scanFee').val()) || 0;
 
                 $('.expense-input').each(function() {
                     let value = parseFloat($(this).val()) || 0;
@@ -404,9 +467,6 @@
                         otherTotal += value;
                     }
                 });
-
-                // Add doc fee and scan fee to other total
-                //otherTotal += docFee + scanFee;
 
                 $('#aitTotal').text(aitTotal.toFixed(2));
                 $('#portTotal').text(portTotal.toFixed(2));
@@ -435,6 +495,15 @@
                     account_id: { required: "Please select main account for expenses" }
                 },
                 submitHandler: function(form) {
+                    // Ensure all prefixed fields have their prefixes before submission
+                    Object.keys(prefixes).forEach(fieldName => {
+                        const $input = $(`[name="${fieldName}"]`);
+                        let value = $input.val();
+                        if (value && !value.startsWith(prefixes[fieldName])) {
+                            $input.val(addPrefix(fieldName, value));
+                        }
+                    });
+
                     let formData = new FormData(form);
                     formData.append('_method', 'PUT');
                     let submitBtn = $(form).find('button[type="submit"]');
