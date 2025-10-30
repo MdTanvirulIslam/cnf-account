@@ -110,6 +110,11 @@
             font-size: 0.8em;
             font-weight: 600;
         }
+        .prefix-hint {
+            font-size: 0.75em;
+            color: #6c757d;
+            margin-top: 2px;
+        }
     </style>
 @endsection
 
@@ -156,8 +161,9 @@
 
                                 <div class="col-md-3 mb-3">
                                     <label class="required-field">Bill No</label>
-                                    <input type="text" name="bill_no" class="form-control form-control-sm input-highlight"
+                                    <input type="text" name="bill_no" class="form-control form-control-sm input-highlight bill-no-field"
                                            value="{{ $bill->bill_no }}" required>
+                                    <div class="prefix-hint">Prefix: MFL/EXP/</div>
                                 </div>
 
                                 <div class="col-md-3 mb-3">
@@ -168,8 +174,9 @@
 
                                 <div class="col-md-3 mb-3">
                                     <label class="required-field">Invoice No</label>
-                                    <input type="text" name="invoice_no" class="form-control form-control-sm input-highlight"
+                                    <input type="text" name="invoice_no" class="form-control form-control-sm input-highlight invoice-no-field"
                                            value="{{ $bill->invoice_no }}" required>
+                                    <div class="prefix-hint">Prefix: MFL/</div>
                                 </div>
 
                                 <div class="col-md-3 mb-3">
@@ -191,16 +198,17 @@
                                            value="{{ $bill->total_qty }}">
                                 </div>
 
-                               {{-- <div class="col-md-3 mb-3">
-                                    <label>CTN No</label>
-                                    <input type="text" name="ctn_no" class="form-control form-control-sm input-highlight"
-                                           value="{{ $bill->ctn_no }}">
-                                </div>--}}
+                                {{-- <div class="col-md-3 mb-3">
+                                     <label>CTN No</label>
+                                     <input type="text" name="ctn_no" class="form-control form-control-sm input-highlight"
+                                            value="{{ $bill->ctn_no }}">
+                                 </div>--}}
 
                                 <div class="col-md-3 mb-3">
                                     <label>B/E No</label>
-                                    <input type="text" name="be_no" class="form-control form-control-sm input-highlight"
+                                    <input type="text" name="be_no" class="form-control form-control-sm input-highlight be-no-field"
                                            value="{{ $bill->be_no }}">
+                                    <div class="prefix-hint">Prefix: C-</div>
                                 </div>
 
                                 <div class="col-md-3 mb-3">
@@ -364,6 +372,66 @@
     <script src="https://kit.fontawesome.com/your-fontawesome-kit.js"></script>
     <script>
         $(function () {
+            // Prefix configuration
+            const prefixes = {
+                bill_no: 'MFL/EXP/',
+                invoice_no: 'MFL/',
+                be_no: 'C-'
+            };
+
+            // Function to add prefix to input value
+            function addPrefix(fieldName, value) {
+                const prefix = prefixes[fieldName];
+                // Remove prefix if already exists to avoid duplication
+                let cleanValue = value.replace(prefix, '');
+                return prefix + cleanValue;
+            }
+
+            // Function to remove prefix for display (if needed)
+            function removePrefix(fieldName, value) {
+                const prefix = prefixes[fieldName];
+                return value.replace(prefix, '');
+            }
+
+            // Initialize prefixes on page load for edit form
+            function initializePrefixes() {
+                Object.keys(prefixes).forEach(fieldName => {
+                    const $input = $(`[name="${fieldName}"]`);
+                    const currentValue = $input.val();
+
+                    // For edit form, we want to show the value without prefix for easier editing
+                    if (currentValue && currentValue.startsWith(prefixes[fieldName])) {
+                        $input.data('original-value', currentValue);
+                        $input.val(removePrefix(fieldName, currentValue));
+                    }
+                });
+            }
+
+            // Handle input events to maintain prefixes
+            Object.keys(prefixes).forEach(fieldName => {
+                const $input = $(`[name="${fieldName}"]`);
+                const prefix = prefixes[fieldName];
+
+                $input.on('focus', function() {
+                    let value = $(this).val();
+                    // Store the value without prefix for easier editing
+                    if (value && !value.startsWith(prefix)) {
+                        $(this).data('original-value', value);
+                    }
+                });
+
+                $input.on('blur', function() {
+                    let value = $(this).val();
+                    // Add prefix when focus is lost if value exists
+                    if (value && !value.startsWith(prefix)) {
+                        $(this).val(addPrefix(fieldName, value));
+                    }
+                });
+            });
+
+            // Initialize prefixes when page loads
+            initializePrefixes();
+
             // Prevent Enter key submission
             $('#exportBillForm').on('keydown', 'input, select, textarea', function(e) {
                 if (e.key === 'Enter' || e.keyCode === 13) {
@@ -400,6 +468,15 @@
             // Form submission
             $('#exportBillForm').submit(function(e) {
                 e.preventDefault();
+
+                // Ensure all prefixed fields have their prefixes before submission
+                Object.keys(prefixes).forEach(fieldName => {
+                    const $input = $(`[name="${fieldName}"]`);
+                    let value = $input.val();
+                    if (value && !value.startsWith(prefixes[fieldName])) {
+                        $input.val(addPrefix(fieldName, value));
+                    }
+                });
 
                 let $form = $(this);
                 let $submitBtn = $form.find('button[type="submit"]');

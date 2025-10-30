@@ -319,6 +319,73 @@
     <script src="https://kit.fontawesome.com/your-fontawesome-kit.js"></script>
     <script>
         $(function () {
+            // Prefix configuration
+            const prefixes = {
+                bill_no: 'MFL/EXP/',
+                invoice_no: 'MFL/',
+                be_no: 'C-'
+            };
+
+            // Function to add prefix to input value
+            function addPrefix(fieldName, value) {
+                const prefix = prefixes[fieldName];
+                // Remove prefix if already exists to avoid duplication
+                let cleanValue = value.replace(prefix, '');
+                return prefix + cleanValue;
+            }
+
+            // Function to remove prefix for display (if needed)
+            function removePrefix(fieldName, value) {
+                const prefix = prefixes[fieldName];
+                return value.replace(prefix, '');
+            }
+
+            // Initialize prefixes on page load
+            function initializePrefixes() {
+                Object.keys(prefixes).forEach(fieldName => {
+                    const $input = $(`[name="${fieldName}"]`);
+                    const currentValue = $input.val();
+                    if (currentValue && !currentValue.startsWith(prefixes[fieldName])) {
+                        $input.val(addPrefix(fieldName, currentValue));
+                    }
+                });
+            }
+
+            // Handle input events to maintain prefixes
+            Object.keys(prefixes).forEach(fieldName => {
+                const $input = $(`[name="${fieldName}"]`);
+                const prefix = prefixes[fieldName];
+
+                $input.on('input', function() {
+                    let value = $(this).val();
+
+                    // If user deletes the prefix, add it back
+                    if (value && !value.startsWith(prefix)) {
+                        $(this).val(addPrefix(fieldName, value));
+                    }
+                });
+
+                $input.on('focus', function() {
+                    let value = $(this).val();
+                    // Store the value without prefix for easier editing
+                    if (value.startsWith(prefix)) {
+                        $(this).data('original-value', value);
+                        $(this).val(removePrefix(fieldName, value));
+                    }
+                });
+
+                $input.on('blur', function() {
+                    let value = $(this).val();
+                    // Restore prefix when focus is lost
+                    if (value && !value.startsWith(prefix)) {
+                        $(this).val(addPrefix(fieldName, value));
+                    }
+                });
+            });
+
+            // Initialize prefixes when page loads
+            initializePrefixes();
+
             // Prevent Enter key submission
             $('#exportBillForm').on('keydown', 'input, select, textarea', function(e) {
                 if (e.key === 'Enter' || e.keyCode === 13) {
@@ -358,6 +425,15 @@
             // Form submission
             $('#exportBillForm').submit(function(e) {
                 e.preventDefault();
+
+                // Ensure all prefixed fields have their prefixes before submission
+                Object.keys(prefixes).forEach(fieldName => {
+                    const $input = $(`[name="${fieldName}"]`);
+                    let value = $input.val();
+                    if (value && !value.startsWith(prefixes[fieldName])) {
+                        $input.val(addPrefix(fieldName, value));
+                    }
+                });
 
                 let $form = $(this);
                 let $submitBtn = $form.find('button[type="submit"]');

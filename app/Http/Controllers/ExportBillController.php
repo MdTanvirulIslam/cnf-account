@@ -209,11 +209,28 @@ class ExportBillController extends Controller
                 throw new \Exception("Account not found");
             }
 
-            // 1️⃣ Create Export Bill
-            $bill = ExportBill::create($request->only([
-                'buyer_id','invoice_no','invoice_date','bill_no','bill_date',
-                'usd','total_qty','ctn_no','be_no','be_date','qty_pcs','note','from_account_id','account_id'
-            ]));
+            // Add prefixes to the fields
+            $bill_no = $this->addBillNoPrefix(trim($request->bill_no));
+            $invoice_no = $this->addInvoiceNoPrefix(trim($request->invoice_no));
+            $be_no = $this->addBeNoPrefix(trim($request->be_no));
+
+            // 1️⃣ Create Export Bill with prefixed values
+            $bill = ExportBill::create([
+                'buyer_id'        => $request->buyer_id,
+                'invoice_no'      => $invoice_no,
+                'invoice_date'    => $request->invoice_date,
+                'bill_no'         => $bill_no,
+                'bill_date'       => $request->bill_date,
+                'usd'             => $request->usd,
+                'total_qty'       => $request->total_qty,
+                'ctn_no'          => $request->ctn_no ? trim($request->ctn_no) : null,
+                'be_no'           => $be_no,
+                'be_date'         => $request->be_date,
+                'qty_pcs'         => $request->qty_pcs,
+                'note'            => $request->note,
+                'from_account_id' => $request->from_account_id,
+                'account_id'      => $request->account_id,
+            ]);
 
             $vatType = 'Bank C & F Vat & Others (As Per Receipt)';
             $vatAmount = (float) ($request->input('expenses')[$vatType] ?? 0);
@@ -268,6 +285,31 @@ class ExportBillController extends Controller
         }
 
         return response()->json(['success' => true, 'message' => 'Export Bill created successfully']);
+    }
+
+// Helper methods for adding prefixes
+    private function addBillNoPrefix($billNo)
+    {
+        $prefix = 'MFL/EXP/';
+        // Remove prefix if already exists to avoid duplication
+        $billNo = str_replace($prefix, '', $billNo);
+        return $prefix . trim($billNo);
+    }
+
+    private function addInvoiceNoPrefix($invoiceNo)
+    {
+        $prefix = 'MFL/';
+        // Remove prefix if already exists to avoid duplication
+        $invoiceNo = str_replace($prefix, '', $invoiceNo);
+        return $prefix . trim($invoiceNo);
+    }
+
+    private function addBeNoPrefix($beNo)
+    {
+        $prefix = 'C-';
+        // Remove prefix if already exists to avoid duplication
+        $beNo = str_replace($prefix, '', $beNo);
+        return $prefix . trim($beNo);
     }
 
     /**
@@ -347,32 +389,36 @@ class ExportBillController extends Controller
             ], 422);
         }
 
-        // MANUAL UNIQUE VALIDATION FOR BE_NO
-        $trimmedBeNo = trim($request->be_no);
+        // Add prefixes to the fields
+        $bill_no = $this->addBillNoPrefix(trim($request->bill_no));
+        $invoice_no = $this->addInvoiceNoPrefix(trim($request->invoice_no));
+        $be_no = $this->addBeNoPrefix(trim($request->be_no));
+
+        // MANUAL UNIQUE VALIDATION FOR BE_NO (with prefix)
         $currentTrimmedBeNo = trim($bill->be_no);
 
         // If BE No is being changed, check for duplicates
-        if (strcasecmp($trimmedBeNo, $currentTrimmedBeNo) !== 0) {
+        if (strcasecmp($be_no, $currentTrimmedBeNo) !== 0) {
             \Log::info('BE No is being changed, checking for duplicates...', [
                 'from' => $currentTrimmedBeNo,
-                'to' => $trimmedBeNo
+                'to' => $be_no
             ]);
 
             // Case-insensitive check for existing BE No
             $existingBill = ExportBill::where('id', '!=', $bill->id)
-                ->where(function($query) use ($trimmedBeNo) {
-                    $query->where('be_no', '=', $trimmedBeNo)
-                        ->orWhere('be_no', '=', strtoupper($trimmedBeNo))
-                        ->orWhere('be_no', '=', strtolower($trimmedBeNo))
-                        ->orWhere(DB::raw('LOWER(be_no)'), '=', strtolower($trimmedBeNo))
-                        ->orWhere(DB::raw('UPPER(be_no)'), '=', strtoupper($trimmedBeNo))
-                        ->orWhere(DB::raw('TRIM(be_no)'), '=', $trimmedBeNo);
+                ->where(function($query) use ($be_no) {
+                    $query->where('be_no', '=', $be_no)
+                        ->orWhere('be_no', '=', strtoupper($be_no))
+                        ->orWhere('be_no', '=', strtolower($be_no))
+                        ->orWhere(DB::raw('LOWER(be_no)'), '=', strtolower($be_no))
+                        ->orWhere(DB::raw('UPPER(be_no)'), '=', strtoupper($be_no))
+                        ->orWhere(DB::raw('TRIM(be_no)'), '=', $be_no);
                 })
                 ->first();
 
             if ($existingBill) {
                 \Log::error('BE No duplicate found:', [
-                    'requested_be_no' => $trimmedBeNo,
+                    'requested_be_no' => $be_no,
                     'existing_bill_id' => $existingBill->id,
                     'existing_be_no' => $existingBill->be_no
                 ]);
@@ -399,17 +445,17 @@ class ExportBillController extends Controller
             // Refresh the bill to ensure we have latest data
             $bill->refresh();
 
-            // Prepare update data with trimmed values
+            // Prepare update data with prefixed values
             $updateData = [
                 'buyer_id' => $request->buyer_id,
-                'invoice_no' => trim($request->invoice_no),
+                'invoice_no' => $invoice_no,
                 'invoice_date' => $request->invoice_date,
-                'bill_no' => trim($request->bill_no),
+                'bill_no' => $bill_no,
                 'bill_date' => $request->bill_date,
                 'usd' => $request->usd,
                 'total_qty' => $request->total_qty,
                 'ctn_no' => $request->ctn_no ? trim($request->ctn_no) : null,
-                'be_no' => $trimmedBeNo, // Use the trimmed version
+                'be_no' => $be_no,
                 'be_date' => $request->be_date,
                 'qty_pcs' => $request->qty_pcs,
                 'note' => $request->note,
