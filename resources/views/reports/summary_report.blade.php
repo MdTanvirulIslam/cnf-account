@@ -109,7 +109,7 @@
 
                 <tr>
                     <td>1</td>
-                    <td id="openingBalanceDesc">TOTAL OPENING BALANCE {{ $selectedMonth->copy()->subMonth()->format('M') }} {{ $selectedMonth->copy()->subMonth()->startOfMonth()->format('d.m.Y') }}</td>
+                    <td id="openingBalanceDesc">TOTAL OPENING BALANCE {{ $selectedMonth->format('M') }} {{ $selectedMonth->startOfMonth()->format('d.m.Y') }}</td>
                     <td class="right {{ $previousMonthClosing < 0 ? 'negative' : '' }}" id="openingBalanceAmount">{{ number_format($previousMonthClosing, 2) }}</td>
                     <td></td>
                 </tr>
@@ -427,40 +427,81 @@
 
             // Function to update report content with new data
             function updateReportContent(data) {
-                const selectedMonth = new Date(data.selectedMonth.date);
-                const prevMonth = new Date(selectedMonth);
-                prevMonth.setMonth(prevMonth.getMonth() - 1);
+                // Safe date parsing with validation
+                let selectedMonth;
+                try {
+                    // Try to parse the date from the response
+                    if (data.selectedMonth && data.selectedMonth.date) {
+                        selectedMonth = new Date(data.selectedMonth.date);
+                    } else if (data.selectedMonth) {
+                        selectedMonth = new Date(data.selectedMonth);
+                    } else {
+                        // Fallback to current month
+                        selectedMonth = new Date();
+                    }
 
-                // Get first day of previous month
-                const firstDayPrevMonth = new Date(prevMonth.getFullYear(), prevMonth.getMonth(), 1);
+                    // Validate the date
+                    if (isNaN(selectedMonth.getTime())) {
+                        throw new Error('Invalid date received');
+                    }
+                } catch (error) {
+                    console.error('Date parsing error:', error);
+                    // Fallback to current date
+                    selectedMonth = new Date();
+                }
 
-                // Get first day of current month
+                // Get first day of selected month
                 const firstDayCurrentMonth = new Date(selectedMonth.getFullYear(), selectedMonth.getMonth(), 1);
 
-                // Get last day of current month
+                // Get last day of selected month
                 const lastDayCurrentMonth = new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() + 1, 0);
 
+                // Safe date formatting function
                 const formatDate = (date) => {
+                    if (!date || isNaN(date.getTime())) {
+                        console.error('Invalid date provided to formatDate:', date);
+                        return 'Invalid Date';
+                    }
                     const day = String(date.getDate()).padStart(2, '0');
                     const month = String(date.getMonth() + 1).padStart(2, '0');
                     const year = date.getFullYear();
                     return `${day}.${month}.${year}`;
                 };
 
-                const formatMonth = (date) => date.toLocaleDateString('en-GB', { month: 'short' });
-                const formatCurrency = (amount) => parseFloat(amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                // Safe month formatting
+                const formatMonth = (date) => {
+                    if (!date || isNaN(date.getTime())) {
+                        console.error('Invalid date provided to formatMonth:', date);
+                        return 'Invalid Month';
+                    }
+                    return date.toLocaleDateString('en-GB', { month: 'short' });
+                };
 
-                // Update header
+                // Safe currency formatting
+                const formatCurrency = (amount) => {
+                    const num = parseFloat(amount);
+                    if (isNaN(num)) {
+                        console.error('Invalid amount provided to formatCurrency:', amount);
+                        return '0.00';
+                    }
+                    return num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                };
+
+                console.log('Selected Month:', selectedMonth);
+                console.log('First Day Current Month:', firstDayCurrentMonth);
+                console.log('Last Day Current Month:', lastDayCurrentMonth);
+
+                // Update header with selected month
                 $('#reportTitle').html(`CASH RECEIVED AND PAYMENT STATEMENT FOR THE MONTH ${formatMonth(selectedMonth)}-${selectedMonth.getFullYear()}`);
 
-                // Update table data with corrected dates
-                $('#openingBalanceDesc').html(`TOTAL OPENING BALANCE ${formatMonth(prevMonth)} ${formatDate(firstDayPrevMonth)}`);
+                // Update table data - ALL dates now use the SELECTED month
+                $('#openingBalanceDesc').html(`TOTAL OPENING BALANCE ${formatMonth(selectedMonth)} ${formatDate(firstDayCurrentMonth)}`);
                 $('#openingBalanceAmount').html(formatCurrency(data.previousMonthClosing)).toggleClass('negative', data.previousMonthClosing < 0);
 
                 $('#dhakaBankAmount').html(formatCurrency(data.dhakaBankReceived));
                 $('#cashReceivedAmount').html(formatCurrency(data.cashReceived));
 
-                // Update office balance row with first day to last day
+                // Update office balance row with first day to last day of SELECTED month
                 $('#officeBalanceDesc').html(`OFFICE BALANCE ON ${formatDate(firstDayCurrentMonth)} TO ${formatDate(lastDayCurrentMonth)}`);
                 $('#officeBalanceAmount').html(formatCurrency(data.officeBalance)).toggleClass('negative', data.officeBalance < 0);
 
@@ -472,7 +513,7 @@
 
                 $('#officeExpensesAmount').html(formatCurrency(data.officeExpenses));
 
-                // Update footer with last day of month
+                // Update footer with last day of SELECTED month
                 $('#closingBalanceLabel').html(`TOTAL BALANCE ${formatMonth(selectedMonth)} CLOSING ${formatDate(lastDayCurrentMonth)}:`);
                 $('#closingBalanceAmount').html(formatCurrency(data.closingBalance)).toggleClass('negative', data.closingBalance < 0);
 
