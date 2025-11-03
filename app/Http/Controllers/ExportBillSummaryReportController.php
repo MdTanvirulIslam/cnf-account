@@ -14,9 +14,9 @@ class ExportBillSummaryReportController extends Controller
         [$year, $monthNum] = explode('-', $month);
 
         $bills = ExportBill::with('expenses')
-            ->whereYear('created_at', $year)
-            ->whereMonth('created_at', $monthNum)
-            ->orderBy('created_at', 'asc')
+            ->whereYear('bill_date', $year)
+            ->whereMonth('bill_date', $monthNum)
+            ->orderBy('bill_date', 'desc')
             ->get();
 
         if ($request->ajax()) {
