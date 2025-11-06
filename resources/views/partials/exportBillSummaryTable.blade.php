@@ -69,7 +69,7 @@
     }
     .invoice-table th {
         background-color: #f4f4f4;
-        text-align: left;
+        text-align: center;
     }
     .right {
         text-align: right;

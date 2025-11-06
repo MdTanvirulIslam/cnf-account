@@ -114,12 +114,12 @@ class SummaryReportController extends Controller
      */
     private function getExportData($month)
     {
-        $totalQty = ExportBill::whereYear('created_at', $month->year)
-            ->whereMonth('created_at', $month->month)
+        $totalQty = ExportBill::whereYear('bill_date', $month->year)
+            ->whereMonth('bill_date', $month->month)
             ->count('id');
 
-        $exportBillIds = ExportBill::whereYear('created_at', $month->year)
-            ->whereMonth('created_at', $month->month)
+        $exportBillIds = ExportBill::whereYear('bill_date', $month->year)
+            ->whereMonth('bill_date', $month->month)
             ->pluck('id');
 
         if ($exportBillIds->count() === 0) {
@@ -142,12 +142,12 @@ class SummaryReportController extends Controller
      */
     private function getImportData($month)
     {
-        $totalQty = ImportBill::whereYear('created_at', $month->year)
-            ->whereMonth('created_at', $month->month)
+        $totalQty = ImportBill::whereYear('bill_date', $month->year)
+            ->whereMonth('bill_date', $month->month)
             ->count('id');
 
-        $importBillIds = ImportBill::whereYear('created_at', $month->year)
-            ->whereMonth('created_at', $month->month)
+        $importBillIds = ImportBill::whereYear('bill_date', $month->year)
+            ->whereMonth('bill_date', $month->month)
             ->pluck('id');
 
         if ($importBillIds->count() === 0) {

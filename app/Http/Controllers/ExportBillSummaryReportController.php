@@ -16,7 +16,9 @@ class ExportBillSummaryReportController extends Controller
         $bills = ExportBill::with('expenses')
             ->whereYear('bill_date', $year)
             ->whereMonth('bill_date', $monthNum)
-            ->orderBy('bill_date', 'desc')
+            ->orderByRaw(
+                "CAST(REGEXP_SUBSTR(bill_no, '[0-9]+') AS UNSIGNED) ASC"
+            )
             ->get();
 
         if ($request->ajax()) {

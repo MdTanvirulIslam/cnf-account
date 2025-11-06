@@ -413,7 +413,7 @@
     <meta charset="UTF-8">
 </head>
 <body>
-    <table style="border-collapse: collapse; width: 100%; font-family: Arial; font-size: 11px;">
+    <table style="border-collapse: collapse; width: 100%; font-family: Arial; font-size: 14px;">
         <!-- Empty row -->
         <tr>
             <td colspan="4" style="border: none; padding: 5px;"></td>

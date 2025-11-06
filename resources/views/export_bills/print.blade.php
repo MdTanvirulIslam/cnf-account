@@ -385,7 +385,7 @@
     <meta charset="UTF-8">
 </head>
 <body>
-    <table style="border-collapse: collapse; width: 100%; font-family: Arial; font-size: 11px;">
+    <table style="border-collapse: collapse; width: 100%; font-family: Arial; font-size: 14px;">
         <!-- Empty row -->
         <tr>
             <td colspan="4" style="border: none; padding: 5px;"></td>
@@ -393,8 +393,8 @@
 
         <!-- Company Header Section -->
         <tr>
-            <td style="border: none; padding: 5px; width: 10%;"></td>
-            <td colspan="3" style="border: 1px solid #000000; padding: 10px; text-align: center; font-weight: bold; font-size: 16px; width: 90%;">
+
+            <td colspan="4" style="border: 1px solid #000000; padding: 10px; text-align: center; font-weight: bold; font-size: 16px; width: 90%;">
                 MULTI FABS LTD <br/>
                 (SELF C&F AGENTS)<br/>
                 314, SK. MUJIB ROAD, CHOWDHURY BHABAN (4TH FLOOR) AGRABAD, CHITTAGONG
@@ -408,8 +408,8 @@
 
         <!-- Bill No and Date -->
         <tr>
-            <td style="border: none; padding: 5px;"></td>
-            <td style="border: 1px solid #000000; padding: 5px; text-align: left; font-weight: bold; width: 30%;">BILL NO: {{ $bill->bill_no }}</td>
+
+            <td colspan="2" style="border: 1px solid #000000; padding: 5px; text-align: left; font-weight: bold; width: 30%;">BILL NO: {{ $bill->bill_no }}</td>
             <td colspan="2" style="border: 1px solid #000000; padding: 5px; text-align: right; font-weight: bold; width: 60%;">DATE: {{ $bill->bill_date ? \Carbon\Carbon::parse($bill->bill_date)->format('d/m/Y') : '' }}</td>
         </tr>
 
@@ -420,8 +420,8 @@
 
         <!-- Sub Title -->
         <tr>
-            <td style="border: none; padding: 5px;"></td>
-            <td colspan="3" style="border: 1px solid #000000; padding: 8px; text-align: left; font-weight: bold; font-size: 12px;">SUB: FORWARDING BILL (AS PER INVOICE)</td>
+
+            <td colspan="4" style="border: 1px solid #000000; padding: 8px; text-align: left; font-weight: bold; font-size: 12px;">SUB: FORWARDING BILL (AS PER INVOICE)</td>
         </tr>
 
         <!-- Empty row -->
@@ -431,28 +431,28 @@
 
         <!-- Buyer Information Table -->
         <tr>
-            <td style="border: none; padding: 5px;"></td>
-            <td style="border: 1px solid #000000; padding: 5px; text-align: left;">Buyer Name : {{ $bill->buyer->name ?? '' }}</td>
-            <td style="border: 1px solid #000000; padding: 5px; text-align: center; font-weight: bold;">USD</td>
-            <td style="border: 1px solid #000000; padding: 5px; text-align: center;">{{ number_format($bill->usd, 2) }}</td>
+
+            <td colspan="2" style="border: 1px solid #000000; padding: 5px; text-align: left;">Buyer Name : {{ $bill->buyer->name ?? '' }}</td>
+            <td colspan="2" style="border: 1px solid #000000; padding: 5px; text-align: center; font-weight: bold;">USD : {{ number_format($bill->usd, 2) }}</td>
+
         </tr>
         <tr>
-            <td style="border: none; padding: 5px;"></td>
-            <td style="border: 1px solid #000000; padding: 5px; text-align: left;">Invoice No : {{ $bill->invoice_no }}</td>
-            <td style="border: 1px solid #000000; padding: 5px; text-align: center; font-weight: bold;">Date</td>
-            <td style="border: 1px solid #000000; padding: 5px; text-align: center;">{{ $bill->invoice_date ? \Carbon\Carbon::parse($bill->invoice_date)->format('d/m/Y') : '' }}</td>
+
+            <td colspan="2" style="border: 1px solid #000000; padding: 5px; text-align: left;">Invoice No : {{ $bill->invoice_no }}</td>
+            <td colspan="2" style="border: 1px solid #000000; padding: 5px; text-align: center; font-weight: bold;">Date : {{ $bill->invoice_date ? \Carbon\Carbon::parse($bill->invoice_date)->format('d/m/Y') : '' }} </td>
+
         </tr>
         <tr>
-            <td style="border: none; padding: 5px;"></td>
-            <td style="border: 1px solid #000000; padding: 5px; text-align: left;">B/E No : {{ $bill->be_no }}</td>
-            <td style="border: 1px solid #000000; padding: 5px; text-align: center; font-weight: bold;">Date</td>
-            <td style="border: 1px solid #000000; padding: 5px; text-align: center;">{{ $bill->be_date ? \Carbon\Carbon::parse($bill->be_date)->format('d/m/Y') : '' }}</td>
+
+            <td colspan="2" style="border: 1px solid #000000; padding: 5px; text-align: left;">B/E No : {{ $bill->be_no }}</td>
+            <td colspan="2" style="border: 1px solid #000000; padding: 5px; text-align: center; font-weight: bold;">Date : {{ $bill->be_date ? \Carbon\Carbon::parse($bill->be_date)->format('d/m/Y') : '' }}</td>
+
         </tr>
         <tr>
-            <td style="border: none; padding: 5px;"></td>
-            <td style="border: 1px solid #000000; padding: 5px; text-align: left;">Total CTN : {{ $bill->total_qty }}</td>
-            <td style="border: 1px solid #000000; padding: 5px; text-align: center; font-weight: bold;">Qty Pcs</td>
-            <td style="border: 1px solid #000000; padding: 5px; text-align: center;">{{ $bill->qty_pcs }}</td>
+
+            <td colspan="2" style="border: 1px solid #000000; padding: 5px; text-align: left;">Total CTN : {{ $bill->total_qty }}</td>
+            <td colspan="2" style="border: 1px solid #000000; padding: 5px; text-align: center; font-weight: bold;">Qty Pcs : {{ $bill->qty_pcs }}</td>
+
         </tr>
 
         <!-- Empty row -->

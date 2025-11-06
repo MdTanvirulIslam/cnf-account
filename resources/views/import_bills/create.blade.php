@@ -334,10 +334,10 @@
                         {{-- Form Actions --}}
                         <div class="row mt-4">
                             <div class="col-md-12 text-center">
-                                <button type="submit" class="btn btn-info btn-rounded _effect--ripple waves-effect waves-light">
+                                <button type="submit" class="btn btn-outline-primary btn-info btn-rounded _effect--ripple waves-effect waves-light focus-color-change">
                                     <i class="fas fa-paper-plane me-2"></i>Create Import Bill
                                 </button>
-                                <a href="{{ route('import-bills.index') }}" class="btn btn-light cancel-btn">
+                                <a href="{{ route('import-bills.index') }}" class="btn btn-outline-secondary btn-info btn-rounded _effect--ripple waves-effect waves-light focus-color-change">
                                     <i class="fas fa-arrow-left me-2"></i>Back to List
                                 </a>
                             </div>

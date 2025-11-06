@@ -48,7 +48,8 @@ class BankBookReportController extends Controller
             $month = $carbonMonth->format('Y-m');
         }
         $query->whereYear('created_at', $carbonMonth->year)
-            ->whereMonth('created_at', $carbonMonth->month);
+            ->whereMonth('created_at', $carbonMonth->month)
+            ->orderBy('created_at', 'asc');
 
         // ---------- Type filter ----------
         if (!empty($type) && strtolower($type) !== 'all') {

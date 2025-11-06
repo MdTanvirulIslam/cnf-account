@@ -96,74 +96,104 @@
 
                 // Write the print document
                 printWindow.document.write(`
-                    <!DOCTYPE html>
-                    <html>
-                    <head>
-                        <title>Import Bill Summary - ${formattedMonth}</title>
-                        <style>
-                            body {
-                                font-family: Arial, sans-serif;
-                                margin: 20px;
-                                color: #000;
-                            }
-                            .print-header {
-                                text-align: center;
-                                margin-bottom: 20px;
-                                border-bottom: 2px solid #000;
-                                padding-bottom: 10px;
-                            }
-                            .print-header h2 {
-                                margin: 0;
-                                color: #000;
-                            }
-                            .print-header p {
-                                margin: 5px 0 0 0;
-                            }
-                            table {
-                                width: 100%;
-                                border-collapse: collapse;
-                                margin-top: 20px;
-                            }
-                            th, td {
-                                border: 1px solid #ddd;
-                                padding: 8px;
-                                text-align: left;
-                            }
-                            th {
-                                background-color: #f2f2f2;
-                                font-weight: bold;
-                            }
-                            .text-center {
-                                text-align: center;
-                            }
-                            .text-right {
-                                text-align: right;
-                            }
-                            .total-row {
-                                font-weight: bold;
-                                background-color: #e9e9e9;
-                            }
-                            @media print {
-                                body {
-                                    margin: 0;
-                                    padding: 15px;
-                                }
-                                .no-print {
-                                    display: none !important;
-                                }
-                                @page {
-                                    size: landscape;
-                                    margin: 10mm;
-                                }
-                            }
-                        </style>
-                    </head>
-                    <body>
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Import Bill Summary - ${formattedMonth}</title>
+            <style>
+                body {
+                    font-family: Arial, sans-serif;
+                    margin: 20px;
+                    color: #000;
+                }
+                .print-header {
+                    text-align: center;
+                    margin-bottom: 20px;
+                    border-bottom: 2px solid #000;
+                    padding-bottom: 10px;
+                }
+                .print-header h2 {
+                    margin: 0;
+                    color: #000;
+                }
+                .print-header p {
+                    margin: 5px 0 0 0;
+                }
+                table {
+                    width: 100%;
+                    border-collapse: collapse;
+                    margin-top: 20px;
+                    table-layout: fixed; /* Prevents column breaking */
+                }
+                th, td {
+                    border: 1px solid #ddd;
+                    padding: 8px;
+                    text-align: center; /* Center all text */
+                    vertical-align: middle; /* Center vertically */
+                    white-space: nowrap; /* Prevent text wrapping */
+                    overflow: hidden; /* Hide overflow */
+                    text-overflow: ellipsis; /* Show ... if text too long */
+                    font-size: 12px; /* Slightly smaller font to fit content */
+                }
+                th {
+                    background-color: #f2f2f2;
+                    font-weight: bold;
+                    font-size: 12px;
+                    text-align: center; /* Center header text */
+                }
+                .text-center {
+                    text-align: center;
+                }
+                .text-right {
+                    text-align: right;
+                }
+                .total-row {
+                    font-weight: bold;
+                    background-color: #e9e9e9;
+                }
+                /* Set specific column widths to prevent breaking */
+                th:nth-child(1), td:nth-child(1) { width: 120px; } /* INVOICE NO */
+                th:nth-child(2), td:nth-child(2) { width: 80px; }  /* TOTAL DATE */
+                th:nth-child(3), td:nth-child(3) { width: 70px; }  /* CTN. */
+                th:nth-child(4), td:nth-child(4) { width: 100px; } /* INVOICE PCS */
+                th:nth-child(5), td:nth-child(5) { width: 100px; } /* VALU(E) */
+                th:nth-child(6), td:nth-child(6) { width: 90px; }  /* B/E NO. */
+                th:nth-child(7), td:nth-child(7) { width: 80px; }  /* DATE */
+                th:nth-child(8), td:nth-child(8) { width: 120px; } /* BILL NO */
+                th:nth-child(9), td:nth-child(9) { width: 100px; } /* ACTUAL DATE */
+                th:nth-child(10), td:nth-child(10) { width: 100px; } /* SUBMITED EXP */
+                th:nth-child(11), td:nth-child(11) { width: 80px; } /* DF VAT */
+                th:nth-child(12), td:nth-child(12) { width: 120px; } /* APPROVED BILL */
 
-                        <div>${reportContent}</div>
-                    </body>
-                    </html>
-                `);
+                @media print {
+                    body {
+                        margin: 0;
+                        padding: 15px;
+                    }
+                    .no-print {
+                        display: none !important;
+                    }
+                    @page {
+                        size: landscape;
+                        margin: 10mm;
+                    }
+                    table {
+                        width: 100% !important;
+                    }
+                    th, td {
+                        white-space: nowrap !important;
+                        overflow: hidden !important;
+                        text-overflow: ellipsis !important;
+                        font-size: 11px !important; /* Even smaller for print */
+                    }
+                }
+            </style>
+        </head>
+        <body>
+            <div>${reportContent}</div>
+        </body>
+        </html>
+    `);
 
                 printWindow.document.close();
 
@@ -199,7 +229,7 @@
     <meta charset="UTF-8">
 </head>
 <body>
-    <table style="border-collapse: collapse; width: 100%; font-family: Arial; font-size: 11px;">
+    <table style="border-collapse: collapse; width: 100%; font-family: Arial; font-size: 14px;">
         <!-- Company Header Section -->
         <tr>
             <td colspan="15" style="border: 1px solid #000000; padding: 10px; text-align: center; font-weight: bold; font-size: 16px;">

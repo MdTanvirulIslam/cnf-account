@@ -483,7 +483,7 @@
     <meta charset="UTF-8">
 </head>
 <body>
-    <table style="border-collapse: collapse; width: 100%; font-family: Arial; font-size: 11px;">
+    <table style="border-collapse: collapse; width: 100%; font-family: Arial; font-size: 14px;">
         <!-- Company Header Section -->
         <tr>
             <td colspan="7" style="border: 1px solid #000000; padding: 10px; text-align: center; font-weight: bold; font-size: 16px;">
