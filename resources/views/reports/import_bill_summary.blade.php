@@ -83,6 +83,7 @@
             }
 
             // Function to print the report
+            // Function to print the report
             function printReport() {
                 // Create a new window for printing
                 var printWindow = window.open('', '_blank');
@@ -96,104 +97,178 @@
 
                 // Write the print document
                 printWindow.document.write(`
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <title>Import Bill Summary - ${formattedMonth}</title>
-            <style>
-                body {
-                    font-family: Arial, sans-serif;
-                    margin: 20px;
-                    color: #000;
-                }
-                .print-header {
-                    text-align: center;
-                    margin-bottom: 20px;
-                    border-bottom: 2px solid #000;
-                    padding-bottom: 10px;
-                }
-                .print-header h2 {
-                    margin: 0;
-                    color: #000;
-                }
-                .print-header p {
-                    margin: 5px 0 0 0;
-                }
-                table {
-                    width: 100%;
-                    border-collapse: collapse;
-                    margin-top: 20px;
-                    table-layout: fixed; /* Prevents column breaking */
-                }
-                th, td {
-                    border: 1px solid #ddd;
-                    padding: 8px;
-                    text-align: center; /* Center all text */
-                    vertical-align: middle; /* Center vertically */
-                    white-space: nowrap; /* Prevent text wrapping */
-                    overflow: hidden; /* Hide overflow */
-                    text-overflow: ellipsis; /* Show ... if text too long */
-                    font-size: 12px; /* Slightly smaller font to fit content */
-                }
-                th {
-                    background-color: #f2f2f2;
-                    font-weight: bold;
-                    font-size: 12px;
-                    text-align: center; /* Center header text */
-                }
-                .text-center {
-                    text-align: center;
-                }
-                .text-right {
-                    text-align: right;
-                }
-                .total-row {
-                    font-weight: bold;
-                    background-color: #e9e9e9;
-                }
-                /* Set specific column widths to prevent breaking */
-                th:nth-child(1), td:nth-child(1) { width: 120px; } /* INVOICE NO */
-                th:nth-child(2), td:nth-child(2) { width: 80px; }  /* TOTAL DATE */
-                th:nth-child(3), td:nth-child(3) { width: 70px; }  /* CTN. */
-                th:nth-child(4), td:nth-child(4) { width: 100px; } /* INVOICE PCS */
-                th:nth-child(5), td:nth-child(5) { width: 100px; } /* VALU(E) */
-                th:nth-child(6), td:nth-child(6) { width: 90px; }  /* B/E NO. */
-                th:nth-child(7), td:nth-child(7) { width: 80px; }  /* DATE */
-                th:nth-child(8), td:nth-child(8) { width: 120px; } /* BILL NO */
-                th:nth-child(9), td:nth-child(9) { width: 100px; } /* ACTUAL DATE */
-                th:nth-child(10), td:nth-child(10) { width: 100px; } /* SUBMITED EXP */
-                th:nth-child(11), td:nth-child(11) { width: 80px; } /* DF VAT */
-                th:nth-child(12), td:nth-child(12) { width: 120px; } /* APPROVED BILL */
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Import Bill Summary - ${formattedMonth}</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-                @media print {
-                    body {
-                        margin: 0;
-                        padding: 15px;
-                    }
-                    .no-print {
-                        display: none !important;
-                    }
-                    @page {
-                        size: landscape;
-                        margin: 10mm;
-                    }
-                    table {
-                        width: 100% !important;
-                    }
-                    th, td {
-                        white-space: nowrap !important;
-                        overflow: hidden !important;
-                        text-overflow: ellipsis !important;
-                        font-size: 11px !important; /* Even smaller for print */
-                    }
-                }
-            </style>
-        </head>
-        <body>
-            <div>${reportContent}</div>
-        </body>
-        </html>
-    `);
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            color: #000;
+        }
+
+        .print-header {
+            text-align: center;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #000;
+            padding-bottom: 10px;
+        }
+
+        .print-header h2 {
+            margin: 0;
+            color: #000;
+        }
+
+        .print-header p {
+            margin: 5px 0 0 0;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            table-layout: fixed;
+        }
+
+        /* CRITICAL: Prevent grand total from repeating */
+        tfoot {
+            display: table-row-group !important;
+        }
+
+        th, td {
+            border: 1px solid #000;
+            padding: 5px 3px;
+            text-align: center;
+            vertical-align: middle;
+            font-size: 10px;
+            word-wrap: break-word !important;
+            overflow-wrap: break-word !important;
+            white-space: normal !important;
+            overflow: visible !important;
+            text-overflow: clip !important;
+        }
+
+        th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+            font-size: 9px;
+            text-align: center;
+        }
+
+        .text-center, .center {
+            text-align: center;
+        }
+
+        .text-right, .right {
+            text-align: right;
+        }
+
+        .text-left, .left {
+            text-align: left;
+        }
+
+        .total-row {
+            font-weight: bold;
+            background-color: #e9e9e9;
+        }
+
+        /* Column widths */
+        th:nth-child(1), td:nth-child(1) { width: 8%; }
+        th:nth-child(2), td:nth-child(2) { width: 6%; }
+        th:nth-child(3), td:nth-child(3) { width: 5%; }
+        th:nth-child(4), td:nth-child(4) { width: 7%; }
+        th:nth-child(5), td:nth-child(5) { width: 5%; }
+        th:nth-child(6), td:nth-child(6) { width: 10%; }
+        th:nth-child(7), td:nth-child(7) { width: 5%; }
+        th:nth-child(8), td:nth-child(8) { width: 7%; }
+        th:nth-child(9), td:nth-child(9) { width: 8%; }
+        th:nth-child(10), td:nth-child(10) { width: 7%; }
+        th:nth-child(11), td:nth-child(11) { width: 7%; }
+        th:nth-child(12), td:nth-child(12) { width: 9%; }
+        th:nth-child(13), td:nth-child(13) { width: 6%; }
+        th:nth-child(14), td:nth-child(14) { width: 5%; }
+        th:nth-child(15), td:nth-child(15) { width: 5%; }
+
+        @media print {
+            * {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+
+            body {
+                margin: 0;
+                padding: 10px;
+            }
+
+            .no-print {
+                display: none !important;
+            }
+
+            @page {
+                size: landscape;
+                margin: 8mm;
+            }
+
+            /* CRITICAL: Prevent grand total from repeating on every page */
+            tfoot {
+                display: table-row-group !important;
+            }
+
+            thead {
+                display: table-header-group !important;
+            }
+
+            table {
+                width: 100% !important;
+                page-break-inside: auto;
+            }
+
+            tr {
+                page-break-inside: avoid;
+                page-break-after: auto;
+            }
+
+            th, td {
+                font-size: 8px !important;
+                padding: 3px 2px !important;
+                word-wrap: break-word !important;
+                overflow-wrap: break-word !important;
+                white-space: normal !important;
+                overflow: visible !important;
+                text-overflow: clip !important;
+            }
+
+            /* Ensure column widths in print */
+            th:nth-child(1), td:nth-child(1) { width: 8% !important; }
+            th:nth-child(2), td:nth-child(2) { width: 6% !important; }
+            th:nth-child(3), td:nth-child(3) { width: 5% !important; }
+            th:nth-child(4), td:nth-child(4) { width: 7% !important; }
+            th:nth-child(5), td:nth-child(5) { width: 5% !important; }
+            th:nth-child(6), td:nth-child(6) { width: 10% !important; }
+            th:nth-child(7), td:nth-child(7) { width: 5% !important; }
+            th:nth-child(8), td:nth-child(8) { width: 7% !important; }
+            th:nth-child(9), td:nth-child(9) { width: 8% !important; }
+            th:nth-child(10), td:nth-child(10) { width: 7% !important; }
+            th:nth-child(11), td:nth-child(11) { width: 7% !important; }
+            th:nth-child(12), td:nth-child(12) { width: 9% !important; }
+            th:nth-child(13), td:nth-child(13) { width: 6% !important; }
+            th:nth-child(14), td:nth-child(14) { width: 5% !important; }
+            th:nth-child(15), td:nth-child(15) { width: 5% !important; }
+        }
+    </style>
+</head>
+<body>
+    <div>${reportContent}</div>
+</body>
+</html>
+`);
 
                 printWindow.document.close();
 
