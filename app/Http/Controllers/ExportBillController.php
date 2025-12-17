@@ -39,6 +39,7 @@ class ExportBillController extends Controller
         "Short Ship Certificate",
         "Weight Permission. Invoice P/list Dc Print",
         "Eid Boxsis",
+        "DHL SHAHJAHAN/SAROWAR",
         "Other Expense",
     ];
 

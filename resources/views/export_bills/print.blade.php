@@ -185,7 +185,12 @@
                             <div><strong>BILL NO:</strong> {{ $bill->bill_no }}</div>
                             <div class="right"><strong>DATE:</strong> {{ $bill->bill_date ? \Carbon\Carbon::parse($bill->bill_date)->format('d/m/Y') : '' }}</div>
                         </div>
-
+                        <address>
+                            TO,<br>
+                            MULTIFABS LTD.<br>
+                            NAYAPARA, KASHIMPUR,<br>
+                            GAZIPUR-1704,BANGLADESH
+                        </address>
                         <h3>SUB: FORWARDING BILL (AS PER INVOICE)</h3>
 
                         <table class="info-table">
@@ -193,7 +198,7 @@
                                 <td class="info-key">Buyer Name</td>
                                 <td class="info-value">{{ $bill->buyer->name ?? '' }}</td>
                                 <td class="info-key">USD</td>
-                                <td class="info-value">{{ number_format($bill->usd, 2) }}</td>
+                                <td class="info-value">{{ number_format($bill->usd, 2) }} $</td>
                             </tr>
                             <tr>
                                 <td class="info-key">Invoice No</td>
@@ -209,9 +214,9 @@
                             </tr>
                             <tr>
                                 <td class="info-key">Total CTN</td>
-                                <td class="info-value">{{ $bill->total_qty }}</td>
-                                <td class="info-key">Qty Pcs</td>
-                                <td class="info-value">{{ $bill->qty_pcs }}</td>
+                                <td class="info-value">{{ $bill->total_qty }} CTNS</td>
+                                <td class="info-key">Qty PCS</td>
+                                <td class="info-value">{{ $bill->qty_pcs }} PCS</td>
                             </tr>
                         </table>
 
@@ -242,7 +247,12 @@
                         </table>
 
                         <div class="footer-note">
-                            <strong>INWARD: {{ strtoupper(convertToTakaWords($total)) }}</strong>
+                            <strong>INWARD: {{ strtoupper(convertToTakaWords($total)) }}</strong> <br/><br/>
+
+                            THANKING YOU
+
+                            <br/><br/><br/><br/><br/>
+                            MULTIFABS LIMITED
                         </div>
                     </div>
                 </div>
@@ -450,8 +460,8 @@
         </tr>
         <tr>
 
-            <td colspan="2" style="border: 1px solid #000000; padding: 5px; text-align: left;">Total CTN : {{ $bill->total_qty }}</td>
-            <td colspan="2" style="border: 1px solid #000000; padding: 5px; text-align: center; font-weight: bold;">Qty Pcs : {{ $bill->qty_pcs }}</td>
+            <td colspan="2" style="border: 1px solid #000000; padding: 5px; text-align: left;">Total CTNS : {{ $bill->total_qty }}</td>
+            <td colspan="2" style="border: 1px solid #000000; padding: 5px; text-align: center; font-weight: bold;">Qty PCS : {{ $bill->qty_pcs }}</td>
 
         </tr>
 

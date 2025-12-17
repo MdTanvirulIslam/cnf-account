@@ -14,6 +14,7 @@
         $totalSubmitted += $submittedExp;
         $totalDfVat += $dfVat;
     }
+     $count = 1;
 @endphp
 
 <style>
@@ -111,11 +112,13 @@
 
 <br>
 
+<!-- Your existing code up to the main table -->
 <table id="exportSummaryTable">
     <thead>
     <tr>
+        <th>SL</th>
         <th>INVOICE NO</th>
-        <th>TOTAL DATE</th>
+        <th>DATE</th>
         <th>CTN.</th>
         <th>INVOICE PCS</th>
         <th>VALUE($)</th>
@@ -125,7 +128,7 @@
         <th>ACTUAL DATE</th>
         <th>SUBMITED EXP</th>
         <th>DF VAT</th>
-        <th>APPROVED BILL</th> <!-- ✅ FIXED WIDTH -->
+        <th>APPROVED BILL</th>
     </tr>
     </thead>
 
@@ -136,11 +139,12 @@
             $dfVat = $bill->dfVat();
         @endphp
         <tr>
+            <td>{{ $count++ }}</td>
             <td>{{ $bill->invoice_no }}</td>
             <td>{{ optional($bill->invoice_date)->format('d-M-Y') }}</td>
-            <td>{{ $bill->total_qty }}</td>
-            <td>{{ $bill->qty_pcs }}</td>
-            <td>{{ number_format($bill->usd, 2) }}</td>
+            <td>{{ $bill->total_qty }} CTN</td>
+            <td>{{ $bill->qty_pcs }} PCS</td>
+            <td>{{ number_format($bill->usd, 2) }} $</td>
             <td>{{ $bill->be_no }}</td>
             <td>{{ optional($bill->be_date)->format('d-M-Y') }}</td>
             <td>{{ $bill->bill_no }}</td>
@@ -151,29 +155,21 @@
         </tr>
     @empty
         <tr>
-            <td colspan="12">No records found for {{ $monthName }}</td>
+            <td colspan="13">No records found for {{ $monthName }}</td>
         </tr>
     @endforelse
+
+    @if(count($bills) > 0)
+        <!-- ✅ Grand Total as regular row instead of tfoot -->
+        <tr style="font-weight: bold; background-color: #f0f0f0;">
+            <td colspan="10" style="text-align: right;">GRAND TOTAL</td>
+            <td>{{ number_format($totalSubmitted, 2) }}</td>
+            <td>{{ number_format($totalDfVat, 2) }}</td>
+            <td></td>
+        </tr>
+    @endif
     </tbody>
 </table>
 
 
-{{-- ✅ YOUR ORIGINAL CODE, UNCHANGED --}}
-@if(count($bills) > 0)
-    <div style="margin-top: 20px;">
-        <table style="width: 100%; border-collapse: collapse; font-size: 13px; font-weight: bold;">
-            <tr>
-                <td style="border: 1px solid #000; padding: 8px; text-align: right !important; width: 76%;" colspan="9">
-                    GRAND TOTAL
-                </td>
-                <td style="border: 1px solid #000; padding: 8px; text-align: center; width: 9.5%;">
-                    {{ number_format($totalSubmitted, 2) }}
-                </td>
-                <td style="border: 1px solid #000; padding: 8px; text-align: left !important;" colspan="2">
-                    {{ number_format($totalDfVat, 2) }}
-                </td>
 
-            </tr>
-        </table>
-    </div>
-@endif

@@ -215,7 +215,12 @@
                         <div class="right">
                             <strong>DATE:</strong> {{ \Carbon\Carbon::parse($bill->bill_date)->format('d/m/Y') }}</div>
                     </div>
-
+                    <address>
+                        TO,<br>
+                        MULTIFABS LTD.<br>
+                        NAYAPARA, KASHIMPUR,<br>
+                        GAZIPUR-1704,BANGLADESH
+                    </address>
                     <h3>SUB: CLEARING BILL FOR {{ strtoupper($bill->item ?? '') }}</h3>
 
                     <table class="info-table">
@@ -272,7 +277,11 @@
                     </table>
 
                     <div class="footer-note">
-                        <strong>INWARD: {{ strtoupper(convertToTakaWords($total)) }}</strong>
+                        <strong>INWARD: {{ strtoupper(convertToTakaWords($total)) }}</strong> <br/><br/>
+                        THANKING YOU
+
+                        <br/><br/><br/><br/><br/>
+                        MULTIFABS LIMITED
                     </div>
                 </div>
             </div>

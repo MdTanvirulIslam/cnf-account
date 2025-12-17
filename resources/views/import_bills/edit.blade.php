@@ -181,7 +181,7 @@
 
                                 <div class="col-md-3 mb-3">
                                     <label>Quantity</label>
-                                    <input class="form-control form-control-sm input-highlight" type="number" name="qty" value="{{ $bill->qty }}">
+                                    <input class="form-control form-control-sm input-highlight" type="text" name="qty" value="{{ $bill->qty }}">
                                 </div>
 
                                 <div class="col-md-3 mb-3">
