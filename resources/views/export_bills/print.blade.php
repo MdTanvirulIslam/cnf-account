@@ -230,11 +230,13 @@
                             </tr>
                             </thead>
                             <tbody>
+
                             @foreach($expenseTypes as $index => $type)
+
                                 <tr>
                                     <td class="center">{{ str_pad($index + 1, 2, '0', STR_PAD_LEFT) }}</td>
                                     <td>{{ strtoupper($type) }}</td>
-                                    <td class="right">{{ number_format($expenses[$type] ?? 0, 2) }}</td>
+                                    <td class="right">{{ $expenses[$type] }}</td>
                                     <td></td>
                                 </tr>
                             @endforeach
@@ -251,7 +253,7 @@
 
                             THANKING YOU
 
-                            <br/><br/><br/><br/><br/>
+                            <br/><br/><br/>
                             MULTIFABS LIMITED
                         </div>
                     </div>

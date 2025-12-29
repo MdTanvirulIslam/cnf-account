@@ -269,7 +269,7 @@
                                             <input type="number" step="0.01" min="0"
                                                    name="expenses[{{ $exp }}]"
                                                    class="form-control form-control-sm expense-input input-highlight"
-                                                   value="0" onkeydown="return event.key !== 'Enter';">
+                                                   onkeydown="return event.key !== 'Enter';">
                                         </div>
                                     </div>
                                 </div>

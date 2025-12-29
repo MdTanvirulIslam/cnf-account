@@ -188,7 +188,8 @@ class ImportBillController extends Controller
         $request->validate([
             'lc_no'           => 'required|string|max:255',
             'lc_date'         => 'nullable|date',
-            'bill_no'         => 'required|string|max:255',
+            'bill_no'         => 'required|string|max:255|unique:import_bills,bill_no',
+            'be_no'           => 'required|string|max:255|unique:import_bills,be_no',
             'bill_date'       => 'nullable|date',
             'value'           => 'required|numeric|min:0.01',
             'account_id'      => 'required|exists:accounts,id',

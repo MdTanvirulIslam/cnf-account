@@ -298,7 +298,7 @@
                                         <div class="input-group input-group-sm">
                                             <span class="input-group-text">৳</span>
                                             <input type="number" class="form-control form-control-sm expense-input input-highlight"
-                                                   name="expenses[{{ $exp }}]" value="0" min="0" step="0.01"
+                                                   name="expenses[{{ $exp }}]"  min="0" step="0.01"
                                                    onkeydown="return event.key !== 'Enter';">
                                         </div>
                                     </div>

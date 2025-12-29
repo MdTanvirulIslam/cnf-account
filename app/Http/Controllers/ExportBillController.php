@@ -640,8 +640,15 @@ class ExportBillController extends Controller
     {
         $bill = ExportBill::with(['buyer', 'expenses'])->findOrFail($id);
 
-        $expenses = $bill->expenses->pluck('amount', 'expense_type')->toArray();
-        $total = array_sum($expenses);
+        // Initialize all types with null (blank)
+        $expenses = array_fill_keys($this->expenseTypes, null);
+
+        // Fill actual amounts
+        foreach ($bill->expenses as $expense) {
+            $expenses[$expense->expense_type] = $expense->amount;
+        }
+
+        $total = array_sum(array_filter($expenses)); // ignores nulls
 
         return view('export_bills.print', [
             'bill'         => $bill,
@@ -650,4 +657,6 @@ class ExportBillController extends Controller
             'total'        => $total,
         ]);
     }
+
+
 }
