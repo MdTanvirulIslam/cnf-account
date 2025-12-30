@@ -25,7 +25,8 @@ class ImportBill extends Model
         'doc_fee',
         'account_id',
         'ait_account_id',
-        'port_account_id'
+        'port_account_id',
+        'itc',
 
     ];
 

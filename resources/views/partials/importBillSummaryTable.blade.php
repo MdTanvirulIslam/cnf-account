@@ -5,7 +5,7 @@
     [$year, $monthNum] = explode('-', $month);
     $monthName = Carbon::createFromDate($year, $monthNum, 1)->format('F Y');
 
-    $totalValue = $totalPort = $totalTotalBill = $totalDfVat = $totalDocFee = $totalScan = 0;
+    $totalValue = $totalPort = $totalTotalBill = $totalDfVat = $totalDocFee = $totalScan = $totalItc = 0;
 @endphp
 <style>
     .company-header {
@@ -99,13 +99,15 @@
     .invoice-table th:nth-child(11),
     .invoice-table td:nth-child(11) { width: 7%; }  /* PORT BILL */
     .invoice-table th:nth-child(12),
-    .invoice-table td:nth-child(12) { width: 9%; }  /* TOTAL BILL AMOUNT */
+    .invoice-table td:nth-child(12) { width: 7%; }  /* TOTAL BILL AMOUNT */
     .invoice-table th:nth-child(13),
     .invoice-table td:nth-child(13) { width: 6%; }  /* DF VAT */
     .invoice-table th:nth-child(14),
     .invoice-table td:nth-child(14) { width: 5%; }  /* DOC FEE */
     .invoice-table th:nth-child(15),
     .invoice-table td:nth-child(15) { width: 5%; }  /* SCAN FEE */
+    .invoice-table th:nth-child(16),
+    .invoice-table td:nth-child(16) { width: 5%; }  /* ITC */
 
     .right {
         text-align: right;
@@ -155,6 +157,7 @@
         <th>DF VAT</th>
         <th>DOC FEE</th>
         <th>SCAN FEE</th>
+        <th>ITC</th>
     </tr>
     </thead>
     <tbody>
@@ -163,6 +166,7 @@
             $portBill = $bill->portBill();
             $dfVat = $bill->dfVat();
             $totalBillAmount = $bill->totalExpenses();
+            $itcValue = $bill->itc ?? 0;
 
             $totalValue += $bill->value;
             $totalPort += $portBill;
@@ -170,6 +174,7 @@
             $totalDfVat += $dfVat;
             $totalDocFee += $bill->doc_fee;
             $totalScan += $bill->scan_fee;
+            $totalItc += $itcValue;
         @endphp
         <tr>
             <td class="center">{{ $bill->lc_no }}</td>
@@ -187,10 +192,11 @@
             <td class="center">{{ number_format($dfVat, 2) }}</td>
             <td class="center">{{ number_format($bill->doc_fee, 2) }}</td>
             <td class="center">{{ number_format($bill->scan_fee, 2) }}</td>
+            <td class="center">{{ number_format($itcValue, 2) }}</td>
         </tr>
     @empty
         <tr>
-            <td colspan="15" class="center">No records found for {{ $monthName }}</td>
+            <td colspan="16" class="center">No records found for {{ $monthName }}</td>
         </tr>
     @endforelse
     </tbody>
@@ -203,6 +209,7 @@
         <td class="center"><strong>{{ number_format($totalDfVat, 2) }}</strong></td>
         <td class="center"><strong>{{ number_format($totalDocFee, 2) }}</strong></td>
         <td class="center"><strong>{{ number_format($totalScan, 2) }}</strong></td>
+        <td class="center"><strong>{{ number_format($totalItc, 2) }}</strong></td>
     </tr>
     </tfoot>
 </table>

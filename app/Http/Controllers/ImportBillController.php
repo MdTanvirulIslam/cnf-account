@@ -21,11 +21,12 @@ class ImportBillController extends Controller
         "Reffie Card Bill (As Per Receipt)",
         "AIT (As Per Receipt)",
         "Port Bill (As Per Receipt)",
+        "PORT BILL (RSGT/PCT)",
         "Agent Bill (As Per Receipt)",
         "Labour Bill (As Per Rcpt)",
         "Depot Bill (As Per Rcpt)",
         "Bank Guarantee Bank Verify (As Per Rcpt)",
-        "Extra Expenses For NOCOM",
+        "Extra Expenses For Custom",
         "Custom Air",
         "Cover Van Labour",
         "Nilmark",
@@ -33,6 +34,24 @@ class ImportBillController extends Controller
         "Assistance Commissioner With Pion (Random Selection)",
         "Extra Expenses For Marine Policy",
         "Documents Expenses",
+        "CONTAINER KEEP DOWN",
+        "NOTE SHEET TYPE",
+        "100% EXAMINE PURPOSE",
+        "TEST EXPENSES",
+        "HISTAR",
+        "BREAKING",
+        "WRONG MARK",
+        "PART PARMISSION",
+        "BANK GUARANTEE BANK VERIFY (AS PER RECEIPT)",
+        "CHITTY ISSUE",
+        "ASSISTANT COMMISSIONER WITH PION",
+        "TEST EXPENSES FOR CUTE",
+        "PAY ORDER CHARGE",
+        "EXTRA EXPENSES FOR CUSTOMS (ARO,RO,AC)",
+        "EXTRA EXPENSES FOR CUSTOMS (PORT)",
+        "SPECIAL PERMISSION",
+        "IGM AMENDMENT PURPOSE",
+        "VAT PAYMENT EXPENSES",
         "Other Expense",
     ];
 
@@ -60,17 +79,17 @@ class ImportBillController extends Controller
                 ->addIndexColumn()
                 ->editColumn('lc_date', function ($row) {
                     return $row->lc_date
-                        ? \Carbon\Carbon::parse($row->lc_date)->format('Y-m-d')
+                        ? \Carbon\Carbon::parse($row->lc_date)->format('d-m-Y')
                         : '';
                 })
                 ->editColumn('be_date', function ($row) {
                     return $row->be_date
-                        ? \Carbon\Carbon::parse($row->be_date)->format('Y-m-d')
+                        ? \Carbon\Carbon::parse($row->be_date)->format('d-m-Y')
                         : '';
                 })
                 ->editColumn('bill_date', function ($row) {
                     return $row->bill_date
-                        ? \Carbon\Carbon::parse($row->bill_date)->format('Y-m-d')
+                        ? \Carbon\Carbon::parse($row->bill_date)->format('d-m-Y')
                         : '';
                 })
                 ->editColumn('value', function ($row) {
@@ -231,6 +250,7 @@ class ImportBillController extends Controller
                 'account_id'      => $request->account_id,
                 'ait_account_id'  => $request->ait_account_id,
                 'port_account_id' => $request->port_account_id,
+                'itc'             => $request->itc,
             ]);
 
             $expenses = (array)$request->input('expenses', []);
@@ -398,6 +418,7 @@ class ImportBillController extends Controller
                 'account_id'      => $request->account_id,
                 'ait_account_id'  => $request->ait_account_id,
                 'port_account_id' => $request->port_account_id,
+                'itc'             => $request->itc,
             ]);
 
             $expenses = (array)$request->input('expenses', []);

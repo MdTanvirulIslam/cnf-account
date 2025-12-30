@@ -83,7 +83,6 @@
             }
 
             // Function to print the report
-            // Function to print the report
             function printReport() {
                 // Create a new window for printing
                 var printWindow = window.open('', '_blank');
@@ -179,7 +178,7 @@
             background-color: #e9e9e9;
         }
 
-        /* Column widths */
+        /* Column widths - UPDATED FOR ITC COLUMN */
         th:nth-child(1), td:nth-child(1) { width: 8%; }
         th:nth-child(2), td:nth-child(2) { width: 6%; }
         th:nth-child(3), td:nth-child(3) { width: 5%; }
@@ -191,10 +190,11 @@
         th:nth-child(9), td:nth-child(9) { width: 8%; }
         th:nth-child(10), td:nth-child(10) { width: 7%; }
         th:nth-child(11), td:nth-child(11) { width: 7%; }
-        th:nth-child(12), td:nth-child(12) { width: 9%; }
+        th:nth-child(12), td:nth-child(12) { width: 7%; }
         th:nth-child(13), td:nth-child(13) { width: 6%; }
         th:nth-child(14), td:nth-child(14) { width: 5%; }
         th:nth-child(15), td:nth-child(15) { width: 5%; }
+        th:nth-child(16), td:nth-child(16) { width: 5%; }
 
         @media print {
             * {
@@ -245,7 +245,7 @@
                 text-overflow: clip !important;
             }
 
-            /* Ensure column widths in print */
+            /* Ensure column widths in print - UPDATED FOR ITC COLUMN */
             th:nth-child(1), td:nth-child(1) { width: 8% !important; }
             th:nth-child(2), td:nth-child(2) { width: 6% !important; }
             th:nth-child(3), td:nth-child(3) { width: 5% !important; }
@@ -257,10 +257,11 @@
             th:nth-child(9), td:nth-child(9) { width: 8% !important; }
             th:nth-child(10), td:nth-child(10) { width: 7% !important; }
             th:nth-child(11), td:nth-child(11) { width: 7% !important; }
-            th:nth-child(12), td:nth-child(12) { width: 9% !important; }
+            th:nth-child(12), td:nth-child(12) { width: 7% !important; }
             th:nth-child(13), td:nth-child(13) { width: 6% !important; }
             th:nth-child(14), td:nth-child(14) { width: 5% !important; }
             th:nth-child(15), td:nth-child(15) { width: 5% !important; }
+            th:nth-child(16), td:nth-child(16) { width: 5% !important; }
         }
     </style>
 </head>
@@ -307,7 +308,7 @@
     <table style="border-collapse: collapse; width: 100%; font-family: Arial; font-size: 14px;">
         <!-- Company Header Section -->
         <tr>
-            <td colspan="15" style="border: 1px solid #000000; padding: 10px; text-align: center; font-weight: bold; font-size: 16px;">
+            <td colspan="16" style="border: 1px solid #000000; padding: 10px; text-align: center; font-weight: bold; font-size: 16px;">
                 MULTI FABS LTD <br/>
                 (SELF C&F AGENTS)<br/>
                 314, SK. MUJIB ROAD, CHOWDHURY BHABAN (4TH FLOOR) AGRABAD, CHITTAGONG
@@ -316,7 +317,7 @@
 
         <!-- Empty row -->
         <tr>
-            <td colspan="15" style="border: none; padding: 5px;"></td>
+            <td colspan="16" style="border: none; padding: 5px;"></td>
         </tr>
 
         <!-- Report Info -->
@@ -324,17 +325,17 @@
             <td colspan="10" style="border: 1px solid #000000; padding: 5px; text-align: left; font-weight: bold;">
                 IMPORT BILL STATEMENT : ${formattedMonth}
             </td>
-            <td colspan="5" style="border: 1px solid #000000; padding: 5px; text-align: right; font-weight: bold;">
+            <td colspan="6" style="border: 1px solid #000000; padding: 5px; text-align: right; font-weight: bold;">
                 Date: ${currentDate}
             </td>
         </tr>
 
         <!-- Empty row -->
         <tr>
-            <td colspan="15" style="border: none; padding: 5px;"></td>
+            <td colspan="16" style="border: none; padding: 5px;"></td>
         </tr>
 
-        <!-- Table Header -->
+        <!-- Table Header - UPDATED FOR ITC COLUMN -->
         <tr>
             <th style="border: 1px solid #000000; padding: 8px; text-align: center; font-weight: bold; width: 8%;">L/C NO.</th>
             <th style="border: 1px solid #000000; padding: 8px; text-align: center; font-weight: bold; width: 6%;">B/E</th>
@@ -351,10 +352,11 @@
             <th style="border: 1px solid #000000; padding: 8px; text-align: center; font-weight: bold; width: 6%;">DF VAT</th>
             <th style="border: 1px solid #000000; padding: 8px; text-align: center; font-weight: bold; width: 6%;">DOC FEE</th>
             <th style="border: 1px solid #000000; padding: 8px; text-align: center; font-weight: bold; width: 6%;">SCAN FEE</th>
+            <th style="border: 1px solid #000000; padding: 8px; text-align: center; font-weight: bold; width: 6%;">ITC</th>
         </tr>
 
         <!-- Table Rows -->
-        ${getTableRowsHTML()}
+        ${getTableRowsHTML(formattedMonth)}
 
         <!-- Total Row -->
         ${getTotalRowHTML()}
@@ -388,8 +390,8 @@
                 }
             }
 
-            // Helper function to get table rows HTML
-            function getTableRowsHTML() {
+            // Helper function to get table rows HTML - UPDATED FOR ITC COLUMN
+            function getTableRowsHTML(formattedMonth) {
                 const rows = document.querySelectorAll('#reportTable table tbody tr');
                 let rowsHTML = '';
 
@@ -397,14 +399,14 @@
                 if (rows.length === 0) {
                     return `
         <tr>
-            <td colspan="15" style="border: 1px solid #000000; padding: 5px; text-align: center;">No records found for ${formattedMonth}.</td>
+            <td colspan="16" style="border: 1px solid #000000; padding: 5px; text-align: center;">No records found for ${formattedMonth}.</td>
         </tr>
                     `;
                 }
 
                 rows.forEach(row => {
                     const cells = row.querySelectorAll('td');
-                    if (cells.length === 15) {
+                    if (cells.length === 16) {
                         const lcNo = cells[0].textContent.trim();
                         const beNo = cells[1].textContent.trim();
                         const beDate = cells[2].textContent.trim();
@@ -420,6 +422,7 @@
                         const dfVat = cells[12].textContent.trim();
                         const docFee = cells[13].textContent.trim();
                         const scanFee = cells[14].textContent.trim();
+                        const itc = cells[15].textContent.trim();
 
                         rowsHTML += `
         <tr>
@@ -438,6 +441,7 @@
             <td style="border: 1px solid #000000; padding: 5px; text-align: center;">${dfVat}</td>
             <td style="border: 1px solid #000000; padding: 5px; text-align: center;">${docFee}</td>
             <td style="border: 1px solid #000000; padding: 5px; text-align: center;">${scanFee}</td>
+            <td style="border: 1px solid #000000; padding: 5px; text-align: center;">${itc}</td>
         </tr>
                         `;
                     }
@@ -446,7 +450,7 @@
                 return rowsHTML;
             }
 
-            // Helper function to get total row HTML
+            // Helper function to get total row HTML - UPDATED FOR ITC COLUMN
             function getTotalRowHTML() {
                 console.log('Getting total row HTML...');
 
@@ -462,13 +466,14 @@
                         const cells = row.querySelectorAll('th, td');
                         console.log('TFoot cells:', cells.length);
 
-                        if (cells.length >= 7) {
+                        if (cells.length >= 8) {
                             const valueTotal = cells[1]?.textContent?.trim() || '0.00';
                             const portBillTotal = cells[2]?.textContent?.trim() || '0.00';
                             const totalBillAmountTotal = cells[3]?.textContent?.trim() || '0.00';
                             const dfVatTotal = cells[4]?.textContent?.trim() || '0.00';
                             const docFeeTotal = cells[5]?.textContent?.trim() || '0.00';
                             const scanFeeTotal = cells[6]?.textContent?.trim() || '0.00';
+                            const itcTotal = cells[7]?.textContent?.trim() || '0.00';
 
                             console.log('TFoot totals:', {
                                 valueTotal,
@@ -476,7 +481,8 @@
                                 totalBillAmountTotal,
                                 dfVatTotal,
                                 docFeeTotal,
-                                scanFeeTotal
+                                scanFeeTotal,
+                                itcTotal
                             });
 
                             return `
@@ -488,6 +494,7 @@
             <td style="border: 1px solid #000000; padding: 5px; text-align: center; font-weight: bold;">${dfVatTotal}</td>
             <td style="border: 1px solid #000000; padding: 5px; text-align: center; font-weight: bold;">${docFeeTotal}</td>
             <td style="border: 1px solid #000000; padding: 5px; text-align: center; font-weight: bold;">${scanFeeTotal}</td>
+            <td style="border: 1px solid #000000; padding: 5px; text-align: center; font-weight: bold;">${itcTotal}</td>
         </tr>
                             `;
                         }
@@ -502,17 +509,19 @@
                 let calculatedDfVatTotal = 0;
                 let calculatedDocFeeTotal = 0;
                 let calculatedScanFeeTotal = 0;
+                let calculatedItcTotal = 0;
 
                 const dataRows = document.querySelectorAll('#reportTable table tbody tr');
                 dataRows.forEach(row => {
                     const cells = row.querySelectorAll('td');
-                    if (cells.length === 15) {
+                    if (cells.length === 16) {
                         const valueText = cells[9].textContent.trim();
                         const portBillText = cells[10].textContent.trim();
                         const totalBillAmountText = cells[11].textContent.trim();
                         const dfVatText = cells[12].textContent.trim();
                         const docFeeText = cells[13].textContent.trim();
                         const scanFeeText = cells[14].textContent.trim();
+                        const itcText = cells[15].textContent.trim();
 
                         if (valueText !== '' && valueText !== '-') {
                             calculatedValueTotal += parseFloat(valueText.replace(/,/g, '')) || 0;
@@ -532,6 +541,9 @@
                         if (scanFeeText !== '' && scanFeeText !== '-') {
                             calculatedScanFeeTotal += parseFloat(scanFeeText.replace(/,/g, '')) || 0;
                         }
+                        if (itcText !== '' && itcText !== '-') {
+                            calculatedItcTotal += parseFloat(itcText.replace(/,/g, '')) || 0;
+                        }
                     }
                 });
 
@@ -541,7 +553,8 @@
                     totalBill: calculatedTotalBillAmountTotal,
                     dfVat: calculatedDfVatTotal,
                     docFee: calculatedDocFeeTotal,
-                    scanFee: calculatedScanFeeTotal
+                    scanFee: calculatedScanFeeTotal,
+                    itc: calculatedItcTotal
                 });
 
                 return `
@@ -553,6 +566,7 @@
             <td style="border: 1px solid #000000; padding: 5px; text-align: center; font-weight: bold;">${calculatedDfVatTotal.toFixed(2)}</td>
             <td style="border: 1px solid #000000; padding: 5px; text-align: center; font-weight: bold;">${calculatedDocFeeTotal.toFixed(2)}</td>
             <td style="border: 1px solid #000000; padding: 5px; text-align: center; font-weight: bold;">${calculatedScanFeeTotal.toFixed(2)}</td>
+            <td style="border: 1px solid #000000; padding: 5px; text-align: center; font-weight: bold;">${calculatedItcTotal.toFixed(2)}</td>
         </tr>
                 `;
             }

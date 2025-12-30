@@ -166,11 +166,11 @@ class SummaryReportController extends Controller
             ->select(DB::raw('SUM(scan_fee) as total_scan_fee'), DB::raw('SUM(doc_fee) as total_doc_fee'))
             ->first();
 
-        $totalFees = ($fees->total_scan_fee ?? 0) + ($fees->total_doc_fee ?? 0) + $totalExpenses;
+        //$totalFees = ($fees->total_scan_fee ?? 0) + ($fees->total_doc_fee ?? 0) + $totalExpenses;
 
         return [
             'qty' => $totalQty,
-            'total' => $totalFees
+            'total' => $totalExpenses
         ];
     }
 

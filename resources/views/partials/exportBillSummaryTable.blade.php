@@ -5,97 +5,21 @@
     [$year, $monthNum] = explode('-', $month);
     $monthName = Carbon::createFromDate($year, $monthNum, 1)->format('F Y');
 
-    $totalUSD = $totalSubmitted = $totalDfVat = 0;
+    $totalUSD = $totalSubmitted = $totalDfVat = $totalItc = $totalCtn = $totalInvoicePcs = 0;
 
     foreach($bills as $bill) {
         $submittedExp = $bill->submittedExpense();
         $dfVat = $bill->dfVat();
+        $itcValue = $bill->itc ?? 0;
         $totalUSD += $bill->usd;
         $totalSubmitted += $submittedExp;
         $totalDfVat += $dfVat;
+        $totalItc += $itcValue;
+        $totalCtn += $bill->total_qty;
+        $totalInvoicePcs += $bill->qty_pcs;
     }
      $count = 1;
 @endphp
-
-<style>
-    /* ✅ GLOBAL TABLE STYLES */
-    table {
-        width: 100%;
-        border-collapse: collapse !important;
-        table-layout: auto !important;
-    }
-
-    th, td {
-        border: 1px solid #000 !important;
-        text-align: center !important;
-        vertical-align: middle !important;
-        white-space: nowrap !important;
-        padding: 6px 8px;
-        font-size: 13px;
-    }
-
-    /* ✅ FIX LAST COLUMN (NO BREAK, NO SHRINK) */
-    th:last-child,
-    td:last-child {
-        min-width: 140px !important; /* ✅ FIXED WIDTH */
-        max-width: 140px !important;
-        white-space: nowrap !important;
-    }
-
-    /* ✅ HEADER */
-    .company-header {
-        text-align: center;
-    }
-    .company-header h1 {
-        margin: 0;
-        font-size: 22px;
-        font-weight: bold;
-    }
-    .company-header p {
-        margin: 2px 0;
-        font-size: 13px;
-    }
-
-    /* ✅ PRINT MODE */
-    @media print {
-
-        body {
-            margin: 10px;
-            padding: 0;
-            font-size: 12px;
-        }
-
-        table, th, td {
-            border: 1px solid #000 !important;
-            border-collapse: collapse !important;
-        }
-
-        th, td {
-            padding: 4px 6px !important;
-        }
-
-        /* ✅ Force landscape */
-        @page {
-            size: landscape;
-            margin: 10mm;
-        }
-
-        thead { display: table-header-group; }
-        tfoot { display: table-footer-group; }
-        tr { page-break-inside: avoid; }
-
-        .no-print { display: none !important; }
-
-        /* ✅ PRINT FIX FOR LAST COLUMN TOO */
-        th:last-child,
-        td:last-child {
-            min-width: 150px !important;
-            max-width: 150px !important;
-        }
-    }
-</style>
-
-
 
 <div class="company-header">
     <h1>MULTI FABS LTD</h1>
@@ -112,7 +36,6 @@
 
 <br>
 
-<!-- Your existing code up to the main table -->
 <table id="exportSummaryTable">
     <thead>
     <tr>
@@ -128,6 +51,7 @@
         <th>ACTUAL DATE</th>
         <th>SUBMITED EXP</th>
         <th>DF VAT</th>
+        <th>ITC</th>
         <th>APPROVED BILL</th>
     </tr>
     </thead>
@@ -137,6 +61,7 @@
         @php
             $submittedExp = $bill->submittedExpense();
             $dfVat = $bill->dfVat();
+            $itcValue = $bill->itc ?? 0;
         @endphp
         <tr>
             <td>{{ $count++ }}</td>
@@ -151,25 +76,28 @@
             <td>{{ optional($bill->bill_date)->format('d-M-Y') }}</td>
             <td>{{ number_format($submittedExp, 2) }}</td>
             <td>{{ number_format($dfVat, 2) }}</td>
+            <td>{{ number_format($itcValue, 2) }}</td>
             <td></td>
         </tr>
     @empty
         <tr>
-            <td colspan="13">No records found for {{ $monthName }}</td>
+            <td colspan="14">No records found for {{ $monthName }}</td>
         </tr>
     @endforelse
 
     @if(count($bills) > 0)
         <!-- ✅ Grand Total as regular row instead of tfoot -->
         <tr style="font-weight: bold; background-color: #f0f0f0;">
-            <td colspan="10" style="text-align: right;">GRAND TOTAL</td>
+            <td colspan="3" style="text-align: right;">GRAND TOTAL</td>
+            <td>{{ $totalCtn }} CTN</td>
+            <td>{{ $totalInvoicePcs }} PCS</td>
+            <td>{{ number_format($totalUSD, 2) }} $</td>
+            <td colspan="4"></td>
             <td>{{ number_format($totalSubmitted, 2) }}</td>
             <td>{{ number_format($totalDfVat, 2) }}</td>
+            <td>{{ number_format($totalItc, 2) }}</td>
             <td></td>
         </tr>
     @endif
     </tbody>
 </table>
-
-
-

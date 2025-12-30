@@ -24,7 +24,7 @@ class ExportBill extends Model
         'qty_pcs',
         'from_account_id',
         'account_id',
-        'note'
+        'itc'
     ];
 
     protected $casts = [

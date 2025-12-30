@@ -209,6 +209,10 @@
                                     <label>Document Fee</label>
                                     <input class="form-control form-control-sm input-highlight" type="number" name="doc_fee" id="docFee" value="{{ $bill->doc_fee }}" step="0.01">
                                 </div>
+                                <div class="col-md-6 mb-6">
+                                    <label> ITC (INCOME TAX ON C & F COMMISSION) </label>
+                                    <input class="form-control form-control-sm input-highlight" type="number" name="itc" id="itc" value="{{ $bill->itc }}" step="0.01">
+                                </div>
                             </div>
                         </div>
 

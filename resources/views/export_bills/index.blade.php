@@ -35,7 +35,7 @@
                         <th>Qty PCS</th>
                         <th>Total Amount</th>
                         <th>VAT</th>
-                        <th>Note</th>
+                        <th>ITC</th>
                         <th class="text-center">Action</th>
                     </tr>
                     </thead>
@@ -89,7 +89,7 @@
                     { data: 'qty_pcs', name: 'qty_pcs' },
                     { data: 'amount', name: 'amount', className: "text-right" },
                     { data: 'bank_vat_amount', name: 'bank_vat_amount', className: "text-right" },
-                    { data: 'note', name: 'note' },
+                    { data: 'itc', name: 'itc' },
                     { data: 'action', name: 'action', orderable:false, searchable:false, className:'text-center' }
                 ],
                  // you can adjust the default order if needed
@@ -121,12 +121,18 @@
                     var totalBankVat = api.column(12, { page: 'current' }).data()
                         .reduce((a, b) => intVal(a) + intVal(b), 0);
 
+                    var totalItc = api.column(13, { page: 'current' }).data()
+                        .reduce((a, b) => intVal(a) + intVal(b), 0);
+
                     // Update footer cells
                     $(api.column(11).footer()).html(
                         totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
                     );
                     $(api.column(12).footer()).html(
                         totalBankVat.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                    );
+                    $(api.column(13).footer()).html(
+                        totalItc.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
                     );
                 }
             });

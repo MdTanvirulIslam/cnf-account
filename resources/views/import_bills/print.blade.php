@@ -280,7 +280,7 @@
                         <strong>INWARD: {{ strtoupper(convertToTakaWords($total)) }}</strong> <br/><br/>
                         THANKING YOU
 
-                        <br/><br/><br/><br/><br/>
+                        <br/><br/><br/>
                         MULTIFABS LIMITED
                     </div>
                 </div>

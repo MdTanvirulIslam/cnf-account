@@ -2,10 +2,80 @@
 
 @section('styles')
     <style>
-        /* ✅ Global table center alignment */
-        table th, table td {
+        /* ✅ GLOBAL TABLE STYLES */
+        table {
+            width: 100%;
+            border-collapse: collapse !important;
+            table-layout: auto !important;
+        }
+
+        th, td {
+            border: 1px solid #000 !important;
             text-align: center !important;
             vertical-align: middle !important;
+            white-space: nowrap !important;
+            padding: 6px 8px;
+            font-size: 13px;
+        }
+
+        /* ✅ FIX LAST COLUMN (NO BREAK, NO SHRINK) */
+        th:last-child,
+        td:last-child {
+            min-width: 140px !important; /* ✅ FIXED WIDTH */
+            max-width: 140px !important;
+            white-space: nowrap !important;
+        }
+
+        /* ✅ HEADER */
+        .company-header {
+            text-align: center;
+        }
+        .company-header h1 {
+            margin: 0;
+            font-size: 22px;
+            font-weight: bold;
+        }
+        .company-header p {
+            margin: 2px 0;
+            font-size: 13px;
+        }
+
+        /* ✅ PRINT MODE */
+        @media print {
+
+            body {
+                margin: 10px;
+                padding: 0;
+                font-size: 12px;
+            }
+
+            table, th, td {
+                border: 1px solid #000 !important;
+                border-collapse: collapse !important;
+            }
+
+            th, td {
+                padding: 4px 6px !important;
+            }
+
+            /* ✅ Force landscape */
+            @page {
+                size: landscape;
+                margin: 10mm;
+            }
+
+            thead { display: table-header-group; }
+            tfoot { display: table-footer-group; }
+            tr { page-break-inside: avoid; }
+
+            .no-print { display: none !important; }
+
+            /* ✅ PRINT FIX FOR LAST COLUMN TOO */
+            th:last-child,
+            td:last-child {
+                min-width: 150px !important;
+                max-width: 150px !important;
+            }
         }
     </style>
 @endsection
@@ -46,8 +116,6 @@
 
     </div>
 @endsection
-
-
 
 @section('scripts')
     <script>
@@ -93,7 +161,7 @@
             }
 
             /* ================================
-               ✅ PRINT FUNCTION
+               ✅ PRINT FUNCTION - UPDATED
             ================================== */
             function printReport() {
                 const monthInput = $('#month').val();
@@ -103,35 +171,100 @@
 
                 const printWindow = window.open('', '_blank');
 
+                // Get the HTML content
+                const reportContent = document.getElementById('reportTable').innerHTML;
+
                 printWindow.document.write(`
 <!DOCTYPE html>
 <html>
 <head>
-<title>Export Bill - ${monthName}</title>
-<style>
-    body { font-family: Arial; font-size: 12px; margin: 20px; }
+    <title>Export Bill - ${monthName}</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 12px;
+            margin: 20px;
+        }
 
-    table {
-        width: 100%;
-        border-collapse: collapse;
-        font-size: 11px;
-    }
-    th, td {
-        border: 1px solid #000;
-        padding: 4px 6px;
-        text-align: center;
-        white-space: nowrap;
-    }
-    th { background: #f5f5f5; font-weight: bold; }
+        .company-header {
+            text-align: center;
+            margin-bottom: 15px;
+        }
+        .company-header h1 {
+            margin: 0;
+            font-size: 22px;
+            font-weight: bold;
+        }
+        .company-header p {
+            margin: 2px 0;
+            font-size: 13px;
+        }
 
-    @page { size: landscape; margin: 10mm; }
-</style>
+        .report-info {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            font-size: 14px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 11px;
+            margin-top: 10px;
+        }
+        th, td {
+            border: 1px solid #000 !important;
+            padding: 4px 6px !important;
+            text-align: center !important;
+            vertical-align: middle !important;
+            white-space: nowrap !important;
+        }
+        th {
+            background: #f5f5f5 !important;
+            font-weight: bold !important;
+        }
+
+        .total-row {
+            font-weight: bold !important;
+            background-color: #f0f0f0 !important;
+        }
+
+        @page {
+            size: landscape;
+            margin: 10mm;
+        }
+
+        @media print {
+            body {
+                margin: 10px;
+                padding: 0;
+                font-size: 12px;
+            }
+
+            .no-print {
+                display: none !important;
+            }
+
+            table, th, td {
+                border: 1px solid #000 !important;
+            }
+
+            thead {
+                display: table-header-group !important;
+            }
+
+            tr {
+                page-break-inside: avoid !important;
+            }
+        }
+    </style>
 </head>
 <body>
-    ${document.getElementById('reportTable').innerHTML}
+    ${reportContent}
 </body>
 </html>
-        `);
+                `);
 
                 printWindow.document.close();
 
@@ -142,34 +275,82 @@
             }
 
             /* ================================
-               ✅ EXPORT EXCEL FUNCTION
+               ✅ EXPORT EXCEL FUNCTION - SIMPLIFIED
             ================================== */
             function exportToExcel() {
+                try {
+                    const monthVal = $('#month').val();
+                    const formattedMonth = monthVal
+                        ? new Date(monthVal + '-01').toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+                        : 'All_Time';
 
-                const monthVal = $('#month').val();
-                const formattedMonth = monthVal
-                    ? new Date(monthVal + '-01').toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
-                    : 'All_Time';
+                    // Get the table content
+                    const tableContent = document.getElementById('reportTable').innerHTML;
 
-                const table = document.querySelector('#reportTable table');
-                if (!table) return alert("No data available!");
+                    // Create simple HTML table for Excel
+                    const excelHTML = `
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            font-family: Arial;
+            font-size: 12px;
+        }
+        th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+            border: 1px solid #000000;
+            padding: 5px;
+            text-align: center;
+        }
+        td {
+            border: 1px solid #000000;
+            padding: 5px;
+            text-align: center;
+        }
+        .total-row td {
+            font-weight: bold;
+            background-color: #f0f0f0;
+        }
+        .company-header {
+            text-align: center;
+            margin-bottom: 15px;
+        }
+        .company-header h1 {
+            font-size: 20px;
+            font-weight: bold;
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+    ${tableContent}
+</body>
+</html>
+                    `;
 
-                let html = `
-<html><head><meta charset="UTF-8"></head><body>
-<table style="border-collapse:collapse;width:100%">
-`;
+                    const blob = new Blob([excelHTML], {
+                        type: "application/vnd.ms-excel"
+                    });
 
-                html += table.outerHTML.replace(/<th/g, '<th style="text-align:center;border:1px solid #000;padding:5px;"');
-                html += table.outerHTML.replace(/<td/g, '<td style="text-align:center;border:1px solid #000;padding:5px;"');
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement("a");
+                    a.href = url;
+                    a.download = `Export_Bill_Summary_${formattedMonth.replace(/\s+/g, '_')}.xls`;
 
-                html += `</table></body></html>`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
 
-                const blob = new Blob([html], { type: "application/vnd.ms-excel" });
-                const a = document.createElement("a");
+                    URL.revokeObjectURL(url);
 
-                a.href = URL.createObjectURL(blob);
-                a.download = `Export_Bill_Summary_${formattedMonth}.xls`;
-                a.click();
+                } catch (error) {
+                    console.error('Excel export error:', error);
+                    alert('Error exporting to Excel: ' + error.message);
+                }
             }
 
         });

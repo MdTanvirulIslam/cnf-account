@@ -183,11 +183,9 @@
                                     <input type="number" name="qty_pcs" class="form-control form-control-sm input-highlight" required>
                                 </div>
                                 {{-- Add this after Quantity PCS field --}}
-                                <div class="col-md-6 mb-3">
-                                    <label>Note</label>
-                                    <textarea name="note" class="form-control form-control-sm input-highlight" rows="1"
-                                              placeholder="Enter any additional notes or comments...">{{ old('note') }}</textarea>
-
+                                <div class="col-md-6 mb-6">
+                                    <label> ITC (INCOME TAX ON C & F COMMISSION) </label>
+                                    <input class="form-control form-control-sm input-highlight" type="number" name="itc" id="itc" value="0" step="0.01">
                                 </div>
                             </div>
                         </div>

@@ -38,6 +38,7 @@
                         <th class="text-center">AIT AMOUNT</th>
                         <th class="text-center">DOC FEE</th>
                         <th class="text-center">SCAN FEE</th>
+                        <th class="text-center">ITC</th>
                         <th class="text-center">Action</th>
                     </tr>
                     </thead>
@@ -49,6 +50,7 @@
                         <th id="total_ait"></th>
                         <th id="total_doc"></th>
                         <th id="total_scan"></th>
+                        <th id="total_itc"></th>
                         <th></th>
                     </tr>
                     </tfoot>
@@ -101,6 +103,7 @@
                     { data: 'ait_amount', name: 'ait_amount' },
                     { data: 'doc_fee', name: 'doc_fee' },
                     { data: 'scan_fee', name: 'scan_fee' },
+                    { data: 'itc', name: 'itc' },
                     { data: 'action', name: 'action', orderable: false, searchable: false }
                 ],
                 order: [[0, 'desc']],
@@ -130,6 +133,7 @@
                     var totalAIT = api.column(14, { page: 'current' }).data().reduce((a, b) => intVal(a) + intVal(b), 0);
                     var totalDoc = api.column(15, { page: 'current' }).data().reduce((a, b) => intVal(a) + intVal(b), 0);
                     var totalScan = api.column(16, { page: 'current' }).data().reduce((a, b) => intVal(a) + intVal(b), 0);
+                    var totalItc = api.column(17, { page: 'current' }).data().reduce((a, b) => intVal(a) + intVal(b), 0);
 
                     // Update footer cells
                     $('#total_amount').html(totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2 }));
@@ -137,6 +141,7 @@
                     $('#total_ait').html(totalAIT.toLocaleString(undefined, { minimumFractionDigits: 2 }));
                     $('#total_doc').html(totalDoc.toLocaleString(undefined, { minimumFractionDigits: 2 }));
                     $('#total_scan').html(totalScan.toLocaleString(undefined, { minimumFractionDigits: 2 }));
+                    $('#total_itc').html(totalItc.toLocaleString(undefined, { minimumFractionDigits: 2 }));
                 }
             });
 

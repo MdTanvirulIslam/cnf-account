@@ -231,6 +231,7 @@ class ExportBillController extends Controller
                 'note'            => $request->note,
                 'from_account_id' => $request->from_account_id,
                 'account_id'      => $request->account_id,
+                'itc'             => $request->itc,
             ]);
 
             $vatType = 'Bank C & F Vat & Others (As Per Receipt)';
@@ -462,6 +463,7 @@ class ExportBillController extends Controller
                 'note' => $request->note,
                 'from_account_id' => $request->from_account_id,
                 'account_id' => $request->account_id,
+                'itc'             => $request->itc,
             ];
 
             \Log::info('Updating bill with data:', $updateData);
