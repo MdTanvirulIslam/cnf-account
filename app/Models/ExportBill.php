@@ -34,7 +34,7 @@ class ExportBill extends Model
         'usd' => 'decimal:2',
     ];
 
-    protected static function boot()
+    /*protected static function boot()
     {
         parent::boot();
 
@@ -45,7 +45,7 @@ class ExportBill extends Model
         static::updating(function ($bill) {
             $bill->company_name = env('COMPANY_NAME', 'MULTI FABS LTD');
         });
-    }
+    }*/
 
     /** ───────────────
      * Relationships

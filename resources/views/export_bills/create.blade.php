@@ -133,6 +133,14 @@
                             <h5 class="section-title">📋 Basic Information</h5>
                             <div class="row">
                                 <div class="col-md-3 mb-3">
+                                    <label class="required-field">Company Name</label>
+                                    <select name="company_name" class="form-control form-control-sm input-highlight" required>
+                                        <option value="">Select Company Name</option>
+                                        <option value="MULTI FABS LTD">MULTI FABS LTD</option>
+                                        <option value="EMS APPARELS LTD"> EMS APPARELS LTD </option>
+                                    </select>
+                                </div>
+                                <div class="col-md-3 mb-3">
                                     <label class="required-field">Buyer Name</label>
                                     <select name="buyer_id" class="form-control form-control-sm input-highlight" required>
                                         <option value="">-- Select Buyer --</option>
@@ -170,15 +178,15 @@
                                     <label>CTN No</label>
                                     <input type="text" name="ctn_no" class="form-control form-control-sm input-highlight">
                                 </div>--}}
-                                <div class="col-md-3 mb-3">
+                                <div class="col-md-4 mb-4">
                                     <label class="required-field">B/E No</label>
                                     <input type="text" name="be_no" class="form-control form-control-sm input-highlight">
                                 </div>
-                                <div class="col-md-3 mb-3">
+                                <div class="col-md-4 mb-4">
                                     <label>B/E Date</label>
                                     <input type="date" name="be_date" class="form-control form-control-sm input-highlight">
                                 </div>
-                                <div class="col-md-3 mb-3">
+                                <div class="col-md-4 mb-4">
                                     <label class="required-field">Quantity PCS</label>
                                     <input type="number" name="qty_pcs" class="form-control form-control-sm input-highlight" required>
                                 </div>
@@ -299,9 +307,7 @@
                                 <button type="submit" class="btn btn-outline-primary btn-info btn-rounded _effect--ripple waves-effect waves-light focus-color-change">
                                     <i class="fas fa-paper-plane me-2"></i>Create Export Bill
                                 </button>
-                                <a href="{{ route('export-bills.index') }}" class="btn btn-outline-secondary btn-info btn-rounded _effect--ripple waves-effect waves-light focus-color-change">
-                                    <i class="fas fa-arrow-left me-2"></i>Back to List
-                                </a>
+
                             </div>
                         </div>
                     </form>
@@ -318,65 +324,164 @@
     <script src="https://kit.fontawesome.com/your-fontawesome-kit.js"></script>
     <script>
         $(function () {
-            // Prefix configuration
-            const prefixes = {
-                bill_no: 'MFL/EXP/',
-                invoice_no: 'MFL/',
+            // Dynamic prefix configuration based on company
+            const companyPrefixes = {
+                'MULTI FABS LTD': 'MFL',
+                'EMS APPARELS LTD': 'EMS'
+            };
+
+            // Prefix patterns for each field
+            const fieldPrefixes = {
+                bill_no: '/EXP/',
+                invoice_no: '/',
                 be_no: 'C-'
             };
 
+            // Function to get current company prefix
+            function getCurrentPrefix() {
+                const companyName = $('[name="company_name"]').val();
+                return companyPrefixes[companyName] || '';
+            }
+
+            // Function to get full prefix for a field
+            function getFullPrefix(fieldName) {
+                const companyPrefix = getCurrentPrefix();
+                if (!companyPrefix) return '';
+
+                // Special handling for be_no (always starts with C-)
+                if (fieldName === 'be_no') {
+                    return fieldPrefixes[fieldName];
+                }
+
+                // For bill_no and invoice_no: companyPrefix + field-specific suffix
+                return companyPrefix + fieldPrefixes[fieldName];
+            }
+
             // Function to add prefix to input value
             function addPrefix(fieldName, value) {
-                const prefix = prefixes[fieldName];
-                // Remove prefix if already exists to avoid duplication
-                let cleanValue = value.replace(prefix, '');
-                return prefix + cleanValue;
+                const fullPrefix = getFullPrefix(fieldName);
+                if (!fullPrefix) return value;
+
+                // Remove any existing prefix to avoid duplication
+                let cleanValue = value;
+                Object.values(companyPrefixes).forEach(prefix => {
+                    // Remove both possible formats
+                    cleanValue = cleanValue.replace(prefix + fieldPrefixes[fieldName], '');
+                    cleanValue = cleanValue.replace(prefix, '');
+                });
+                // Also remove field-specific suffix
+                cleanValue = cleanValue.replace(fieldPrefixes[fieldName], '');
+
+                return fullPrefix + cleanValue;
             }
 
-            // Function to remove prefix for display (if needed)
+            // Function to remove prefix for display
             function removePrefix(fieldName, value) {
-                const prefix = prefixes[fieldName];
-                return value.replace(prefix, '');
+                const fullPrefix = getFullPrefix(fieldName);
+                if (fullPrefix && value.startsWith(fullPrefix)) {
+                    return value.replace(fullPrefix, '');
+                }
+                return value;
             }
 
-            // Initialize prefixes on page load
+            // Initialize prefixes on page load and when company changes
             function initializePrefixes() {
-                Object.keys(prefixes).forEach(fieldName => {
+                const companyName = $('[name="company_name"]').val();
+                if (!companyName) return;
+
+                Object.keys(fieldPrefixes).forEach(fieldName => {
                     const $input = $(`[name="${fieldName}"]`);
                     const currentValue = $input.val();
-                    if (currentValue && !currentValue.startsWith(prefixes[fieldName])) {
-                        $input.val(addPrefix(fieldName, currentValue));
+                    const fullPrefix = getFullPrefix(fieldName);
+
+                    if (currentValue) {
+                        // Check if value already has the correct prefix
+                        let hasCorrectPrefix = false;
+
+                        // For be_no, check if starts with C-
+                        if (fieldName === 'be_no') {
+                            hasCorrectPrefix = currentValue.startsWith(fieldPrefixes.be_no);
+                        } else {
+                            // For other fields, check if starts with company prefix
+                            hasCorrectPrefix = currentValue.startsWith(companyPrefixes[companyName]);
+                        }
+
+                        if (!hasCorrectPrefix) {
+                            $input.val(addPrefix(fieldName, currentValue));
+                        }
                     }
                 });
             }
 
+            // Handle company change event
+            $('[name="company_name"]').change(function() {
+                const companyName = $(this).val();
+                if (!companyName) {
+                    // Clear prefixes if no company selected
+                    Object.keys(fieldPrefixes).forEach(fieldName => {
+                        if (fieldName !== 'be_no') {
+                            $(`[name="${fieldName}"]`).val('');
+                        }
+                    });
+                    return;
+                }
+
+                // Update prefixes for bill_no and invoice_no based on selected company
+                Object.keys(fieldPrefixes).forEach(fieldName => {
+                    // Skip be_no as it doesn't depend on company
+                    if (fieldName === 'be_no') return;
+
+                    const $input = $(`[name="${fieldName}"]`);
+                    const currentValue = $input.val();
+
+                    if (currentValue) {
+                        // Replace existing prefix with new company prefix
+                        const newValue = addPrefix(fieldName, currentValue);
+                        $input.val(newValue);
+                    }
+                });
+            });
+
             // Handle input events to maintain prefixes
-            Object.keys(prefixes).forEach(fieldName => {
+            Object.keys(fieldPrefixes).forEach(fieldName => {
                 const $input = $(`[name="${fieldName}"]`);
-                const prefix = prefixes[fieldName];
 
                 $input.on('input', function() {
+                    const companyName = $('[name="company_name"]').val();
+                    if (!companyName) return;
+
                     let value = $(this).val();
+                    const fullPrefix = getFullPrefix(fieldName);
 
                     // If user deletes the prefix, add it back
-                    if (value && !value.startsWith(prefix)) {
+                    if (value && fullPrefix && !value.startsWith(fullPrefix)) {
                         $(this).val(addPrefix(fieldName, value));
                     }
                 });
 
                 $input.on('focus', function() {
+                    const companyName = $('[name="company_name"]').val();
+                    if (!companyName) return;
+
                     let value = $(this).val();
+                    const fullPrefix = getFullPrefix(fieldName);
+
                     // Store the value without prefix for easier editing
-                    if (value.startsWith(prefix)) {
+                    if (value && fullPrefix && value.startsWith(fullPrefix)) {
                         $(this).data('original-value', value);
                         $(this).val(removePrefix(fieldName, value));
                     }
                 });
 
                 $input.on('blur', function() {
+                    const companyName = $('[name="company_name"]').val();
+                    if (!companyName) return;
+
                     let value = $(this).val();
+                    const fullPrefix = getFullPrefix(fieldName);
+
                     // Restore prefix when focus is lost
-                    if (value && !value.startsWith(prefix)) {
+                    if (value && fullPrefix && !value.startsWith(fullPrefix)) {
                         $(this).val(addPrefix(fieldName, value));
                     }
                 });
@@ -425,11 +530,27 @@
             $('#exportBillForm').submit(function(e) {
                 e.preventDefault();
 
-                // Ensure all prefixed fields have their prefixes before submission
-                Object.keys(prefixes).forEach(fieldName => {
+                // Ensure all prefixed fields have correct prefixes before submission
+                Object.keys(fieldPrefixes).forEach(fieldName => {
                     const $input = $(`[name="${fieldName}"]`);
+                    const companyName = $('[name="company_name"]').val();
+
+                    if (!companyName) {
+                        Swal.fire({
+                            icon: "error",
+                            title: "Error",
+                            text: "Please select a company first.",
+                            background: '#f8f9fa',
+                            iconColor: '#dc3545'
+                        });
+                        e.stopImmediatePropagation();
+                        return false;
+                    }
+
                     let value = $input.val();
-                    if (value && !value.startsWith(prefixes[fieldName])) {
+                    const fullPrefix = getFullPrefix(fieldName);
+
+                    if (value && fullPrefix && !value.startsWith(fullPrefix)) {
                         $input.val(addPrefix(fieldName, value));
                     }
                 });
@@ -455,7 +576,7 @@
                             background: '#f8f9fa',
                             iconColor: '#28a745'
                         }).then(() => {
-                            window.location.href = "{{ route('export-bills.index') }}";
+                            window.location.href = "{{ route('export-bills.create') }}";
                         });
                     },
                     error: function(xhr) {
@@ -483,4 +604,5 @@
             });
         });
     </script>
+
 @endsection

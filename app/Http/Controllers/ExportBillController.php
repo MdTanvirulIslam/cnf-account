@@ -61,8 +61,26 @@ class ExportBillController extends Controller
                 }], 'amount')
                 ->latest();
 
+            // Apply Company Filter
+            if ($request->has('company_name') && !empty($request->company_name)) {
+                $query->where('company_name', $request->company_name);
+            }
+
+            // Apply Month Filter
+            if ($request->has('month') && !empty($request->month)) {
+                $query->whereMonth('bill_date', $request->month);
+            }
+
+            // Apply Year Filter
+            if ($request->has('year') && !empty($request->year)) {
+                $query->whereYear('bill_date', $request->year);
+            }
+
             return datatables()->of($query)
                 ->addIndexColumn()
+                ->addColumn('company_name', function($row) {
+                    return $row->company_name ?? 'N/A';
+                })
                 ->editColumn('invoice_date', function ($row) {
                     return $row->invoice_date
                         ? \Carbon\Carbon::parse($row->invoice_date)->format('d-m-Y')
@@ -156,7 +174,10 @@ class ExportBillController extends Controller
     public function create()
     {
         $accounts  = Account::select('id','name','balance')->get();
-        $buyers    = Buyer::select('id','name')->get();
+        $buyers = Buyer::select('id', 'name')
+            ->whereNull('deleted_at')  // Exclude soft deleted items
+            ->orderBy('name', 'asc')
+            ->get();
 
         $formToken = (string) Str::uuid();
 
@@ -174,6 +195,7 @@ class ExportBillController extends Controller
     public function store(Request $request)
     {
         $request->validate([
+            'company_name'    => 'required',
             'buyer_id'        => 'required|exists:buyers,id',
             'invoice_no'      => 'required|string|max:255',
             'invoice_date'    => 'nullable|date',
@@ -190,6 +212,7 @@ class ExportBillController extends Controller
             'account_id'      => 'required|exists:accounts,id',
             'expenses'        => 'nullable|array',
             'expenses.*'      => 'nullable|numeric|min:0',
+            'itc'             => 'nullable|numeric|min:0',
         ]);
 
         $formToken = $request->input('form_token');
@@ -210,9 +233,12 @@ class ExportBillController extends Controller
                 throw new \Exception("Account not found");
             }
 
-            // Add prefixes to the fields
-            $bill_no = $this->addBillNoPrefix(trim($request->bill_no));
-            $invoice_no = $this->addInvoiceNoPrefix(trim($request->invoice_no));
+            // Get company name from request
+            $companyName = $request->company_name;
+
+            // Add prefixes to the fields with company name
+            $bill_no = $this->addBillNoPrefix(trim($request->bill_no), $companyName);
+            $invoice_no = $this->addInvoiceNoPrefix(trim($request->invoice_no), $companyName);
             $be_no = $this->addBeNoPrefix(trim($request->be_no));
 
             // 1️⃣ Create Export Bill with prefixed values
@@ -232,6 +258,7 @@ class ExportBillController extends Controller
                 'from_account_id' => $request->from_account_id,
                 'account_id'      => $request->account_id,
                 'itc'             => $request->itc,
+                'company_name'    => $companyName,
             ]);
 
             $vatType = 'Bank C & F Vat & Others (As Per Receipt)';
@@ -289,28 +316,55 @@ class ExportBillController extends Controller
         return response()->json(['success' => true, 'message' => 'Export Bill created successfully']);
     }
 
-// Helper methods for adding prefixes
-    private function addBillNoPrefix($billNo)
+// Helper methods for adding prefixes dynamically based on company
+    private function addBillNoPrefix($billNo, $companyName)
     {
-        $prefix = 'MFL/EXP/';
-        // Remove prefix if already exists to avoid duplication
-        $billNo = str_replace($prefix, '', $billNo);
+        $prefixes = [
+            'MULTI FABS LTD' => 'MFL/EXP/',
+            'EMS APPARELS LTD' => 'EMS/EXP/'
+        ];
+
+        $prefix = $prefixes[$companyName] ?? 'MFL/EXP/'; // Default to MFL if not found
+
+        // Remove existing prefix to avoid duplication
+        foreach ($prefixes as $companyPrefix) {
+            if (strpos($billNo, $companyPrefix) === 0) {
+                $billNo = str_replace($companyPrefix, '', $billNo);
+                break;
+            }
+        }
+
         return $prefix . trim($billNo);
     }
 
-    private function addInvoiceNoPrefix($invoiceNo)
+    private function addInvoiceNoPrefix($invoiceNo, $companyName)
     {
-        $prefix = 'MFL/';
-        // Remove prefix if already exists to avoid duplication
-        $invoiceNo = str_replace($prefix, '', $invoiceNo);
+        $prefixes = [
+            'MULTI FABS LTD' => 'MFL/',
+            'EMS APPARELS LTD' => 'EMS/'
+        ];
+
+        $prefix = $prefixes[$companyName] ?? 'MFL/'; // Default to MFL if not found
+
+        // Remove existing prefix to avoid duplication
+        foreach ($prefixes as $companyPrefix) {
+            if (strpos($invoiceNo, $companyPrefix) === 0) {
+                $invoiceNo = str_replace($companyPrefix, '', $invoiceNo);
+                break;
+            }
+        }
+
         return $prefix . trim($invoiceNo);
     }
 
+// For B/E No (if you also want to handle it consistently on server side)
     private function addBeNoPrefix($beNo)
     {
         $prefix = 'C-';
         // Remove prefix if already exists to avoid duplication
-        $beNo = str_replace($prefix, '', $beNo);
+        if (strpos($beNo, $prefix) === 0) {
+            $beNo = substr($beNo, strlen($prefix));
+        }
         return $prefix . trim($beNo);
     }
 
@@ -364,6 +418,7 @@ class ExportBillController extends Controller
 
         // Manual validation with case-insensitive check
         $validator = \Validator::make($request->all(), [
+            'company_name'    => 'required',
             'buyer_id'        => 'required|exists:buyers,id',
             'invoice_no'      => 'required|string|max:255',
             'invoice_date'    => 'nullable|date',
@@ -380,6 +435,7 @@ class ExportBillController extends Controller
             'account_id'      => 'required|exists:accounts,id',
             'expenses'        => 'nullable|array',
             'expenses.*'      => 'nullable|numeric|min:0',
+            'itc'             => 'nullable|numeric|min:0',
         ]);
 
         if ($validator->fails()) {
@@ -391,9 +447,12 @@ class ExportBillController extends Controller
             ], 422);
         }
 
-        // Add prefixes to the fields
-        $bill_no = $this->addBillNoPrefix(trim($request->bill_no));
-        $invoice_no = $this->addInvoiceNoPrefix(trim($request->invoice_no));
+        // Get company name from request
+        $companyName = $request->company_name;
+
+        // Add prefixes to the fields with company name
+        $bill_no = $this->addBillNoPrefix(trim($request->bill_no), $companyName);
+        $invoice_no = $this->addInvoiceNoPrefix(trim($request->invoice_no), $companyName);
         $be_no = $this->addBeNoPrefix(trim($request->be_no));
 
         // MANUAL UNIQUE VALIDATION FOR BE_NO (with prefix)
@@ -464,6 +523,7 @@ class ExportBillController extends Controller
                 'from_account_id' => $request->from_account_id,
                 'account_id' => $request->account_id,
                 'itc'             => $request->itc,
+                'company_name'    => $companyName,
             ];
 
             \Log::info('Updating bill with data:', $updateData);
@@ -652,11 +712,26 @@ class ExportBillController extends Controller
 
         $total = array_sum(array_filter($expenses)); // ignores nulls
 
+        // Determine company address based on company name
+        $companyAddress = '';
+        $companyNameForPrint = '';
+
+        if ($bill->company_name == 'EMS APPARELS LTD') {
+            $companyNameForPrint = 'EMS APPARELS LTD';
+            $companyAddress = 'Barenda, Kashimpur, Gazipur, Bangladesh';
+        } else {
+            // Default to MULTI FABS LTD
+            $companyNameForPrint = 'MULTI FABS LTD';
+            $companyAddress = 'NAYAPARA, KASHIMPUR, GAZIPUR-1704, BANGLADESH';
+        }
+
         return view('export_bills.print', [
             'bill'         => $bill,
             'expenses'     => $expenses,
             'expenseTypes' => $this->expenseTypes,
             'total'        => $total,
+            'companyNameForPrint' => $companyNameForPrint,
+            'companyAddress' => $companyAddress,
         ]);
     }
 

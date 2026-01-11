@@ -62,7 +62,6 @@ class ImportBillController extends Controller
     }
 
     // DataTables AJAX endpoint
-
     public function data(Request $request)
     {
         if ($request->ajax()) {
@@ -75,8 +74,26 @@ class ImportBillController extends Controller
                 }], 'amount')
                 ->latest();
 
+            // Apply Company Filter
+            if ($request->has('company_name') && !empty($request->company_name)) {
+                $query->where('company_name', $request->company_name);
+            }
+
+            // Apply Month Filter
+            if ($request->has('month') && !empty($request->month)) {
+                $query->whereMonth('bill_date', $request->month);
+            }
+
+            // Apply Year Filter
+            if ($request->has('year') && !empty($request->year)) {
+                $query->whereYear('bill_date', $request->year);
+            }
+
             return datatables()->of($query)
                 ->addIndexColumn()
+                ->addColumn('company_name', function($row) {
+                    return $row->company_name ?? 'N/A';
+                })
                 ->editColumn('lc_date', function ($row) {
                     return $row->lc_date
                         ? \Carbon\Carbon::parse($row->lc_date)->format('d-m-Y')
@@ -100,7 +117,7 @@ class ImportBillController extends Controller
                 })
                 ->addColumn('month_name', function ($row) {
                     return $row->bill_date
-                        ? \Carbon\Carbon::parse($row->created_at)->format('F')
+                        ? \Carbon\Carbon::parse($row->bill_date)->format('F')
                         : '';
                 })
                 ->addColumn('ait_amount', function ($row) {
@@ -205,6 +222,7 @@ class ImportBillController extends Controller
     public function store(Request $request)
     {
         $request->validate([
+            'company_name'    => 'required',
             'lc_no'           => 'required|string|max:255',
             'lc_date'         => 'nullable|date',
             'bill_no'         => 'required|string|max:255|unique:import_bills,bill_no',
@@ -229,12 +247,16 @@ class ImportBillController extends Controller
                 throw new \Exception("Main account not found");
             }
 
-            // Add prefixes to the fields
-            $bill_no = $this->addBillNoPrefix(trim($request->bill_no));
+            // Get company name from request
+            $companyName = $request->company_name;
+
+            // Add prefixes to the fields with company name
+            $bill_no = $this->addBillNoPrefix(trim($request->bill_no), $companyName);
             $be_no = $this->addBeNoPrefix(trim($request->be_no ?? ''));
 
             // 1️⃣ Create ImportBill with prefixed values
             $bill = ImportBill::create([
+                'company_name'    => $companyName,
                 'lc_no'           => trim($request->lc_no),
                 'lc_date'         => $request->lc_date,
                 'bill_no'         => $bill_no,
@@ -343,12 +365,24 @@ class ImportBillController extends Controller
         ], 201);
     }
 
-// Helper methods for adding prefixes
-    private function addBillNoPrefix($billNo)
+    // Helper methods for adding prefixes dynamically based on company
+    private function addBillNoPrefix($billNo, $companyName)
     {
-        $prefix = 'MFL/IMP/';
-        // Remove prefix if already exists to avoid duplication
-        $billNo = str_replace($prefix, '', $billNo);
+        $prefixes = [
+            'MULTI FABS LTD' => 'MFL/IMP/',
+            'EMS APPARELS LTD' => 'EMS/IMP/'
+        ];
+
+        $prefix = $prefixes[$companyName] ?? 'MFL/IMP/'; // Default to MFL if not found
+
+        // Remove existing prefix to avoid duplication
+        foreach ($prefixes as $companyPrefix) {
+            if (strpos($billNo, $companyPrefix) === 0) {
+                $billNo = str_replace($companyPrefix, '', $billNo);
+                break;
+            }
+        }
+
         return $prefix . trim($billNo);
     }
 
@@ -362,9 +396,6 @@ class ImportBillController extends Controller
         $beNo = str_replace($prefix, '', $beNo);
         return $prefix . trim($beNo);
     }
-
-
-
 
     // edit form
     public function edit($id)
@@ -381,6 +412,7 @@ class ImportBillController extends Controller
     public function update(Request $request, $id)
     {
         $request->validate([
+            'company_name'    => 'required',
             'lc_no'           => 'required|string|max:255',
             'lc_date'         => 'nullable|date',
             'bill_no'         => 'required|string|max:255',
@@ -397,12 +429,16 @@ class ImportBillController extends Controller
 
             $bill = ImportBill::with('expenses')->findOrFail($id);
 
-            // Add prefixes to the fields
-            $bill_no = $this->addBillNoPrefix(trim($request->bill_no));
+            // Get company name from request
+            $companyName = $request->company_name;
+
+            // Add prefixes to the fields with company name
+            $bill_no = $this->addBillNoPrefix(trim($request->bill_no), $companyName);
             $be_no = $this->addBeNoPrefix(trim($request->be_no ?? ''));
 
             // Update basic fields with prefixed values
             $bill->update([
+                'company_name'    => $companyName,
                 'lc_no'           => trim($request->lc_no),
                 'lc_date'         => $request->lc_date,
                 'bill_no'         => $bill_no,
@@ -550,8 +586,6 @@ class ImportBillController extends Controller
         ]);
     }
 
-
-
     public function destroy($id)
     {
         $bill = ImportBill::find($id);
@@ -569,7 +603,6 @@ class ImportBillController extends Controller
 
             foreach ($bankbooks as $bk) {
                 if ($bk->account) {
-                    //$bk->account->balance += $bk->amount; // restore deducted amount
                     $bk->account->save();
                 }
                 $bk->delete();
@@ -588,16 +621,30 @@ class ImportBillController extends Controller
         ]);
     }
 
-
     public function print($id)
     {
         $bill = ImportBill::with('expenses')->findOrFail($id);
 
         $total = $bill->expenses->sum('amount');
 
-        return view('import_bills.print', compact('bill', 'total'));
+        // Determine company address based on company name
+        $companyAddress = '';
+        $companyNameForPrint = '';
+
+        if ($bill->company_name == 'EMS APPARELS LTD') {
+            $companyNameForPrint = 'EMS APPARELS LTD';
+            $companyAddress = 'Barenda, Kashimpur, Gazipur, Bangladesh';
+        } else {
+            // Default to MULTI FABS LTD
+            $companyNameForPrint = 'MULTI FABS LTD';
+            $companyAddress = 'NAYAPARA, KASHIMPUR, GAZIPUR-1704, BANGLADESH';
+        }
+
+        return view('import_bills.print', [
+            'bill' => $bill,
+            'total' => $total,
+            'companyNameForPrint' => $companyNameForPrint,
+            'companyAddress' => $companyAddress,
+        ]);
     }
-
-
-
 }

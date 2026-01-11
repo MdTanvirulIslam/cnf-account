@@ -113,6 +113,21 @@
             background: #218838;
         }
 
+        /* Custom styles for address to remove italic */
+        .company-address {
+            font-style: normal !important;
+            font-weight: normal;
+            line-height: 1.4;
+            margin-top: 15px;
+        }
+
+        /* Override browser default address styles */
+        address {
+            font-style: normal !important;
+            font-weight: normal;
+            line-height: 1.4;
+        }
+
         /* Print Styles */
         @media print {
             body * {
@@ -155,6 +170,13 @@
                 -webkit-print-color-adjust: exact;
                 print-color-adjust: exact;
             }
+
+            /* Ensure address is not italic in print */
+            address, .company-address {
+                font-style: normal !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
         }
     </style>
 @endsection
@@ -175,9 +197,13 @@
                 <div class="card-body">
                     <div class="col-xl-12 layout-top-spacing dc-report-table">
                         <div class="company-header">
-                            <h1>MULTI FABS LTD</h1>
+                            <h1>{{ $companyNameForPrint }}</h1>
                             <p>(SELF C&F AGENTS)</p>
-                            <p>314, SK. MUJIB ROAD, CHOWDHURY BHABAN (4TH FLOOR) AGRABAD, CHITTAGONG.</p>
+                            @if($bill->company_name == 'EMS APPARELS LTD')
+                                <p>314, SK. MUJIB ROAD, CHOWDHURY BHABAN (4TH FLOOR) AGRABAD, CHITTAGONG.</p>
+                            @else
+                                <p>314, SK. MUJIB ROAD, CHOWDHURY BHABAN (4TH FLOOR) AGRABAD, CHITTAGONG.</p>
+                            @endif
                         </div>
                         <hr style="border: none; border-top: 1px solid #222; margin: 10px 0 18px 0;" />
 
@@ -185,12 +211,15 @@
                             <div><strong>BILL NO:</strong> {{ $bill->bill_no }}</div>
                             <div class="right"><strong>DATE:</strong> {{ $bill->bill_date ? \Carbon\Carbon::parse($bill->bill_date)->format('d/m/Y') : '' }}</div>
                         </div>
-                        <address>
+
+                        {{-- Use div instead of address tag to avoid italic styling --}}
+                        <div class="company-address">
+                            <br>
                             TO,<br>
-                            MULTIFABS LTD.<br>
-                            NAYAPARA, KASHIMPUR,<br>
-                            GAZIPUR-1704,BANGLADESH
-                        </address>
+                            {{ $companyNameForPrint }}<br>
+                            {{ $companyAddress }}
+                        </div>
+
                         <h3>SUB: FORWARDING BILL (AS PER INVOICE)</h3>
 
                         <table class="info-table">
@@ -232,7 +261,6 @@
                             <tbody>
 
                             @foreach($expenseTypes as $index => $type)
-
                                 <tr>
                                     <td class="center">{{ str_pad($index + 1, 2, '0', STR_PAD_LEFT) }}</td>
                                     <td>{{ strtoupper($type) }}</td>
@@ -254,7 +282,7 @@
                             THANKING YOU
 
                             <br/><br/><br/>
-                            MULTIFABS LIMITED
+                            {{ strtoupper($companyNameForPrint) }}
                         </div>
                     </div>
                 </div>
@@ -363,9 +391,18 @@
                     margin-top: 20px;
                     font-size: 13px;
                 }
+                /* Ensure address is not italic */
+                .company-address, address {
+                    font-style: normal !important;
+                    font-weight: normal;
+                    line-height: 1.4;
+                }
                 @media print {
                     body { margin: 0; padding: 15mm; }
                     .card { border: none; box-shadow: none; }
+                    .company-address, address {
+                        font-style: normal !important;
+                    }
                 }
             </style>
         </head>
@@ -389,6 +426,10 @@
         function exportToExcel() {
             console.log('Export to Excel clicked');
 
+            // Define company details
+            const companyName = "{{ $companyNameForPrint }}";
+            const companyAddress = "{{ $companyAddress }}";
+
             try {
                 // Create HTML table with inline styling
                 const tableHTML = `
@@ -405,9 +446,8 @@
 
         <!-- Company Header Section -->
         <tr>
-
             <td colspan="4" style="border: 1px solid #000000; padding: 10px; text-align: center; font-weight: bold; font-size: 16px; width: 90%;">
-                MULTI FABS LTD <br/>
+                ${companyName} <br/>
                 (SELF C&F AGENTS)<br/>
                 314, SK. MUJIB ROAD, CHOWDHURY BHABAN (4TH FLOOR) AGRABAD, CHITTAGONG
             </td>
@@ -420,7 +460,6 @@
 
         <!-- Bill No and Date -->
         <tr>
-
             <td colspan="2" style="border: 1px solid #000000; padding: 5px; text-align: left; font-weight: bold; width: 30%;">BILL NO: {{ $bill->bill_no }}</td>
             <td colspan="2" style="border: 1px solid #000000; padding: 5px; text-align: right; font-weight: bold; width: 60%;">DATE: {{ $bill->bill_date ? \Carbon\Carbon::parse($bill->bill_date)->format('d/m/Y') : '' }}</td>
         </tr>
@@ -432,8 +471,21 @@
 
         <!-- Sub Title -->
         <tr>
-
             <td colspan="4" style="border: 1px solid #000000; padding: 8px; text-align: left; font-weight: bold; font-size: 12px;">SUB: FORWARDING BILL (AS PER INVOICE)</td>
+        </tr>
+
+        <!-- Empty row -->
+        <tr>
+            <td colspan="4" style="border: none; padding: 5px;"></td>
+        </tr>
+
+        <!-- Company Address (with normal font style) -->
+        <tr>
+            <td colspan="4" style="border: 1px solid #000000; padding: 5px; text-align: left; font-style: normal;">
+                TO,<br/>
+                ${companyName}<br/>
+                ${companyAddress}
+            </td>
         </tr>
 
         <!-- Empty row -->
@@ -443,28 +495,20 @@
 
         <!-- Buyer Information Table -->
         <tr>
-
             <td colspan="2" style="border: 1px solid #000000; padding: 5px; text-align: left;">Buyer Name : {{ $bill->buyer->name ?? '' }}</td>
             <td colspan="2" style="border: 1px solid #000000; padding: 5px; text-align: center; font-weight: bold;">USD : {{ number_format($bill->usd, 2) }}</td>
-
         </tr>
         <tr>
-
             <td colspan="2" style="border: 1px solid #000000; padding: 5px; text-align: left;">Invoice No : {{ $bill->invoice_no }}</td>
             <td colspan="2" style="border: 1px solid #000000; padding: 5px; text-align: center; font-weight: bold;">Date : {{ $bill->invoice_date ? \Carbon\Carbon::parse($bill->invoice_date)->format('d/m/Y') : '' }} </td>
-
         </tr>
         <tr>
-
             <td colspan="2" style="border: 1px solid #000000; padding: 5px; text-align: left;">B/E No : {{ $bill->be_no }}</td>
             <td colspan="2" style="border: 1px solid #000000; padding: 5px; text-align: center; font-weight: bold;">Date : {{ $bill->be_date ? \Carbon\Carbon::parse($bill->be_date)->format('d/m/Y') : '' }}</td>
-
         </tr>
         <tr>
-
             <td colspan="2" style="border: 1px solid #000000; padding: 5px; text-align: left;">Total CTNS : {{ $bill->total_qty }}</td>
             <td colspan="2" style="border: 1px solid #000000; padding: 5px; text-align: center; font-weight: bold;">Qty PCS : {{ $bill->qty_pcs }}</td>
-
         </tr>
 
         <!-- Empty row -->
@@ -484,10 +528,10 @@
         @foreach($expenseTypes as $index => $type)
                 <tr>
                     <td style="border: 1px solid #000000; padding: 5px; text-align: center;">{{ str_pad($index + 1, 2, '0', STR_PAD_LEFT) }}</td>
-            <td style="border: 1px solid #000000; padding: 5px; text-align: left;">{{ strtoupper($type) }}</td>
-            <td style="border: 1px solid #000000; padding: 5px; text-align: center;">{{ $expenses[$type] ?? 0 }}</td>
-            <td style="border: 1px solid #000000; padding: 5px; text-align: center;"></td>
-        </tr>
+                <td style="border: 1px solid #000000; padding: 5px; text-align: left;">{{ strtoupper($type) }}</td>
+                <td style="border: 1px solid #000000; padding: 5px; text-align: center;">{{ $expenses[$type] ?? 0 }}</td>
+                <td style="border: 1px solid #000000; padding: 5px; text-align: center;"></td>
+            </tr>
         @endforeach
 
                 <!-- Total Row -->
@@ -507,6 +551,19 @@
         <tr>
             <td colspan="4" style="border: 1px solid #000000; padding: 8px; text-align: left; font-weight: bold;">INWARD: {{ strtoupper(convertToTakaWords($total)) }}</td>
         </tr>
+
+        <!-- Empty row -->
+        <tr>
+            <td colspan="4" style="border: none; padding: 5px;"></td>
+        </tr>
+
+        <!-- Footer -->
+        <tr>
+            <td colspan="4" style="border: 1px solid #000000; padding: 8px; text-align: center;">
+                THANKING YOU<br/><br/>
+                ${companyName.toUpperCase()}
+            </td>
+        </tr>
     </table>
 </body>
 </html>
@@ -520,7 +577,7 @@
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
-                a.download = `Export_Bill_{{ $bill->bill_no }}.xls`;
+                a.download = `Export_Bill_{{ $bill->bill_no }}_{{ $companyNameForPrint }}.xls`;
                 document.body.appendChild(a);
                 a.click();
                 document.body.removeChild(a);

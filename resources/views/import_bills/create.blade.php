@@ -107,6 +107,15 @@
             color: #6c757d;
             margin-top: 2px;
         }
+        .prefix-display {
+            font-size: 0.75em;
+            color: #007bff;
+            font-weight: 500;
+            background: #e7f1ff;
+            padding: 2px 6px;
+            border-radius: 4px;
+            margin-left: 5px;
+        }
     </style>
 @endsection
 
@@ -137,6 +146,15 @@
                             <h5 class="section-title">📋 Basic Information</h5>
                             <div class="row">
                                 <div class="col-md-3 mb-3">
+                                    <label class="required-field">Company Name</label>
+                                    <select name="company_name" class="form-control form-control-sm input-highlight company-select" required>
+                                        <option value="">Select Company Name</option>
+                                        <option value="MULTI FABS LTD">MULTI FABS LTD</option>
+                                        <option value="EMS APPARELS LTD">EMS APPARELS LTD</option>
+                                    </select>
+                                </div>
+
+                                <div class="col-md-3 mb-3">
                                     <label class="required-field">L/C No</label>
                                     <input class="form-control form-control-sm input-highlight" type="text" name="lc_no" required>
                                 </div>
@@ -149,7 +167,7 @@
                                 <div class="col-md-3 mb-3">
                                     <label class="required-field">Bill No</label>
                                     <input class="form-control form-control-sm input-highlight bill-no-field" type="text" name="bill_no" required>
-                                    <div class="prefix-hint">Prefix: MFL/IMP/</div>
+                                    <div class="prefix-hint" id="billNoPrefixHint">Prefix: MFL/IMP/ (Select Company First)</div>
                                 </div>
 
                                 <div class="col-md-3 mb-3">
@@ -181,7 +199,7 @@
                                 <div class="col-md-3 mb-3">
                                     <label>B/E No</label>
                                     <input class="form-control form-control-sm input-highlight be-no-field" type="text" name="be_no">
-                                    <div class="prefix-hint">Prefix: C-</div>
+                                    <div class="prefix-hint">Prefix: C- (Always)</div>
                                 </div>
 
                                 <div class="col-md-3 mb-3">
@@ -341,9 +359,7 @@
                                 <button type="submit" class="btn btn-outline-primary btn-info btn-rounded _effect--ripple waves-effect waves-light focus-color-change">
                                     <i class="fas fa-paper-plane me-2"></i>Create Import Bill
                                 </button>
-                                <a href="{{ route('import-bills.index') }}" class="btn btn-outline-secondary btn-info btn-rounded _effect--ripple waves-effect waves-light focus-color-change">
-                                    <i class="fas fa-arrow-left me-2"></i>Back to List
-                                </a>
+
                             </div>
                         </div>
                     </form>
@@ -363,64 +379,149 @@
 
     <script>
         $(function () {
-            // Prefix configuration
-            const prefixes = {
-                bill_no: 'MFL/IMP/',
+            // Dynamic prefix configuration based on company
+            const companyPrefixes = {
+                'MULTI FABS LTD': 'MFL',
+                'EMS APPARELS LTD': 'EMS'
+            };
+
+            // Prefix patterns for each field
+            const fieldPrefixes = {
+                bill_no: '/IMP/',
                 be_no: 'C-'
             };
 
-            // Function to add prefix to input value
-            function addPrefix(fieldName, value) {
-                const prefix = prefixes[fieldName];
-                // Remove prefix if already exists to avoid duplication
-                let cleanValue = value.replace(prefix, '');
-                return prefix + cleanValue;
+            // Function to get current company prefix
+            function getCurrentPrefix() {
+                const companyName = $('[name="company_name"]').val();
+                return companyPrefixes[companyName] || 'MFL'; // Default to MFL
             }
 
-            // Function to remove prefix for display (if needed)
+            // Function to get full prefix for a field
+            function getFullPrefix(fieldName) {
+                const companyPrefix = getCurrentPrefix();
+                if (!companyPrefix) return '';
+
+                // Special handling for be_no (always starts with C-)
+                if (fieldName === 'be_no') {
+                    return fieldPrefixes[fieldName];
+                }
+
+                // For bill_no: companyPrefix + field-specific suffix
+                return companyPrefix + fieldPrefixes[fieldName];
+            }
+
+            // Function to update prefix hints
+            function updatePrefixHints() {
+                const companyName = $('[name="company_name"]').val();
+                let billPrefix = 'MFL/IMP/';
+
+                if (companyName === 'MULTI FABS LTD') {
+                    billPrefix = 'MFL/IMP/';
+                } else if (companyName === 'EMS APPARELS LTD') {
+                    billPrefix = 'EMS/IMP/';
+                }
+
+                $('#billNoPrefixHint').text('Prefix: ' + billPrefix);
+            }
+
+            // Function to add prefix to input value
+            function addPrefix(fieldName, value) {
+                const fullPrefix = getFullPrefix(fieldName);
+                if (!fullPrefix) return value;
+
+                // Remove any existing prefix to avoid duplication
+                let cleanValue = value;
+                Object.values(companyPrefixes).forEach(prefix => {
+                    // Remove both possible formats
+                    cleanValue = cleanValue.replace(prefix + fieldPrefixes[fieldName], '');
+                    cleanValue = cleanValue.replace(prefix, '');
+                });
+                // Also remove field-specific suffix
+                cleanValue = cleanValue.replace(fieldPrefixes[fieldName], '');
+
+                return fullPrefix + cleanValue;
+            }
+
+            // Function to remove prefix for display
             function removePrefix(fieldName, value) {
-                const prefix = prefixes[fieldName];
-                return value.replace(prefix, '');
+                const fullPrefix = getFullPrefix(fieldName);
+                if (fullPrefix && value.startsWith(fullPrefix)) {
+                    return value.replace(fullPrefix, '');
+                }
+                return value;
             }
 
             // Initialize prefixes on page load
             function initializePrefixes() {
-                Object.keys(prefixes).forEach(fieldName => {
-                    const $input = $(`[name="${fieldName}"]`);
-                    const currentValue = $input.val();
-                    if (currentValue && !currentValue.startsWith(prefixes[fieldName])) {
-                        $input.val(addPrefix(fieldName, currentValue));
-                    }
-                });
+                updatePrefixHints();
             }
 
+            // Handle company change event
+            $('[name="company_name"]').change(function() {
+                updatePrefixHints();
+
+                const companyName = $(this).val();
+                if (!companyName) {
+                    // Clear prefixes if no company selected
+                    const $input = $('.bill-no-field');
+                    const originalValue = $input.data('original-value') || '';
+                    $input.val(originalValue);
+                    return;
+                }
+
+                // Update prefix for bill_no based on selected company
+                const $input = $('.bill-no-field');
+                const currentValue = $input.val();
+
+                if (currentValue) {
+                    // Replace existing prefix with new company prefix
+                    const newValue = addPrefix('bill_no', currentValue);
+                    $input.val(newValue);
+                    $input.data('original-value', newValue);
+                }
+            });
+
             // Handle input events to maintain prefixes
-            Object.keys(prefixes).forEach(fieldName => {
+            Object.keys(fieldPrefixes).forEach(fieldName => {
                 const $input = $(`[name="${fieldName}"]`);
-                const prefix = prefixes[fieldName];
 
                 $input.on('input', function() {
+                    const companyName = $('[name="company_name"]').val();
+                    if (!companyName) return;
+
                     let value = $(this).val();
+                    const fullPrefix = getFullPrefix(fieldName);
 
                     // If user deletes the prefix, add it back
-                    if (value && !value.startsWith(prefix)) {
+                    if (value && fullPrefix && !value.startsWith(fullPrefix)) {
                         $(this).val(addPrefix(fieldName, value));
                     }
                 });
 
                 $input.on('focus', function() {
+                    const companyName = $('[name="company_name"]').val();
+                    if (!companyName) return;
+
                     let value = $(this).val();
+                    const fullPrefix = getFullPrefix(fieldName);
+
                     // Store the value without prefix for easier editing
-                    if (value.startsWith(prefix)) {
+                    if (value && fullPrefix && value.startsWith(fullPrefix)) {
                         $(this).data('original-value', value);
                         $(this).val(removePrefix(fieldName, value));
                     }
                 });
 
                 $input.on('blur', function() {
+                    const companyName = $('[name="company_name"]').val();
+                    if (!companyName) return;
+
                     let value = $(this).val();
+                    const fullPrefix = getFullPrefix(fieldName);
+
                     // Restore prefix when focus is lost
-                    if (value && !value.startsWith(prefix)) {
+                    if (value && fullPrefix && !value.startsWith(fullPrefix)) {
                         $(this).val(addPrefix(fieldName, value));
                     }
                 });
@@ -477,20 +578,37 @@
             $("#importBillForm").validate({
                 errorClass: 'text-danger',
                 rules: {
+                    company_name: { required: true },
                     lc_no: { required: true },
                     bill_no: { required: true },
                     value: { required: true, number: true, min: 0.01 },
                     account_id: { required: true }
                 },
                 messages: {
+                    company_name: { required: "Please select company name" },
                     account_id: { required: "Please select main account for expenses" }
                 },
                 submitHandler: function(form) {
-                    // Ensure all prefixed fields have their prefixes before submission
-                    Object.keys(prefixes).forEach(fieldName => {
+                    const companyName = $('[name="company_name"]').val();
+                    if (!companyName) {
+                        Swal.fire({
+                            icon: "error",
+                            title: "Error",
+                            text: "Please select a company first.",
+                            background: '#f8f9fa',
+                            iconColor: '#dc3545'
+                        });
+                        return false;
+                    }
+
+                    // Ensure all prefixed fields have correct prefixes before submission
+                    Object.keys(fieldPrefixes).forEach(fieldName => {
                         const $input = $(`[name="${fieldName}"]`);
+
                         let value = $input.val();
-                        if (value && !value.startsWith(prefixes[fieldName])) {
+                        const fullPrefix = getFullPrefix(fieldName);
+
+                        if (value && fullPrefix && !value.startsWith(fullPrefix)) {
                             $input.val(addPrefix(fieldName, value));
                         }
                     });
@@ -518,7 +636,7 @@
                                 background: '#f8f9fa',
                                 iconColor: '#28a745'
                             }).then(() => {
-                                window.location.href = "{{ route('import-bills.index') }}";
+                                window.location.href = "{{ route('import-bills.create') }}";
                             });
                         },
                         error: function(xhr){

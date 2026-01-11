@@ -91,6 +91,14 @@
             font-size: 13px;
         }
 
+        /* Custom styles for address to remove italic */
+        .company-address {
+            font-style: normal !important;
+            font-weight: normal;
+            line-height: 1.4;
+            margin-top: 15px;
+        }
+
         /* Print and Export button styles */
         .button-container {
             text-align: right;
@@ -192,7 +200,6 @@
     <div class="row layout-spacing ">
         <div class="col-xl-12 layout-top-spacing">
             <div class="button-container">
-
                 <button class="btn-print" id="printButton">
                     🖨️ Print Bill
                 </button>
@@ -204,7 +211,7 @@
             <div class="card" id="invoiceCard">
                 <div class="card-body">
                     <div class="company-header">
-                        <h1>MULTI FABS LTD</h1>
+                        <h1>{{ $companyNameForPrint }}</h1>
                         <p>(SELF C&F AGENTS)</p>
                         <p>314, SK. MUJIB ROAD, CHOWDHURY BHABAN (4TH FLOOR) AGRABAD, CHITTAGONG.</p>
                     </div>
@@ -215,12 +222,15 @@
                         <div class="right">
                             <strong>DATE:</strong> {{ \Carbon\Carbon::parse($bill->bill_date)->format('d/m/Y') }}</div>
                     </div>
-                    <address>
+
+                    {{-- Use div instead of address tag to avoid italic styling --}}
+                    <div class="company-address">
+                        <br>
                         TO,<br>
-                        MULTIFABS LTD.<br>
-                        NAYAPARA, KASHIMPUR,<br>
-                        GAZIPUR-1704,BANGLADESH
-                    </address>
+                        {{ $companyNameForPrint }}<br>
+                        {{ $companyAddress }}
+                    </div>
+
                     <h3>SUB: CLEARING BILL FOR {{ strtoupper($bill->item ?? '') }}</h3>
 
                     <table class="info-table">
@@ -281,7 +291,7 @@
                         THANKING YOU
 
                         <br/><br/><br/>
-                        MULTIFABS LIMITED
+                        {{ strtoupper($companyNameForPrint) }}
                     </div>
                 </div>
             </div>
@@ -290,6 +300,7 @@
 @endsection
 
 @section('scripts')
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script>
         function printInvoice() {
             // Store the original body content and styles
@@ -388,9 +399,18 @@
                             margin-top: 20px;
                             font-size: 13px;
                         }
+                        /* Ensure address is not italic */
+                        .company-address {
+                            font-style: normal !important;
+                            font-weight: normal;
+                            line-height: 1.4;
+                        }
                         @media print {
                             body { margin: 0; padding: 15mm; }
                             .card { border: none; box-shadow: none; }
+                            .company-address {
+                                font-style: normal !important;
+                            }
                         }
                     </style>
                 </head>
@@ -414,8 +434,12 @@
         function exportToExcel() {
             console.log('Export to Excel clicked');
 
+            // Define company details
+            const companyName = "{{ $companyNameForPrint }}";
+            const companyAddress = "{{ $companyAddress }}";
+
             try {
-                // Create HTML table with inline styling for Excel
+                // Create HTML table with inline styling
                 const tableHTML = `
 <html>
 <head>
@@ -431,7 +455,7 @@
         <!-- Company Header Section -->
         <tr>
             <td colspan="4" style="border: 1px solid #000000; padding: 10px; text-align: center; font-weight: bold; font-size: 16px;">
-                MULTI FABS LTD <br/>
+                ${companyName} <br/>
                 (SELF C&F AGENTS)<br/>
                 314, SK. MUJIB ROAD, CHOWDHURY BHABAN (4TH FLOOR) AGRABAD, CHITTAGONG
             </td>
@@ -456,6 +480,21 @@
         <!-- Sub Title -->
         <tr>
             <td colspan="4" style="border: 1px solid #000000; padding: 8px; text-align: left; font-weight: bold; font-size: 12px;">SUB: CLEARING BILL FOR {{ strtoupper($bill->item ?? '') }}</td>
+        </tr>
+
+        <!-- Empty row -->
+        <tr>
+            <td colspan="4" style="border: none; padding: 5px;"></td>
+        </tr>
+
+        <!-- Company Address (with normal font style) -->
+        <tr>
+            <td colspan="4" style="border: 1px solid #000000; padding: 5px; text-align: left; font-style: normal;">
+            <br>
+                TO,<br/>
+                ${companyName}<br/>
+                ${companyAddress}
+            </td>
         </tr>
 
         <!-- Empty row -->
@@ -529,6 +568,19 @@
         <tr>
             <td colspan="4" style="border: 1px solid #000000; padding: 8px; text-align: left; font-weight: bold;">INWARD: {{ strtoupper(convertToTakaWords($total)) }}</td>
         </tr>
+
+        <!-- Empty row -->
+        <tr>
+            <td colspan="4" style="border: none; padding: 5px;"></td>
+        </tr>
+
+        <!-- Footer -->
+        <tr>
+            <td colspan="4" style="border: 1px solid #000000; padding: 8px; text-align: center;">
+                THANKING YOU<br/><br/>
+                ${companyName.toUpperCase()}
+            </td>
+        </tr>
     </table>
 </body>
 </html>
@@ -542,7 +594,7 @@
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
-                a.download = `Import_Bill_{{ $bill->bill_no }}.xls`;
+                a.download = `Import_Bill_{{ $bill->bill_no }}_{{ $companyNameForPrint }}.xls`;
                 document.body.appendChild(a);
                 a.click();
                 document.body.removeChild(a);

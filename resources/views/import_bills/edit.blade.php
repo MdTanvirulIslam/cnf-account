@@ -115,6 +115,15 @@
             color: #6c757d;
             margin-top: 2px;
         }
+        .prefix-display {
+            font-size: 0.75em;
+            color: #007bff;
+            font-weight: 500;
+            background: #e7f1ff;
+            padding: 2px 6px;
+            border-radius: 4px;
+            margin-left: 5px;
+        }
     </style>
 @endsection
 
@@ -148,6 +157,15 @@
                             <h5 class="section-title">📋 Basic Information</h5>
                             <div class="row">
                                 <div class="col-md-3 mb-3">
+                                    <label class="required-field">Company Name</label>
+                                    <select name="company_name" class="form-control form-control-sm input-highlight company-select" required>
+                                        <option value="">Select Company Name</option>
+                                        <option value="MULTI FABS LTD" {{ $bill->company_name == 'MULTI FABS LTD' ? 'selected' : '' }}>MULTI FABS LTD</option>
+                                        <option value="EMS APPARELS LTD" {{ $bill->company_name == 'EMS APPARELS LTD' ? 'selected' : '' }}>EMS APPARELS LTD</option>
+                                    </select>
+                                </div>
+
+                                <div class="col-md-3 mb-3">
                                     <label class="required-field">L/C No</label>
                                     <input class="form-control form-control-sm input-highlight" type="text" name="lc_no" value="{{ $bill->lc_no }}" required>
                                 </div>
@@ -160,7 +178,17 @@
                                 <div class="col-md-3 mb-3">
                                     <label class="required-field">Bill No</label>
                                     <input class="form-control form-control-sm input-highlight bill-no-field" type="text" name="bill_no" value="{{ $bill->bill_no }}" required>
-                                    <div class="prefix-hint">Prefix: MFL/IMP/</div>
+                                    <div class="prefix-hint" id="billNoPrefixHint">
+                                        @php
+                                            if($bill->company_name == 'MULTI FABS LTD') {
+                                                echo 'Prefix: MFL/IMP/';
+                                            } elseif($bill->company_name == 'EMS APPARELS LTD') {
+                                                echo 'Prefix: EMS/IMP/';
+                                            } else {
+                                                echo 'Prefix: MFL/IMP/ (Default)';
+                                            }
+                                        @endphp
+                                    </div>
                                 </div>
 
                                 <div class="col-md-3 mb-3">
@@ -192,7 +220,7 @@
                                 <div class="col-md-3 mb-3">
                                     <label>B/E No</label>
                                     <input class="form-control form-control-sm input-highlight be-no-field" type="text" name="be_no" value="{{ $bill->be_no }}">
-                                    <div class="prefix-hint">Prefix: C-</div>
+                                    <div class="prefix-hint">Prefix: C- (Always)</div>
                                 </div>
 
                                 <div class="col-md-3 mb-3">
@@ -225,8 +253,7 @@
                                     <select class="form-control form-control-sm readonly-field" name="account_id" required readonly>
                                         <option value="">-- Select Main Account --</option>
                                         @foreach($accounts as $account)
-                                            <option value="{{ $account->id }}"
-                                                {{ ($bill->account_id == $account->id) || (str_contains(strtolower($account->name), 'dhaka') && !$bill->account_id) ? 'selected' : '' }}>
+                                            <option value="{{ $account->id }}" {{ $bill->account_id == $account->id ? 'selected' : '' }}>
                                                 {{ $account->name }}
                                                 <span class="account-balance">(Balance: {{ number_format($account->balance,2) }})</span>
                                             </option>
@@ -243,8 +270,7 @@
                                     <select class="form-control form-control-sm readonly-field" name="ait_account_id" readonly>
                                         <option value="">-- Select AIT Account --</option>
                                         @foreach($accounts as $account)
-                                            <option value="{{ $account->id }}"
-                                                {{ ($bill->ait_account_id == $account->id) || (str_contains(strtolower($account->name), 'sonali') && !$bill->ait_account_id) ? 'selected' : '' }}>
+                                            <option value="{{ $account->id }}" {{ $bill->ait_account_id == $account->id ? 'selected' : '' }}>
                                                 {{ $account->name }}
                                                 <span class="account-balance">(Balance: {{ number_format($account->balance,2) }})</span>
                                             </option>
@@ -261,8 +287,7 @@
                                     <select class="form-control form-control-sm readonly-field" name="port_account_id" readonly>
                                         <option value="">-- Select Port Bill Account --</option>
                                         @foreach($accounts as $account)
-                                            <option value="{{ $account->id }}"
-                                                {{ ($bill->port_account_id == $account->id) || (str_contains(strtolower($account->name), 'janata') && !$bill->port_account_id) ? 'selected' : '' }}>
+                                            <option value="{{ $account->id }}" {{ $bill->port_account_id == $account->id ? 'selected' : '' }}>
                                                 {{ $account->name }}
                                                 <span class="account-balance">(Balance: {{ number_format($account->balance,2) }})</span>
                                             </option>
@@ -386,57 +411,161 @@
 
     <script>
         $(function () {
-            // Prefix configuration
-            const prefixes = {
-                bill_no: 'MFL/IMP/',
+            // Dynamic prefix configuration based on company
+            const companyPrefixes = {
+                'MULTI FABS LTD': 'MFL',
+                'EMS APPARELS LTD': 'EMS'
+            };
+
+            // Prefix patterns for each field
+            const fieldPrefixes = {
+                bill_no: '/IMP/',
                 be_no: 'C-'
             };
 
-            // Function to add prefix to input value
-            function addPrefix(fieldName, value) {
-                const prefix = prefixes[fieldName];
-                // Remove prefix if already exists to avoid duplication
-                let cleanValue = value.replace(prefix, '');
-                return prefix + cleanValue;
+            // Function to get current company prefix
+            function getCurrentPrefix() {
+                const companyName = $('[name="company_name"]').val();
+                return companyPrefixes[companyName] || 'MFL'; // Default to MFL
             }
 
-            // Function to remove prefix for display (if needed)
+            // Function to get full prefix for a field
+            function getFullPrefix(fieldName) {
+                const companyPrefix = getCurrentPrefix();
+                if (!companyPrefix) return '';
+
+                // Special handling for be_no (always starts with C-)
+                if (fieldName === 'be_no') {
+                    return fieldPrefixes[fieldName];
+                }
+
+                // For bill_no: companyPrefix + field-specific suffix
+                return companyPrefix + fieldPrefixes[fieldName];
+            }
+
+            // Function to update prefix hints
+            function updatePrefixHints() {
+                const companyName = $('[name="company_name"]').val();
+                let billPrefix = 'MFL/IMP/';
+
+                if (companyName === 'MULTI FABS LTD') {
+                    billPrefix = 'MFL/IMP/';
+                } else if (companyName === 'EMS APPARELS LTD') {
+                    billPrefix = 'EMS/IMP/';
+                }
+
+                $('#billNoPrefixHint').text('Prefix: ' + billPrefix);
+            }
+
+            // Function to add prefix to input value
+            function addPrefix(fieldName, value) {
+                const fullPrefix = getFullPrefix(fieldName);
+                if (!fullPrefix) return value;
+
+                // Remove any existing prefix to avoid duplication
+                let cleanValue = value;
+                Object.values(companyPrefixes).forEach(prefix => {
+                    // Remove both possible formats
+                    cleanValue = cleanValue.replace(prefix + fieldPrefixes[fieldName], '');
+                    cleanValue = cleanValue.replace(prefix, '');
+                });
+                // Also remove field-specific suffix
+                cleanValue = cleanValue.replace(fieldPrefixes[fieldName], '');
+
+                return fullPrefix + cleanValue;
+            }
+
+            // Function to remove prefix for display
             function removePrefix(fieldName, value) {
-                const prefix = prefixes[fieldName];
-                return value.replace(prefix, '');
+                const fullPrefix = getFullPrefix(fieldName);
+                if (fullPrefix && value.startsWith(fullPrefix)) {
+                    return value.replace(fullPrefix, '');
+                }
+                return value;
             }
 
             // Initialize prefixes on page load for edit form
             function initializePrefixes() {
-                Object.keys(prefixes).forEach(fieldName => {
-                    const $input = $(`[name="${fieldName}"]`);
-                    const currentValue = $input.val();
+                updatePrefixHints();
 
-                    // For edit form, we want to show the value without prefix for easier editing
-                    if (currentValue && currentValue.startsWith(prefixes[fieldName])) {
-                        $input.data('original-value', currentValue);
-                        $input.val(removePrefix(fieldName, currentValue));
-                    }
-                });
+                // Remove prefixes from bill_no for editing
+                const $billNoField = $('.bill-no-field');
+                const billNoValue = $billNoField.val();
+
+                // Store original value
+                $billNoField.data('original-value', billNoValue);
+
+                // Remove prefix for editing
+                if (billNoValue) {
+                    $billNoField.val(removePrefix('bill_no', billNoValue));
+                }
             }
 
+            // Handle company change event
+            $('[name="company_name"]').change(function() {
+                updatePrefixHints();
+
+                const companyName = $(this).val();
+                if (!companyName) {
+                    // Clear prefixes if no company selected
+                    const $input = $('.bill-no-field');
+                    const originalValue = $input.data('original-value') || '';
+                    $input.val(originalValue);
+                    return;
+                }
+
+                // Update prefix for bill_no based on selected company
+                const $input = $('.bill-no-field');
+                const currentValue = $input.val();
+
+                if (currentValue) {
+                    // Replace existing prefix with new company prefix
+                    const newValue = addPrefix('bill_no', currentValue);
+                    $input.val(newValue);
+                    $input.data('original-value', newValue);
+                }
+            });
+
             // Handle input events to maintain prefixes
-            Object.keys(prefixes).forEach(fieldName => {
+            Object.keys(fieldPrefixes).forEach(fieldName => {
                 const $input = $(`[name="${fieldName}"]`);
-                const prefix = prefixes[fieldName];
+
+                $input.on('input', function() {
+                    const companyName = $('[name="company_name"]').val();
+                    if (!companyName) return;
+
+                    let value = $(this).val();
+                    const fullPrefix = getFullPrefix(fieldName);
+
+                    // If user deletes the prefix, add it back
+                    if (value && fullPrefix && !value.startsWith(fullPrefix)) {
+                        $(this).val(addPrefix(fieldName, value));
+                    }
+                });
 
                 $input.on('focus', function() {
+                    const companyName = $('[name="company_name"]').val();
+                    if (!companyName) return;
+
                     let value = $(this).val();
+                    const fullPrefix = getFullPrefix(fieldName);
+
                     // Store the value without prefix for easier editing
-                    if (value && !value.startsWith(prefix)) {
+                    if (value && fullPrefix && value.startsWith(fullPrefix)) {
                         $(this).data('original-value', value);
+                        $(this).val(removePrefix(fieldName, value));
                     }
                 });
 
                 $input.on('blur', function() {
+                    const companyName = $('[name="company_name"]').val();
+                    if (!companyName) return;
+
                     let value = $(this).val();
-                    // Add prefix when focus is lost if value exists
-                    if (value && !value.startsWith(prefix)) {
+                    const fullPrefix = getFullPrefix(fieldName);
+
+                    // Restore prefix when focus is lost
+                    if (value && fullPrefix && !value.startsWith(fullPrefix)) {
                         $(this).val(addPrefix(fieldName, value));
                     }
                 });
@@ -490,20 +619,37 @@
             $("#importBillForm").validate({
                 errorClass: 'text-danger',
                 rules: {
+                    company_name: { required: true },
                     lc_no: { required: true },
                     bill_no: { required: true },
                     value: { required: true, number: true, min: 0.01 },
                     account_id: { required: true }
                 },
                 messages: {
+                    company_name: { required: "Please select company name" },
                     account_id: { required: "Please select main account for expenses" }
                 },
                 submitHandler: function(form) {
-                    // Ensure all prefixed fields have their prefixes before submission
-                    Object.keys(prefixes).forEach(fieldName => {
+                    const companyName = $('[name="company_name"]').val();
+                    if (!companyName) {
+                        Swal.fire({
+                            icon: "error",
+                            title: "Error",
+                            text: "Please select a company first.",
+                            background: '#f8f9fa',
+                            iconColor: '#dc3545'
+                        });
+                        return false;
+                    }
+
+                    // Ensure all prefixed fields have correct prefixes before submission
+                    Object.keys(fieldPrefixes).forEach(fieldName => {
                         const $input = $(`[name="${fieldName}"]`);
+
                         let value = $input.val();
-                        if (value && !value.startsWith(prefixes[fieldName])) {
+                        const fullPrefix = getFullPrefix(fieldName);
+
+                        if (value && fullPrefix && !value.startsWith(fullPrefix)) {
                             $input.val(addPrefix(fieldName, value));
                         }
                     });

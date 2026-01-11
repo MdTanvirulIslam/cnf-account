@@ -40,18 +40,7 @@ class ImportBill extends Model
         'weight'    => 'decimal:2',
     ];
 
-    protected static function boot()
-    {
-        parent::boot();
 
-        static::creating(function ($bill) {
-            $bill->company_name = env('COMPANY_NAME', 'MULTI FABS LTD');
-        });
-
-        static::updating(function ($bill) {
-            $bill->company_name = env('COMPANY_NAME', 'MULTI FABS LTD');
-        });
-    }
 
     /** ───────────────
      *  Relationships
