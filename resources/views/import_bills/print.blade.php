@@ -211,7 +211,7 @@
             <div class="card" id="invoiceCard">
                 <div class="card-body">
                     <div class="company-header">
-                        <h1>{{ $companyNameForPrint }}</h1>
+                        <h1>MULTI FABS LTD</h1>
                         <p>(SELF C&F AGENTS)</p>
                         <p>314, SK. MUJIB ROAD, CHOWDHURY BHABAN (4TH FLOOR) AGRABAD, CHITTAGONG.</p>
                     </div>

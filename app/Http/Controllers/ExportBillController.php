@@ -299,7 +299,7 @@ class ExportBillController extends Controller
                     'account_id' => $mainAccount->id,
                     'type'       => 'Export Bill',
                     'amount'     => $otherAmount,
-                    'note'       => "{$otherAmount} Amount deduct for export bill #{$bill->id}",
+                    'note'       => "Amount deduct for export bill #{$bill_no}",
                 ]);
             }
 
@@ -590,14 +590,14 @@ class ExportBillController extends Controller
                         'account_id' => $bill->account_id,
                         'type'       => 'Export Bill',
                         'amount'     => $otherAmount,
-                        'note'       => "{$otherAmount} Amount deduct for export bill #{$bill->id}",
+                        'note'       => "Amount deduct for export bill #{$bill_no}",
                     ]);
                 } else {
                     BankBook::create([
                         'account_id' => $bill->account_id,
                         'type'       => 'Export Bill',
                         'amount'     => $otherAmount,
-                        'note'       => "{$otherAmount} Amount deduct for export bill #{$bill->id}",
+                        'note'       => "Amount deduct for export bill #{$bill_no}",
                     ]);
                 }
             } elseif ($otherBankBook) {

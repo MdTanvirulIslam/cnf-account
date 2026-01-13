@@ -197,7 +197,7 @@
                 <div class="card-body">
                     <div class="col-xl-12 layout-top-spacing dc-report-table">
                         <div class="company-header">
-                            <h1>{{ $companyNameForPrint }}</h1>
+                            <h1>MULTI FABS LTD</h1>
                             <p>(SELF C&F AGENTS)</p>
                             @if($bill->company_name == 'EMS APPARELS LTD')
                                 <p>314, SK. MUJIB ROAD, CHOWDHURY BHABAN (4TH FLOOR) AGRABAD, CHITTAGONG.</p>

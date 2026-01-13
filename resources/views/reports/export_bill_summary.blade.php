@@ -89,10 +89,21 @@
                 <div class="card-body">
                     <h5 class="card-title">Export Bill Summary</h5>
                     <div class="row g-3 align-items-end">
-                        <div class="col-md-4 form-group">
+                        <div class="col-md-3 form-group">
                             <label for="month" class="form-label">Select Month</label>
                             <input type="month" id="month" value="{{ $month }}" class="form-control form-control-sm">
                         </div>
+
+                        <!-- ADDED: Company Filter -->
+                        <div class="col-md-3 form-group">
+                            <label for="company" class="form-label">Select Company</label>
+                            <select name="company" id="company" class="form-control form-control-sm">
+                                @foreach($companyNames as $key => $name)
+                                    <option value="{{ $key }}" {{ $company == $key ? 'selected' : '' }}>{{ $name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+
                         <div class="col-md-4 form-group d-flex align-items-end">
                             <button type="button" id="resetBtn" class="btn btn-secondary btn-sm me-1">
                                 <i class="fas fa-undo"></i> Reset
@@ -111,7 +122,7 @@
 
         <!-- Report Table -->
         <div class="col-xl-12 layout-top-spacing dc-report-table" id="reportTable">
-            @include('partials.exportBillSummaryTable', ['bills' => $bills, 'month' => $month])
+            @include('partials.exportBillSummaryTable', ['bills' => $bills, 'month' => $month, 'company' => $company])
         </div>
 
     </div>
@@ -121,15 +132,25 @@
     <script>
         $(document).ready(function(){
 
+            // Store the original values
             const originalMonth = "{{ $month }}";
+            const originalCompany = "{{ $company }}";
 
+            // Month change event
             $('#month').on('change', function(){
-                loadReportData($(this).val());
+                loadReportData($(this).val(), $('#company').val());
+            });
+
+            // ADDED: Company change event
+            $('#company').on('change', function(){
+                loadReportData($('#month').val(), $(this).val());
             });
 
             $('#resetBtn').on('click', function() {
+                // Reset to original values
                 $('#month').val(originalMonth);
-                loadReportData(originalMonth);
+                $('#company').val(originalCompany);
+                loadReportData(originalMonth, originalCompany);
             });
 
             $('#printBtn').on('click', function() {
@@ -141,13 +162,16 @@
             });
 
             /* ================================
-               ✅ Load report via AJAX
+               ✅ Load report via AJAX - UPDATED TO INCLUDE COMPANY
             ================================== */
-            function loadReportData(month) {
+            function loadReportData(month, company) {
                 $.ajax({
                     url: "{{ route('export.bill.summary.report') }}",
                     type: "GET",
-                    data: { month: month },
+                    data: {
+                        month: month,
+                        company: company
+                    },
                     beforeSend: function() {
                         $('#reportTable').html('<div class="text-center p-3"><i class="fas fa-spinner fa-spin"></i> Loading...</div>');
                     },
@@ -161,10 +185,12 @@
             }
 
             /* ================================
-               ✅ PRINT FUNCTION - UPDATED
+               ✅ PRINT FUNCTION - UPDATED TO INCLUDE COMPANY
             ================================== */
             function printReport() {
                 const monthInput = $('#month').val();
+                const companySelect = document.getElementById('company');
+                const companyName = companySelect.options[companySelect.selectedIndex].text;
                 const monthName = monthInput
                     ? new Date(monthInput + '-01').toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
                     : 'All Time';
@@ -178,7 +204,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Export Bill - ${monthName}</title>
+    <title>Export Bill - ${monthName} - ${companyName}</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -275,11 +301,13 @@
             }
 
             /* ================================
-               ✅ EXPORT EXCEL FUNCTION - SIMPLIFIED
+               ✅ EXPORT EXCEL FUNCTION - UPDATED TO INCLUDE COMPANY
             ================================== */
             function exportToExcel() {
                 try {
                     const monthVal = $('#month').val();
+                    const companySelect = document.getElementById('company');
+                    const companyName = companySelect.options[companySelect.selectedIndex].text;
                     const formattedMonth = monthVal
                         ? new Date(monthVal + '-01').toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
                         : 'All_Time';
@@ -287,7 +315,7 @@
                     // Get the table content
                     const tableContent = document.getElementById('reportTable').innerHTML;
 
-                    // Create simple HTML table for Excel
+                    // Create simple HTML table for Excel with company header
                     const excelHTML = `
 <html>
 <head>
@@ -339,7 +367,7 @@
                     const url = URL.createObjectURL(blob);
                     const a = document.createElement("a");
                     a.href = url;
-                    a.download = `Export_Bill_Summary_${formattedMonth.replace(/\s+/g, '_')}.xls`;
+                    a.download = `Export_Bill_Summary_${companyName.replace(/\s+/g, '_')}_${formattedMonth.replace(/\s+/g, '_')}.xls`;
 
                     document.body.appendChild(a);
                     a.click();

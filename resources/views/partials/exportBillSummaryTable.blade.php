@@ -1,5 +1,6 @@
 @php
     use Carbon\Carbon;
+    use App\Http\Controllers\ExportBillSummaryReportController;
 
     $printDate = Carbon::now()->format('d/m/Y');
     [$year, $monthNum] = explode('-', $month);
@@ -18,12 +19,19 @@
         $totalCtn += $bill->total_qty;
         $totalInvoicePcs += $bill->qty_pcs;
     }
-     $count = 1;
+    $count = 1;
+
+    // Get company name for display
+    $controller = new ExportBillSummaryReportController();
+    $companyName = $company == 'all' ? 'All Companies' : $controller->companyNames[$company] ?? $company;
 @endphp
 
+<!-- UPDATED COMPANY HEADER -->
 <div class="company-header">
-    <h1>MULTI FABS LTD</h1>
-    <p>(SELF C&F AGENTS)</p>
+    <h1>{{ $companyName }}</h1>
+    @if($company == 'all' || $company == 'MULTI FABS LTD')
+        <p>(SELF C&F AGENTS)</p>
+    @endif
     <p>314, SK. MUJIB ROAD, CHOWDHURY BHABAN (4TH FLOOR) AGRABAD, CHITTAGONG.</p>
 </div>
 

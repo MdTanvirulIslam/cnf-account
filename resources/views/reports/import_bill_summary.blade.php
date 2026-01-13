@@ -7,9 +7,19 @@
                 <div class="card-body">
                     <h5 class="card-title">Import Bill Summary</h5>
                     <div class="row g-3 align-items-end">
-                        <div class="col-md-4 form-group">
+                        <div class="col-md-3 form-group">
                             <label for="month" class="form-label">Select Month</label>
                             <input type="month" id="month" value="{{ $month }}" class="form-control form-control-sm">
+                        </div>
+
+                        <!-- ADDED: Company Filter -->
+                        <div class="col-md-3 form-group">
+                            <label for="company" class="form-label">Select Company</label>
+                            <select name="company" id="company" class="form-control form-control-sm">
+                                @foreach($companyNames as $key => $name)
+                                    <option value="{{ $key }}" {{ $company == $key ? 'selected' : '' }}>{{ $name }}</option>
+                                @endforeach
+                            </select>
                         </div>
 
                         <div class="col-md-4 form-group d-flex align-items-end">
@@ -29,7 +39,7 @@
         </div>
 
         <div class="col-xl-12 layout-top-spacing dc-report-table" id="reportTable">
-            @include('partials.importBillSummaryTable', ['bills' => $bills, 'month' => $month])
+            @include('partials.importBillSummaryTable', ['bills' => $bills, 'month' => $month, 'company' => $company])
         </div>
     </div>
 @endsection
@@ -37,20 +47,27 @@
 @section('scripts')
     <script>
         $(document).ready(function(){
-            // Store the original month value
+            // Store the original values
             const originalMonth = "{{ $month }}";
+            const originalCompany = "{{ $company }}";
 
             // Month change event
             $('#month').on('change', function(){
-                loadReportData($(this).val());
+                loadReportData($(this).val(), $('#company').val());
+            });
+
+            // ADDED: Company change event
+            $('#company').on('change', function(){
+                loadReportData($('#month').val(), $(this).val());
             });
 
             // Reset button click event
             $('#resetBtn').on('click', function() {
-                // Reset to original month
+                // Reset to original values
                 $('#month').val(originalMonth);
-                // Reload report with original month
-                loadReportData(originalMonth);
+                $('#company').val(originalCompany);
+                // Reload report with original values
+                loadReportData(originalMonth, originalCompany);
             });
 
             // Print button click event
@@ -63,12 +80,15 @@
                 exportToExcel();
             });
 
-            // Function to load report data
-            function loadReportData(month) {
+            // Function to load report data - UPDATED TO INCLUDE COMPANY
+            function loadReportData(month, company) {
                 $.ajax({
                     url: "{{ route('import.bill.summary.report') }}",
                     type: "GET",
-                    data: { month: month },
+                    data: {
+                        month: month,
+                        company: company
+                    },
                     beforeSend: function() {
                         $('#reportTable').html('<div class="text-center p-3">Loading...</div>');
                     },
@@ -82,7 +102,7 @@
                 });
             }
 
-            // Function to print the report
+            // Function to print the report - ONLY UPDATE HEADER TO INCLUDE COMPANY
             function printReport() {
                 // Create a new window for printing
                 var printWindow = window.open('', '_blank');
@@ -90,11 +110,13 @@
                 // Get the HTML content of the report table
                 var reportContent = document.getElementById('reportTable').innerHTML;
 
-                // Get the month value for the report title
+                // Get the month and company values for the report title
                 var monthValue = document.getElementById('month').value;
+                var companySelect = document.getElementById('company');
+                var companyName = companySelect.options[companySelect.selectedIndex].text;
                 var formattedMonth = monthValue ? new Date(monthValue + '-01').toLocaleDateString('en-US', { year: 'numeric', month: 'long' }) : 'All Time';
 
-                // Write the print document
+                // Write the print document - USING YOUR ORIGINAL STYLING
                 printWindow.document.write(`
 <!DOCTYPE html>
 <html>
@@ -178,7 +200,7 @@
             background-color: #e9e9e9;
         }
 
-        /* Column widths - UPDATED FOR ITC COLUMN */
+        /* Column widths - EXACTLY AS YOUR ORIGINAL */
         th:nth-child(1), td:nth-child(1) { width: 8%; }
         th:nth-child(2), td:nth-child(2) { width: 6%; }
         th:nth-child(3), td:nth-child(3) { width: 5%; }
@@ -245,7 +267,7 @@
                 text-overflow: clip !important;
             }
 
-            /* Ensure column widths in print - UPDATED FOR ITC COLUMN */
+            /* Ensure column widths in print - EXACTLY AS YOUR ORIGINAL */
             th:nth-child(1), td:nth-child(1) { width: 8% !important; }
             th:nth-child(2), td:nth-child(2) { width: 6% !important; }
             th:nth-child(3), td:nth-child(3) { width: 5% !important; }
@@ -283,11 +305,13 @@
                 };
             }
 
-            // Function to export to Excel with inline CSS
+            // Function to export to Excel - UPDATED TO INCLUDE COMPANY
             function exportToExcel() {
                 try {
-                    // Get the month value for the report title
+                    // Get the month and company values for the report title
                     const monthValue = $('#month').val();
+                    const companySelect = document.getElementById('company');
+                    const companyName = companySelect.options[companySelect.selectedIndex].text;
                     const formattedMonth = monthValue ? new Date(monthValue + '-01').toLocaleDateString('en-US', { year: 'numeric', month: 'long' }) : 'All Time';
                     const currentDate = new Date().toLocaleDateString('en-GB');
 
@@ -298,7 +322,7 @@
                         return;
                     }
 
-                    // Create HTML table with inline styling for Excel
+                    // Create HTML table with inline styling for Excel - USING YOUR ORIGINAL STYLING
                     const tableHTML = `
 <html>
 <head>
@@ -306,10 +330,10 @@
 </head>
 <body>
     <table style="border-collapse: collapse; width: 100%; font-family: Arial; font-size: 14px;">
-        <!-- Company Header Section -->
+        <!-- Company Header Section - UPDATED TO SHOW SELECTED COMPANY -->
         <tr>
             <td colspan="16" style="border: 1px solid #000000; padding: 10px; text-align: center; font-weight: bold; font-size: 16px;">
-                MULTI FABS LTD <br/>
+                ${companyName}<br/>
                 (SELF C&F AGENTS)<br/>
                 314, SK. MUJIB ROAD, CHOWDHURY BHABAN (4TH FLOOR) AGRABAD, CHITTAGONG
             </td>
@@ -335,7 +359,7 @@
             <td colspan="16" style="border: none; padding: 5px;"></td>
         </tr>
 
-        <!-- Table Header - UPDATED FOR ITC COLUMN -->
+        <!-- Table Header - EXACTLY YOUR ORIGINAL -->
         <tr>
             <th style="border: 1px solid #000000; padding: 8px; text-align: center; font-weight: bold; width: 8%;">L/C NO.</th>
             <th style="border: 1px solid #000000; padding: 8px; text-align: center; font-weight: bold; width: 6%;">B/E</th>
@@ -356,7 +380,7 @@
         </tr>
 
         <!-- Table Rows -->
-        ${getTableRowsHTML(formattedMonth)}
+        ${getTableRowsHTML()}
 
         <!-- Total Row -->
         ${getTotalRowHTML()}
@@ -390,16 +414,18 @@
                 }
             }
 
-            // Helper function to get table rows HTML - UPDATED FOR ITC COLUMN
-            function getTableRowsHTML(formattedMonth) {
+            // Helper function to get table rows HTML
+            function getTableRowsHTML() {
                 const rows = document.querySelectorAll('#reportTable table tbody tr');
                 let rowsHTML = '';
 
                 // Check if there are any data rows
                 if (rows.length === 0) {
+                    const companySelect = document.getElementById('company');
+                    const companyName = companySelect.options[companySelect.selectedIndex].text;
                     return `
         <tr>
-            <td colspan="16" style="border: 1px solid #000000; padding: 5px; text-align: center;">No records found for ${formattedMonth}.</td>
+            <td colspan="16" style="border: 1px solid #000000; padding: 5px; text-align: center;">No records found.</td>
         </tr>
                     `;
                 }
@@ -450,21 +476,16 @@
                 return rowsHTML;
             }
 
-            // Helper function to get total row HTML - UPDATED FOR ITC COLUMN
+            // Helper function to get total row HTML
             function getTotalRowHTML() {
-                console.log('Getting total row HTML...');
-
                 // Try to get from tfoot
                 const tfoot = document.querySelector('#reportTable table tfoot');
-                console.log('TFoot found:', tfoot);
 
                 if (tfoot) {
                     const tfootRows = tfoot.querySelectorAll('tr');
-                    console.log('TFoot rows:', tfootRows.length);
 
                     for (let row of tfootRows) {
                         const cells = row.querySelectorAll('th, td');
-                        console.log('TFoot cells:', cells.length);
 
                         if (cells.length >= 8) {
                             const valueTotal = cells[1]?.textContent?.trim() || '0.00';
@@ -474,16 +495,6 @@
                             const docFeeTotal = cells[5]?.textContent?.trim() || '0.00';
                             const scanFeeTotal = cells[6]?.textContent?.trim() || '0.00';
                             const itcTotal = cells[7]?.textContent?.trim() || '0.00';
-
-                            console.log('TFoot totals:', {
-                                valueTotal,
-                                portBillTotal,
-                                totalBillAmountTotal,
-                                dfVatTotal,
-                                docFeeTotal,
-                                scanFeeTotal,
-                                itcTotal
-                            });
 
                             return `
         <tr>
@@ -502,7 +513,6 @@
                 }
 
                 // Calculate totals from data rows as fallback
-                console.log('Calculating totals from data rows...');
                 let calculatedValueTotal = 0;
                 let calculatedPortBillTotal = 0;
                 let calculatedTotalBillAmountTotal = 0;
@@ -545,16 +555,6 @@
                             calculatedItcTotal += parseFloat(itcText.replace(/,/g, '')) || 0;
                         }
                     }
-                });
-
-                console.log('Calculated totals:', {
-                    value: calculatedValueTotal,
-                    portBill: calculatedPortBillTotal,
-                    totalBill: calculatedTotalBillAmountTotal,
-                    dfVat: calculatedDfVatTotal,
-                    docFee: calculatedDocFeeTotal,
-                    scanFee: calculatedScanFeeTotal,
-                    itc: calculatedItcTotal
                 });
 
                 return `

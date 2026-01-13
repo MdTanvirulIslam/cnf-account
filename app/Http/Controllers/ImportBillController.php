@@ -344,7 +344,7 @@ class ImportBillController extends Controller
                     'import_bill_id' => $bill->id,
                     'type'           => 'Import Bill',
                     'amount'         => $otherAmount,
-                    'note'           => "{$otherAmount} Amount deduct for import bill #{$bill->id}",
+                    'note'           => "Amount deduct for import bill #{$bill_no}",
                 ]);
             }
 
@@ -553,7 +553,7 @@ class ImportBillController extends Controller
                     $otherBankBook->update([
                         'account_id' => $bill->account_id,
                         'amount'     => $otherAmount,
-                        'note'       => "{$otherAmount} Amount deduct for import bill #{$bill->id}",
+                        'note'       => "Amount deduct for import bill #{$bill_no}",
                     ]);
                 } else {
                     BankBook::create([

@@ -17,76 +17,147 @@ class SummaryReportController extends Controller
 {
     public function index(Request $request)
     {
-        // Get the selected month or default to current month
-        $selectedMonth = $request->filled('month')
-            ? Carbon::parse($request->month)
-            : Carbon::now();
+        try {
+            // Get the selected month or default to current month
+            $selectedMonth = $request->filled('month')
+                ? Carbon::parse($request->month)
+                : Carbon::now();
 
-        // 1. Get previous month's closing balance
-        $previousMonthClosing = $this->calculatePreviousMonthClosing($selectedMonth);
+            // Get selected company or default to all
+            $selectedCompany = $request->filled('company') ? $request->company : 'all';
 
-        // 2. Get cash received in Dhaka Bank
-        $dhakaBankReceived = $this->getBankReceived('Dhaka Bank', $selectedMonth);
+            // Define available companies
+            $companies = [
+                'all' => 'All Companies',
+                'MULTI FABS LTD' => 'MULTI FABS LTD',
+                'EMS APPARELS LTD' => 'EMS APPARELS LTD'
+            ];
 
-        // 3. Get cash received in Cash account
-        $cashReceived = $this->getBankReceived('Cash', $selectedMonth);
+            // 1. Get previous month's closing balance (NO company filter for BankBook)
+            $previousMonthClosing = $this->calculatePreviousMonthClosing($selectedMonth);
 
-        // Calculate office balance
-        $officeBalance = $previousMonthClosing + $dhakaBankReceived + $cashReceived;
+            // 2. Get cash received in Dhaka Bank (NO company filter for BankBook)
+            $dhakaBankReceived = $this->getBankReceived('Dhaka Bank', $selectedMonth);
 
-        // 4. Get export documents data
-        $exportData = $this->getExportData($selectedMonth);
+            // 3. Get cash received in Cash account (NO company filter for BankBook)
+            $cashReceived = $this->getBankReceived('Cash', $selectedMonth);
 
-        // 5. Get import documents data
-        $importData = $this->getImportData($selectedMonth);
+            // Calculate office balance
+            $officeBalance = $previousMonthClosing + $dhakaBankReceived + $cashReceived;
 
-        // 6. Get office maintenance expenses
-        $officeExpenses = $this->getOfficeExpenses($selectedMonth);
+            // 4. Get export documents data (WITH company filter)
+            $exportData = $this->getExportData($selectedMonth, $selectedCompany);
 
-        // Calculate total expenses
-        $totalExpenses = $exportData['total'] + $importData['total'] + $officeExpenses;
+            // 5. Get import documents data (WITH company filter)
+            $importData = $this->getImportData($selectedMonth, $selectedCompany);
 
-        // Calculate closing balance (can be positive or negative)
-        $closingBalance = $officeBalance - $totalExpenses;
+            // 6. Get office maintenance expenses (NO company filter for Expenses)
+            $officeExpenses = $this->getOfficeExpenses($selectedMonth);
 
-        // Prepare data array
-        $data = compact(
-            'selectedMonth',
-            'previousMonthClosing',
-            'dhakaBankReceived',
-            'cashReceived',
-            'officeBalance',
-            'exportData',
-            'importData',
-            'officeExpenses',
-            'totalExpenses',
-            'closingBalance'
-        );
+            // Calculate total expenses
+            $totalExpenses = $exportData['total'] + $importData['total'] + $officeExpenses;
 
-        // If it's an AJAX request, return JSON
-        if ($request->ajax()) {
-            return response()->json($data);
+            // Calculate closing balance (can be positive or negative)
+            $closingBalance = $officeBalance - $totalExpenses;
+
+            // Prepare data array
+            $data = [
+                'selectedMonth' => $selectedMonth,
+                'selectedCompany' => $selectedCompany,
+                'companies' => $companies,
+                'previousMonthClosing' => $previousMonthClosing,
+                'dhakaBankReceived' => $dhakaBankReceived,
+                'cashReceived' => $cashReceived,
+                'officeBalance' => $officeBalance,
+                'exportData' => $exportData,
+                'importData' => $importData,
+                'officeExpenses' => $officeExpenses,
+                'totalExpenses' => $totalExpenses,
+                'closingBalance' => $closingBalance
+            ];
+
+            // If it's an AJAX request, return JSON
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'data' => $data
+                ]);
+            }
+
+            // For regular request, return the view
+            return view('reports.summary_report', $data);
+
+        } catch (\Exception $e) {
+            // Log the error
+            \Log::error('Summary Report Error: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            // If it's an AJAX request, return error JSON
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Error loading report data: ' . $e->getMessage()
+                ], 500);
+            }
+
+            // For regular request, show error
+            return view('reports.summary_report', [
+                'error' => 'Error loading report: ' . $e->getMessage(),
+                'selectedMonth' => Carbon::now(),
+                'selectedCompany' => 'all',
+                'companies' => [
+                    'all' => 'All Companies',
+                    'MULTI FABS LTD' => 'MULTI FABS LTD',
+                    'EMS APPARELS LTD' => 'EMS APPARELS LTD'
+                ],
+                'previousMonthClosing' => 0,
+                'dhakaBankReceived' => 0,
+                'cashReceived' => 0,
+                'officeBalance' => 0,
+                'exportData' => ['qty' => 0, 'total' => 0],
+                'importData' => ['qty' => 0, 'total' => 0],
+                'officeExpenses' => 0,
+                'totalExpenses' => 0,
+                'closingBalance' => 0
+            ]);
         }
-
-        // For regular request, return the view
-        return view('reports.summary_report', $data);
     }
 
     /**
      * Calculate previous month's closing balance
+     * NO company filter for BankBook
      */
     private function calculatePreviousMonthClosing($currentMonth)
     {
         $previousMonth = $currentMonth->copy()->subMonth();
 
-        // Get income for previous month
+        // Get income for previous month (NO company filter)
         $previousIncome = $this->getBankReceived('Dhaka Bank', $previousMonth) +
             $this->getBankReceived('Cash', $previousMonth);
 
-        // Get expenses for previous month
-        $previousExport = $this->getExportData($previousMonth)['total'];
-        $previousImport = $this->getImportData($previousMonth)['total'];
-        $previousOffice = $this->getOfficeExpenses($previousMonth);
+        // Get expenses for previous month (Export/Import have company filter, Expenses does not)
+        // Note: For previous month closing, we should not filter by company
+        // because closing balance should be calculated for all companies
+        $previousExport = ExportBill::whereYear('bill_date', $previousMonth->year)
+            ->whereMonth('bill_date', $previousMonth->month)
+            ->with('expenses')
+            ->get()
+            ->sum(function($bill) {
+                return $bill->expenses->sum('amount');
+            });
+
+        $previousImport = ImportBill::whereYear('bill_date', $previousMonth->year)
+            ->whereMonth('bill_date', $previousMonth->month)
+            ->with('expenses')
+            ->get()
+            ->sum(function($bill) {
+                return $bill->expenses->sum('amount');
+            });
+
+        $previousOffice = Expenses::whereYear('date', $previousMonth->year)
+            ->whereMonth('date', $previousMonth->month)
+            ->sum('amount');
 
         $previousExpenses = $previousExport + $previousImport + $previousOffice;
 
@@ -96,6 +167,7 @@ class SummaryReportController extends Controller
 
     /**
      * Get bank received amount for a specific account and month
+     * NO company filter for BankBook
      */
     private function getBankReceived($accountName, $month)
     {
@@ -111,25 +183,27 @@ class SummaryReportController extends Controller
 
     /**
      * Get export data for a specific month
+     * WITH company filter for ExportBill
      */
-    private function getExportData($month)
+    private function getExportData($month, $company = 'all')
     {
-        $totalQty = ExportBill::whereYear('bill_date', $month->year)
-            ->whereMonth('bill_date', $month->month)
-            ->count('id');
+        $query = ExportBill::whereYear('bill_date', $month->year)
+            ->whereMonth('bill_date', $month->month);
 
-        $exportBillIds = ExportBill::whereYear('bill_date', $month->year)
-            ->whereMonth('bill_date', $month->month)
-            ->pluck('id');
+        // Filter by company if not 'all'
+        if ($company !== 'all') {
+            $query->where('company_name', $company);
+        }
+
+        $totalQty = $query->count('id');
+
+        $exportBillIds = $query->pluck('id');
 
         if ($exportBillIds->count() === 0) {
             return ['qty' => 0, 'total' => 0];
         }
 
         $totalExpenses = ExportBillExpense::whereIn('export_bill_id', $exportBillIds)->sum('amount');
-        $subtractExpenses = ExportBillExpense::whereIn('export_bill_id', $exportBillIds)
-            ->where('expense_type', 'like', '%Bank C & F Vat & Others%')
-            ->sum('amount');
 
         return [
             'qty' => $totalQty,
@@ -139,34 +213,27 @@ class SummaryReportController extends Controller
 
     /**
      * Get import data for a specific month
+     * WITH company filter for ImportBill
      */
-    private function getImportData($month)
+    private function getImportData($month, $company = 'all')
     {
-        $totalQty = ImportBill::whereYear('bill_date', $month->year)
-            ->whereMonth('bill_date', $month->month)
-            ->count('id');
+        $query = ImportBill::whereYear('bill_date', $month->year)
+            ->whereMonth('bill_date', $month->month);
 
-        $importBillIds = ImportBill::whereYear('bill_date', $month->year)
-            ->whereMonth('bill_date', $month->month)
-            ->pluck('id');
+        // Filter by company if not 'all'
+        if ($company !== 'all') {
+            $query->where('company_name', $company);
+        }
+
+        $totalQty = $query->count('id');
+
+        $importBillIds = $query->pluck('id');
 
         if ($importBillIds->count() === 0) {
             return ['qty' => 0, 'total' => 0];
         }
 
         $totalExpenses = ImportBillExpense::whereIn('import_bill_id', $importBillIds)->sum('amount');
-        $subtractExpenses = ImportBillExpense::whereIn('import_bill_id', $importBillIds)
-            ->where(function($query) {
-                $query->where('expense_type', 'like', '%Port Bill%')
-                    ->orWhere('expense_type', 'like', '%AIT%');
-            })
-            ->sum('amount');
-
-        $fees = ImportBill::whereIn('id', $importBillIds)
-            ->select(DB::raw('SUM(scan_fee) as total_scan_fee'), DB::raw('SUM(doc_fee) as total_doc_fee'))
-            ->first();
-
-        //$totalFees = ($fees->total_scan_fee ?? 0) + ($fees->total_doc_fee ?? 0) + $totalExpenses;
 
         return [
             'qty' => $totalQty,
@@ -176,6 +243,7 @@ class SummaryReportController extends Controller
 
     /**
      * Get office expenses for a specific month
+     * NO company filter for Expenses
      */
     private function getOfficeExpenses($month)
     {

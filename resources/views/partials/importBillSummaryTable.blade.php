@@ -1,11 +1,16 @@
 @php
     use Carbon\Carbon;
+    use App\Http\Controllers\ImportBillSummaryReportController;
 
     $printDate = Carbon::now()->format('d/m/Y');
     [$year, $monthNum] = explode('-', $month);
     $monthName = Carbon::createFromDate($year, $monthNum, 1)->format('F Y');
 
     $totalValue = $totalPort = $totalTotalBill = $totalDfVat = $totalDocFee = $totalScan = $totalItc = 0;
+
+    // Get company name for display
+    $controller = new ImportBillSummaryReportController();
+    $companyName = $company == 'all' ? 'All Companies' : $controller->companyNames[$company] ?? $company;
 @endphp
 <style>
     .company-header {
@@ -75,7 +80,7 @@
         text-align: center;
     }
 
-    /* Set specific column widths */
+    /* Set specific column widths - EXACTLY YOUR ORIGINAL */
     .invoice-table th:nth-child(1),
     .invoice-table td:nth-child(1) { width: 8%; }   /* L/C NO. */
     .invoice-table th:nth-child(2),
@@ -128,12 +133,16 @@
         font-size: 13px;
     }
 </style>
+
+<!-- ONLY UPDATED COMPANY NAME HERE -->
 <div class="company-header">
-    <h1>MULTI FABS LTD</h1>
+    <h1>{{ $companyName }}</h1>
     <p>(SELF C&F AGENTS)</p>
     <p>314, SK. MUJIB ROAD, CHOWDHURY BHABAN (4TH FLOOR) AGRABAD, CHITTAGONG.</p>
 </div>
+
 <hr style="border: none; border-top: 1px solid #222; margin: 10px 0 18px 0;" />
+
 <div class="invoice-info">
     <div><strong>IMPORT BILL STATEMENT :</strong> {{ $monthName }}</div>
     <div class="right"><strong> Date:</strong> {{ \Carbon\Carbon::now('Asia/Dhaka')->format('d-m-Y') }} </div>

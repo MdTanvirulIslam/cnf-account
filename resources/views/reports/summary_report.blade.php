@@ -40,6 +40,15 @@
                             <input type="month" id="month" name="month" class="form-control form-control-sm"
                                    value="{{ $selectedMonth->format('Y-m') }}">
                         </div>
+                        <div class="col-md-3 form-group">
+                            <select id="company" name="company" class="form-control form-control-sm">
+                                @foreach($companies as $key => $name)
+                                    <option value="{{ $key }}" {{ $selectedCompany == $key ? 'selected' : '' }}>
+                                        {{ $name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
                         <div class="col-md-4 d-flex align-items-end gap-2">
                             <button type="button" id="resetFilter" class="btn btn-secondary btn-sm">Reset</button>
                             <button type="button" id="printBtn" class="btn btn-info btn-sm">
@@ -55,7 +64,13 @@
         </div>
 
         <div class="col-xl-12 layout-top-spacing dc-report-table" id="reportContent">
-            <!-- Hidden element to store totals for Excel export -->
+            @if(isset($error))
+                <div class="alert alert-danger">
+                    {{ $error }}
+                </div>
+        @endif
+
+        <!-- Hidden element to store totals for Excel export -->
             <div id="summaryReportTotals"
                  data-previous-month-closing="{{ number_format($previousMonthClosing, 2) }}"
                  data-dhaka-bank-received="{{ number_format($dhakaBankReceived, 2) }}"
@@ -66,6 +81,7 @@
                  data-office-expenses="{{ number_format($officeExpenses, 2) }}"
                  data-closing-balance="{{ number_format($closingBalance, 2) }}"
                  data-month-text="{{ $selectedMonth->format('M-Y') }}"
+                 data-company="{{ $selectedCompany }}"
                  style="display: none;">
             </div>
 
@@ -76,7 +92,13 @@
             </div>
 
             <div class="company-header">
-                <h1>MULTI FABS LTD</h1>
+                <h1 id="companyHeaderName">
+                    @if($selectedCompany == 'all')
+                        ALL COMPANIES
+                    @else
+                        {{ $selectedCompany }}
+                    @endif
+                </h1>
                 <p>(SELF C&F AGENTS)</p>
                 <p>314, SK. MUJIB ROAD, CHOWDHURY BHABAN (4TH FLOOR) AGRABAD, CHITTAGONG.</p>
             </div>
@@ -141,14 +163,34 @@
 
                 <tr>
                     <td>1</td>
-                    <td id="exportDesc">EXPORT DOCUMENTS MFL {{ $exportData['qty'] }} PCS ( As per Sheet)</td>
+                    <td id="exportDesc">
+                        @php
+                            $companyCode = 'ALL';
+                            if($selectedCompany == 'MULTI FABS LTD') {
+                                $companyCode = 'MFL';
+                            } elseif($selectedCompany == 'EMS APPARELS LTD') {
+                                $companyCode = 'EMS';
+                            }
+                        @endphp
+                        EXPORT DOCUMENTS {{ $companyCode }} {{ $exportData['qty'] }} PCS ( As per Sheet)
+                    </td>
                     <td></td>
                     <td class="left" id="exportAmount">{{ number_format($exportData['total'], 2) }}</td>
                 </tr>
 
                 <tr>
                     <td>2</td>
-                    <td id="importDesc">IMPORT DOCUMENTS MFL {{ $importData['qty'] }} PCS ( As per Sheet)</td>
+                    <td id="importDesc">
+                        @php
+                            $companyCode = 'ALL';
+                            if($selectedCompany == 'MULTI FABS LTD') {
+                                $companyCode = 'MFL';
+                            } elseif($selectedCompany == 'EMS APPARELS LTD') {
+                                $companyCode = 'EMS';
+                            }
+                        @endphp
+                        IMPORT DOCUMENTS {{ $companyCode }} {{ $importData['qty'] }} PCS ( As per Sheet)
+                    </td>
                     <td></td>
                     <td class="left" id="importAmount">{{ number_format($importData['total'], 2) }}</td>
                 </tr>
@@ -175,6 +217,13 @@
 @section('scripts')
     <script>
         $(document).ready(function() {
+            // Add CSRF token to AJAX requests
+            $.ajaxSetup({
+                headers: {
+                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                }
+            });
+
             $('#excelBtn').on('click', function() {
                 exportToExcel();
             });
@@ -184,6 +233,10 @@
                 try {
                     // Get filter values
                     const monthValue = $('#month').val();
+                    const companySelect = document.getElementById('company');
+                    const selectedCompany = companySelect.value;
+                    const selectedCompanyText = companySelect.options[companySelect.selectedIndex].text;
+
                     const formattedMonth = monthValue ? new Date(monthValue + '-01').toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : 'All Time';
                     const currentDate = new Date().toLocaleDateString('en-GB');
 
@@ -205,7 +258,7 @@
         <!-- Company Header Section -->
         <tr>
             <td colspan="4" style="border: 1px solid #000000; padding: 10px; text-align: center; font-weight: bold; font-size: 16px;">
-                MULTI FABS LTD <br/>
+                ${selectedCompanyText}<br/>
                 (SELF C&F AGENTS)<br/>
                 314, SK. MUJIB ROAD, CHOWDHURY BHABAN (4TH FLOOR) AGRABAD, CHITTAGONG
             </td>
@@ -258,7 +311,7 @@
                     const a = document.createElement('a');
                     a.href = url;
 
-                    const fileName = `Monthly_Summary_Report_${formattedMonth.replace(/\s+/g, '_')}.xls`;
+                    const fileName = `Monthly_Summary_Report_${selectedCompanyText.replace(/\s+/g, '_')}_${formattedMonth.replace(/\s+/g, '_')}.xls`;
                     a.download = fileName;
 
                     document.body.appendChild(a);
@@ -312,25 +365,14 @@
 
             // Helper function to get total row HTML
             function getTotalRowHTML() {
-                console.log('Getting total row HTML for Monthly Summary Report...');
-
-                // Method 1: Try to get from tfoot
                 const tfoot = document.querySelector('#reportContent table tfoot');
-                console.log('TFoot found:', tfoot);
-
                 if (tfoot) {
                     const tfootRows = tfoot.querySelectorAll('tr');
-                    console.log('TFoot rows:', tfootRows.length);
-
                     for (let row of tfootRows) {
                         const cells = row.querySelectorAll('th, td');
-                        console.log('TFoot cells:', cells.length);
-
                         if (cells.length >= 4) {
                             const label = cells[0]?.textContent?.trim() || '';
                             const amount = cells[3]?.textContent?.trim() || '0.00';
-
-                            console.log('TFoot totals:', { label, amount });
 
                             return `
         <tr>
@@ -342,47 +384,7 @@
                     }
                 }
 
-                // Method 2: Try to get from hidden data element
-                const totalsElement = document.getElementById('summaryReportTotals');
-                if (totalsElement) {
-                    const closingBalance = totalsElement.getAttribute('data-closing-balance') || '0.00';
-                    const monthText = totalsElement.getAttribute('data-month-text') || 'Current Month';
-
-                    return `
-        <tr>
-            <td colspan="3" style="border: 1px solid #000000; padding: 5px; text-align: right; font-weight: bold;">TOTAL BALANCE ${monthText} CLOSING:</td>
-            <td style="border: 1px solid #000000; padding: 5px; text-align: right; font-weight: bold;">${closingBalance}</td>
-        </tr>
-                    `;
-                }
-
-                // Method 3: Try to get from elements with IDs
-                const closingBalanceElement = document.getElementById('closingBalanceAmount');
-                const closingBalanceLabel = document.getElementById('closingBalanceLabel');
-
-                if (closingBalanceElement && closingBalanceLabel) {
-                    const amount = closingBalanceElement.textContent.trim();
-                    const label = closingBalanceLabel.textContent.trim();
-
-                    return `
-        <tr>
-            <td colspan="3" style="border: 1px solid #000000; padding: 5px; text-align: right; font-weight: bold;">${label}</td>
-            <td style="border: 1px solid #000000; padding: 5px; text-align: right; font-weight: bold;">${amount}</td>
-        </tr>
-                    `;
-                }
-
-                // Method 4: Default fallback
-                console.log('Using default closing balance');
-                const reportTitle = document.getElementById('reportTitle');
-                const monthFromTitle = reportTitle ? reportTitle.textContent.match(/MONTH\s+([A-Za-z0-9-]+)/)?.[1] : 'Current Month';
-
-                return `
-        <tr>
-            <td colspan="3" style="border: 1px solid #000000; padding: 5px; text-align: right; font-weight: bold;">TOTAL BALANCE ${monthFromTitle} CLOSING:</td>
-            <td style="border: 1px solid #000000; padding: 5px; text-align: right; font-weight: bold;">0.00</td>
-        </tr>
-                `;
+                return '';
             }
 
             const originalAction = "{{ route('summary.report') }}";
@@ -392,9 +394,15 @@
                 loadReportData();
             });
 
+            // Company change event
+            $('#company').on('change', function() {
+                loadReportData();
+            });
+
             // Reset filter button
             $('#resetFilter').on('click', function() {
                 $('#month').val('{{ \Carbon\Carbon::now()->format('Y-m') }}');
+                $('#company').val('all');
                 loadReportData();
             });
 
@@ -406,7 +414,10 @@
             // Function to load report data via AJAX
             function loadReportData() {
                 const month = $('#month').val();
-                const url = `${originalAction}?month=${month}&ajax=true`;
+                const company = $('#company').val();
+                const url = `${originalAction}?month=${month}&company=${company}&ajax=true`;
+
+                console.log('Loading report data from:', url);
 
                 $('#loadingOverlay').show();
 
@@ -415,11 +426,36 @@
                     method: 'GET',
                     dataType: 'json',
                     success: function(response) {
-                        updateReportContent(response);
+                        console.log('AJAX Response:', response);
+
+                        if (response.success && response.data) {
+                            updateReportContent(response.data);
+                        } else {
+                            alert(response.message || 'Error loading report data.');
+                        }
                         $('#loadingOverlay').hide();
                     },
-                    error: function() {
-                        alert('Error loading report data. Please try again.');
+                    error: function(xhr, status, error) {
+                        console.error('AJAX Error:', {
+                            status: xhr.status,
+                            statusText: xhr.statusText,
+                            responseText: xhr.responseText,
+                            error: error
+                        });
+
+                        let errorMessage = 'Error loading report data. Please try again.';
+
+                        // Try to parse JSON error response
+                        try {
+                            const errorResponse = JSON.parse(xhr.responseText);
+                            if (errorResponse.message) {
+                                errorMessage = errorResponse.message;
+                            }
+                        } catch (e) {
+                            // Not JSON, use default message
+                        }
+
+                        alert(errorMessage);
                         $('#loadingOverlay').hide();
                     }
                 });
@@ -427,6 +463,8 @@
 
             // Function to update report content with new data
             function updateReportContent(data) {
+                console.log('Updating report content with:', data);
+
                 // Safe date parsing with validation
                 let selectedMonth;
                 try {
@@ -487,33 +525,47 @@
                     return num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
                 };
 
-                console.log('Selected Month:', selectedMonth);
-                console.log('First Day Current Month:', firstDayCurrentMonth);
-                console.log('Last Day Current Month:', lastDayCurrentMonth);
+                // Update company name in header
+                let companyName = data.selectedCompany === 'all' ? 'ALL COMPANIES' : data.selectedCompany;
+                $('#companyHeaderName').text(companyName);
 
-                // Update header with selected month
+                // Update report title
                 $('#reportTitle').html(`CASH RECEIVED AND PAYMENT STATEMENT FOR THE MONTH ${formatMonth(selectedMonth)}-${selectedMonth.getFullYear()}`);
 
-                // Update table data - ALL dates now use the SELECTED month
+                // Update table data
                 $('#openingBalanceDesc').html(`TOTAL OPENING BALANCE ${formatMonth(selectedMonth)} ${formatDate(firstDayCurrentMonth)}`);
                 $('#openingBalanceAmount').html(formatCurrency(data.previousMonthClosing)).toggleClass('negative', data.previousMonthClosing < 0);
 
                 $('#dhakaBankAmount').html(formatCurrency(data.dhakaBankReceived));
                 $('#cashReceivedAmount').html(formatCurrency(data.cashReceived));
 
-                // Update office balance row with first day to last day of SELECTED month
+                // Update office balance row
                 $('#officeBalanceDesc').html(`OFFICE BALANCE ON ${formatDate(firstDayCurrentMonth)} TO ${formatDate(lastDayCurrentMonth)}`);
                 $('#officeBalanceAmount').html(formatCurrency(data.officeBalance)).toggleClass('negative', data.officeBalance < 0);
 
-                $('#exportDesc').html(`EXPORT DOCUMENTS MFL ${data.exportData.qty} PCS ( As per Sheet)`);
+                // Update export description with company code
+                let exportCompanyCode = 'ALL';
+                if (data.selectedCompany === 'MULTI FABS LTD') {
+                    exportCompanyCode = 'MFL';
+                } else if (data.selectedCompany === 'EMS APPARELS LTD') {
+                    exportCompanyCode = 'EMS';
+                }
+                $('#exportDesc').html(`EXPORT DOCUMENTS ${exportCompanyCode} ${data.exportData.qty} PCS ( As per Sheet)`);
                 $('#exportAmount').html(formatCurrency(data.exportData.total));
 
-                $('#importDesc').html(`IMPORT DOCUMENTS MFL ${data.importData.qty} PCS ( As per Sheet)`);
+                // Update import description with company code
+                let importCompanyCode = 'ALL';
+                if (data.selectedCompany === 'MULTI FABS LTD') {
+                    importCompanyCode = 'MFL';
+                } else if (data.selectedCompany === 'EMS APPARELS LTD') {
+                    importCompanyCode = 'EMS';
+                }
+                $('#importDesc').html(`IMPORT DOCUMENTS ${importCompanyCode} ${data.importData.qty} PCS ( As per Sheet)`);
                 $('#importAmount').html(formatCurrency(data.importData.total));
 
                 $('#officeExpensesAmount').html(formatCurrency(data.officeExpenses));
 
-                // Update footer with last day of SELECTED month
+                // Update footer
                 $('#closingBalanceLabel').html(`TOTAL BALANCE ${formatMonth(selectedMonth)} CLOSING ${formatDate(lastDayCurrentMonth)}:`);
                 $('#closingBalanceAmount').html(formatCurrency(data.closingBalance)).toggleClass('negative', data.closingBalance < 0);
 
@@ -530,7 +582,8 @@
                     'data-import-total': formatCurrency(data.importData.total),
                     'data-office-expenses': formatCurrency(data.officeExpenses),
                     'data-closing-balance': formatCurrency(data.closingBalance),
-                    'data-month-text': `${formatMonth(selectedMonth)}-${selectedMonth.getFullYear()}`
+                    'data-month-text': `${formatMonth(selectedMonth)}-${selectedMonth.getFullYear()}`,
+                    'data-company': data.selectedCompany
                 });
             }
 

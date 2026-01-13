@@ -1,6 +1,65 @@
 @extends('layouts.layout')
 @section('styles')
+    <style>
+        .company-header { text-align: center; }
+        .company-header h1 { margin: 0; font-size: 22px; font-weight: bold; }
+        .company-header p { margin: 2px 0; font-size: 13px; color:#333; }
 
+        .invoice-info { display: flex; justify-content: space-between; margin-top: 10px; font-size: 14px; }
+        .invoice-info div { width: 48%; }
+
+        h3 { margin-top: 20px; font-size: 15px; text-transform: uppercase; }
+
+        .info-table { width: 100%; border-collapse: collapse; margin: 10px 0 20px; font-size: 13px; }
+        .info-table td { border: 1px solid #222; padding: 6px; vertical-align: top; }
+        .info-key {  font-weight: bold; width: 10%; }
+        .info-value { width: 40%; }
+
+        .invoice-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        .invoice-table th, .invoice-table td {
+            border: 1px solid #000;
+            padding: 6px 8px;
+        }
+        .invoice-table th {
+            background-color: #f4f4f4;
+        }
+        .right { text-align: right; }
+        .center { text-align: center !important; }
+        .left { text-align: left !important; }
+        .total-row td { font-weight: bold; background: #f9f9f9; }
+
+        .footer-note { margin-top: 40px; font-size: 14px; line-height: 1.6; }
+
+        /* Remove italic from address tag */
+        address {
+            font-style: normal !important;
+            font-size: 13px;
+            line-height: 1.5;
+            margin: 10px 0;
+        }
+
+        .clear {
+            margin: 10px 0;
+        }
+
+        /* Web view specific alignment */
+        .invoice-table th:nth-child(1),
+        .invoice-table td:nth-child(1) {
+            text-align: center;
+            width: 5%;
+        }
+        .invoice-table th:nth-child(2),
+        .invoice-table td:nth-child(2) {
+            text-align: left;
+            width: 65%;
+        }
+        .invoice-table th:nth-child(3),
+        .invoice-table td:nth-child(3),
+        .invoice-table th:nth-child(4),
+        .invoice-table td:nth-child(4) {
+            text-align: center;
+        }
+    </style>
 @endsection
 @section('content')
     <div class="row layout-spacing">
@@ -10,6 +69,16 @@
                     <h5 class="card-title">Import Bill Report</h5>
 
                     <form id="filterForm" class="row g-3 BankBook">
+                        <!-- Company Filter -->
+                        <div class="col-md-2 form-group">
+                            <label>Company</label>
+                            <select name="company" id="company" class="form-control form-control-sm">
+                                @foreach($companyNames as $key => $name)
+                                    <option value="{{ $key }}" {{ $company == $key ? 'selected' : '' }}>{{ $name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+
                         <!-- L/C No -->
                         <div class="col-md-2 form-group">
                             <label>L/C No</label>
@@ -56,7 +125,7 @@
                             <button type="button" id="resetBtn" class="btn btn-secondary btn-sm me-1">
                                 <i class="fas fa-undo"></i> Reset
                             </button>
-                            <button type="button" id="printBtn" class="btn btn-info btn-sm me-1">
+                            <button type="button" id="printBtn" class="btn btn-info btn-sm">
                                 <i class="fas fa-print"></i> Print
                             </button>
                         </div>
@@ -66,7 +135,10 @@
         </div>
 
         <div class="col-xl-12 layout-top-spacing" id="reportTable">
-            @include('partials.importBillReportTable', ['importBills'=>$importBills])
+            @include('partials.importBillReportTable', [
+                'importBills' => $importBills,
+                'companyAddresses' => $companyAddresses
+            ])
         </div>
     </div>
 @endsection
@@ -75,9 +147,10 @@
     <script>
         $(document).ready(function() {
             // Store original values for reset (last bill's values)
-            const originalLcNo = "{{ $lastBill->lc_no ?? 'all' }}";
-            const originalBeNo = "{{ $lastBill->be_no ?? 'all' }}";
-            const originalBillNo = "{{ $lastBill->bill_no ?? 'all' }}";
+            const originalCompany = "{{ $lastBill ? $lastBill->company_name : 'all' }}";
+            const originalLcNo = "{{ $lastBill ? $lastBill->lc_no : 'all' }}";
+            const originalBeNo = "{{ $lastBill ? $lastBill->be_no : 'all' }}";
+            const originalBillNo = "{{ $lastBill ? $lastBill->bill_no : 'all' }}";
             const originalBillDate = "{{ $lastBill?->bill_date ? \Carbon\Carbon::parse($lastBill->bill_date)->format('Y-m-d') : '' }}";
 
             // Store all options for reset
@@ -93,6 +166,7 @@
 
             // Reset button - restore to last bill's values
             $('#resetBtn').on('click', function() {
+                $('#company').val(originalCompany);
                 $('#lcNo').val(originalLcNo);
                 $('#beNo').val(originalBeNo);
                 $('#billNo').val(originalBillNo);
@@ -103,6 +177,7 @@
                 populateDropdown('#billNo', allBillNos, originalBillNo);
 
                 loadReportData({
+                    company: originalCompany,
                     lcNo: originalLcNo,
                     be_no: originalBeNo,
                     bill_no: originalBillNo,
@@ -116,12 +191,13 @@
             });
 
             // When any dropdown changes, update dependent dropdowns
-            $('#lcNo, #beNo, #billNo').on('change', function(){
+            $('#company, #lcNo, #beNo, #billNo').on('change', function(){
                 updateDependentOptions();
             });
 
             // Function to update dependent dropdowns
             function updateDependentOptions() {
+                const company = $('#company').val();
                 const lcNo = $('#lcNo').val();
                 const beNo = $('#beNo').val();
                 const billNo = $('#billNo').val();
@@ -130,6 +206,7 @@
                     url: "{{ route('importBill.dependent') }}",
                     type: "GET",
                     data: {
+                        company: company,
                         lcNo: lcNo,
                         be_no: beNo,
                         bill_no: billNo
@@ -176,7 +253,7 @@
                         $('#reportTable').html('<div class="text-center p-3"><i class="fas fa-spinner fa-spin"></i> Loading...</div>');
                     },
                     success: function(res){
-                        $('#reportTable').html(res.html);
+                        $('#reportTable').html(res);
                     },
                     error: function(xhr) {
                         console.error(xhr);
@@ -187,216 +264,202 @@
 
             // Print functionality
             function printReport() {
-                const currentLcNo = $('#lcNo option:selected').text();
-                const currentBeNo = $('#beNo option:selected').text();
-                const currentBillNo = $('#billNo option:selected').text();
-                const currentBillDate = $('#billDate').val();
-
                 // Get the report content
                 const reportContent = document.getElementById('reportTable').innerHTML;
 
-                // Fix the footer colspan in the content
+                // Remove the alert message if no bills found
                 let fixedContent = reportContent.replace(
-                    /<td colspan="2" class="center">TOTAL AMOUNT<\/td>/g,
-                    '<td colspan="2" class="center" style="text-align: center;">TOTAL AMOUNT</td>'
+                    /<div class="alert alert-info text-center">[\s\S]*?<\/div>/g,
+                    ''
                 );
 
                 // Create print-friendly HTML
                 const printWindow = window.open('', '_blank');
                 printWindow.document.write(`
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <title>Import Bill Report</title>
-            <style>
-                body {
-                    font-family: Arial, sans-serif;
-                    margin: 20px;
-                    color: #000;
-                }
-                .print-container {
-                    max-width: 100%;
-                }
-                .company-header {
-                    text-align: center;
-                    margin-bottom: 15px;
-                }
-                .company-header h1 {
-                    margin: 0;
-                    font-size: 22px;
-                    font-weight: bold;
-                }
-                .company-header p {
-                    margin: 2px 0;
-                    font-size: 13px;
-                    color:#333;
-                }
-                .invoice-info {
-                    display: flex;
-                    justify-content: space-between;
-                    margin-top: 10px;
-                    font-size: 14px;
-                    margin-bottom: 10px;
-                }
-                .invoice-info div {
-                    width: 48%;
-                }
-                h3 {
-                    margin-top: 20px;
-                    font-size: 15px;
-                    text-transform: uppercase;
-                    margin-bottom: 15px;
-                }
-                .info-table {
-                    width: 100%;
-                    border-collapse: collapse;
-                    margin: 10px 0 20px;
-                    font-size: 13px;
-                }
-                .info-table td {
-                    border: 1px solid #222;
-                    padding: 6px;
-                    vertical-align: top;
-                }
-                .info-key {
-                    font-weight: bold;
-                    width: 10%;
-                }
-                .info-value {
-                    width: 40%;
-                }
-                table {
-                    width: 100%;
-                    border-collapse: collapse;
-                    margin: 20px 0;
-                    font-size: 12px;
-                }
-                th, td {
-                    border: 1px solid #000;
-                    padding: 8px;
-                }
-                th {
-                    background-color: #f5f5f5;
-                    font-weight: bold;
-                }
-                .right {
-                    text-align: right;
-                }
-                .center {
-                    text-align: center !important;
-                }
-                .left {
-                    text-align: left !important;
-                }
-                .total-row {
-                    font-weight: bold;
-                    background-color: #e9ecef;
-                }
-                .total-row td {
-                    font-weight: bold;
-                    background-color: #f9f9f9 !important;
-                }
-                .print-footer {
-                    margin-top: 30px;
-                    padding-top: 10px;
-                    border-top: 1px solid #333;
-                    font-size: 11px;
-                    color: #666;
-                    text-align: center;
-                }
-                .grand-total {
-                    margin-top: 20px;
-                    font-size: 14px;
-                    font-weight: bold;
-                    text-align: center;
-                    border-top: 1px solid #000;
-                    padding-top: 10px;
-                }
-                .no-print { display: none; }
+                    <!DOCTYPE html>
+                    <html>
+                    <head>
+                        <title>Import Bill Report</title>
+                        <meta charset="UTF-8">
+                        <style>
+                            body {
+                                font-family: Arial, sans-serif;
+                                margin: 0;
+                                padding: 15px;
+                                color: #000;
+                                font-size: 12px;
+                            }
 
-                /* Specific table alignment for print */
-                .invoice-table {
-                    width: 100%;
-                    border-collapse: collapse;
-                }
-                .invoice-table th:nth-child(1),
-                .invoice-table td:nth-child(1) {
-                    text-align: center;
-                    width: 5%;
-                }
-                .invoice-table th:nth-child(2),
-                .invoice-table td:nth-child(2) {
-                    text-align: left;
-                    width: 65%;
-                }
-                .invoice-table th:nth-child(3),
-                .invoice-table td:nth-child(3),
-                .invoice-table th:nth-child(4),
-                .invoice-table td:nth-child(4) {
-                    text-align: center;
-                    width: 15%;
-                }
+                            .company-header {
+                                text-align: center;
+                                margin-bottom: 10px;
+                            }
+                            .company-header h1 {
+                                margin: 0;
+                                font-size: 20px;
+                                font-weight: bold;
+                            }
+                            .company-header p {
+                                margin: 2px 0;
+                                font-size: 12px;
+                                color:#333;
+                            }
 
-                /* Fix total row alignment */
-                .invoice-table .total-row td:first-child {
-                    text-align: center !important;
-                }
-                .invoice-table .total-row td:nth-child(2) {
-                    text-align: center !important;
-                }
+                            .invoice-info {
+                                display: flex;
+                                justify-content: space-between;
+                                margin-top: 8px;
+                                font-size: 12px;
+                                margin-bottom: 8px;
+                            }
+                            .invoice-info div {
+                                width: 48%;
+                            }
 
-                @media print {
-                    body {
-                        margin: 15px;
-                        font-size: 12px;
-                    }
-                    .company-header h1 {
-                        font-size: 20px;
-                    }
-                    .invoice-table {
-                        page-break-inside: avoid;
-                    }
-                    th {
-                        background-color: #f0f0f0 !important;
-                    }
-                    .table-responsive {
-                        overflow: visible !important;
-                    }
+                            h3 {
+                                margin-top: 15px;
+                                font-size: 13px;
+                                text-transform: uppercase;
+                                margin-bottom: 10px;
+                            }
 
-                    /* Ensure description column is left-aligned in print */
-                    .invoice-table th:nth-child(2),
-                    .invoice-table td:nth-child(2) {
-                        text-align: left !important;
-                    }
-                    .invoice-table th:nth-child(1),
-                    .invoice-table td:nth-child(1),
-                    .invoice-table th:nth-child(3),
-                    .invoice-table td:nth-child(3),
-                    .invoice-table th:nth-child(4),
-                    .invoice-table td:nth-child(4) {
-                        text-align: center !important;
-                    }
+                            /* Remove italic from address tag */
+                            address {
+                                font-style: normal !important;
+                                font-size: 13px;
+                                line-height: 1.5;
+                                margin: 10px 0;
+                            }
 
-                    /* Fix total row in print */
-                    .total-row td {
-                        background-color: #e9ecef !important;
-                    }
-                    .invoice-table .total-row td[colspan] {
-                        text-align: center !important;
-                    }
-                }
-            </style>
-        </head>
-        <body>
-            <div class="print-container">
-                ${fixedContent}
-                <div class="print-footer">
-                    <p>Generated by DifferentCoder || www.differentcoder.com</p>
-                </div>
-            </div>
-        </body>
-        </html>
-    `);
+                            .clear {
+                                margin: 10px 0;
+                            }
+
+                            .info-table {
+                                width: 100%;
+                                border-collapse: collapse;
+                                margin: 8px 0 15px;
+                                font-size: 11px;
+                            }
+                            .info-table td {
+                                border: 1px solid #222;
+                                padding: 5px;
+                                vertical-align: top;
+                            }
+                            .info-key {
+                                font-weight: bold;
+                                width: 10%;
+                            }
+                            .info-value {
+                                width: 40%;
+                            }
+
+                            .invoice-table {
+                                width: 100%;
+                                border-collapse: collapse;
+                                margin: 15px 0;
+                                font-size: 11px;
+                            }
+                            .invoice-table th,
+                            .invoice-table td {
+                                border: 1px solid #000;
+                                padding: 6px;
+                            }
+                            .invoice-table th {
+                                background-color: #f5f5f5;
+                                font-weight: bold;
+                            }
+
+                            .right {
+                                text-align: right;
+                            }
+                            .center {
+                                text-align: center !important;
+                            }
+                            .left {
+                                text-align: left !important;
+                            }
+
+                            .total-row {
+                                font-weight: bold;
+                                background-color: #e9ecef;
+                            }
+                            .total-row td {
+                                font-weight: bold;
+                                background-color: #f9f9f9 !important;
+                            }
+
+                            .footer-note {
+                                margin-top: 30px;
+                                font-size: 12px;
+                                line-height: 1.5;
+                            }
+
+                            .print-footer {
+                                margin-top: 20px;
+                                padding-top: 8px;
+                                border-top: 1px solid #333;
+                                font-size: 10px;
+                                color: #666;
+                                text-align: center;
+                            }
+
+                            /* Page break */
+                            .page-break {
+                                page-break-after: always;
+                            }
+
+                            /* Hide page break indicators in print */
+                            @media print {
+                                body {
+                                    margin: 0;
+                                    padding: 10px;
+                                }
+
+                                hr {
+                                    display: none !important;
+                                }
+
+                                .company-header h1 {
+                                    font-size: 18px;
+                                }
+
+                                .invoice-table {
+                                    page-break-inside: avoid;
+                                }
+
+                                th {
+                                    background-color: #f0f0f0 !important;
+                                }
+
+                                /* Ensure address is not italic in print */
+                                address {
+                                    font-style: normal !important;
+                                    font-size: 12px;
+                                }
+
+                                .clear {
+                                    margin: 8px 0;
+                                }
+
+                                .print-footer {
+                                    position: fixed;
+                                    bottom: 0;
+                                    width: 100%;
+                                }
+                            }
+                        </style>
+                    </head>
+                    <body>
+                        <div class="print-container">
+                            ${fixedContent}
+                            <div class="print-footer">
+                                <p>Generated by DifferentCoder || www.differentcoder.com</p>
+                            </div>
+                        </div>
+                    </body>
+                    </html>
+                `);
 
                 printWindow.document.close();
                 setTimeout(() => {
@@ -409,52 +472,3 @@
         });
     </script>
 @endsection
-
-<style>
-    .company-header { text-align: center; }
-    .company-header h1 { margin: 0; font-size: 22px; font-weight: bold; }
-    .company-header p { margin: 2px 0; font-size: 13px; color:#333; }
-
-    .invoice-info { display: flex; justify-content: space-between; margin-top: 10px; font-size: 14px; }
-    .invoice-info div { width: 48%; }
-
-    h3 { margin-top: 20px; font-size: 15px; text-transform: uppercase; }
-
-    .info-table { width: 100%; border-collapse: collapse; margin: 10px 0 20px; font-size: 13px; }
-    .info-table td { border: 1px solid #222; padding: 6px; vertical-align: top; }
-    .info-key {  font-weight: bold; width: 10%; }
-    .info-value { width: 40%; }
-
-    .invoice-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-    .invoice-table th, .invoice-table td {
-        border: 1px solid #000;
-        padding: 6px 8px;
-    }
-    .invoice-table th {
-        background-color: #f4f4f4;
-    }
-    .right { text-align: right; }
-    .center { text-align: center !important; }
-    .left { text-align: left !important; }
-    .total-row td { font-weight: bold; background: #f9f9f9; }
-
-    .footer-note { margin-top: 20px; font-size: 13px; }
-
-    /* Web view specific alignment */
-    .invoice-table th:nth-child(1),
-    .invoice-table td:nth-child(1) {
-        text-align: center;
-        width: 5%;
-    }
-    .invoice-table th:nth-child(2),
-    .invoice-table td:nth-child(2) {
-        text-align: left;
-        width: 65%;
-    }
-    .invoice-table th:nth-child(3),
-    .invoice-table td:nth-child(3),
-    .invoice-table th:nth-child(4),
-    .invoice-table td:nth-child(4) {
-        text-align: center;
-    }
-</style>
